@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "400845601317",
+    "project_id": "vouch",
+    "storage_bucket": "vouch.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400845601317:android:0a2b01d5e88fb845a05dcc",
+        "android_client_info": {
+          "package_name": "com.example.vouch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQ2so1gFHmJRhQxxxIlVrb_NwHCXWck08"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

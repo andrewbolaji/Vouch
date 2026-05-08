@@ -1,0 +1,34 @@
+name: vouch
+description: "Curated Top 10 restaurant rankings per city, voted on by locals."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  cached_network_image: ^3.4.1
+  cloud_firestore: ^6.3.0
+  cupertino_icons: ^1.0.8
+  firebase_auth: ^6.4.0
+  firebase_core: ^4.7.0
+  firebase_messaging: ^16.2.0
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^9.2.4
+  google_fonts: ^6.2.1
+  provider: ^6.1.2
+  share_plus: ^10.1.4
+  shared_preferences: ^2.3.4
+  shimmer: ^3.0.0
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  very_good_analysis: ^10.1.0
+
+flutter:
+  uses-material-design: true

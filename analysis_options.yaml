@@ -1,0 +1,24 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  errors:
+    # Treat these as errors, not warnings
+    missing_required_param: error
+    missing_return: error
+
+linter:
+  rules:
+    # Relax rules that conflict with the current codebase patterns.
+    # Each relaxation has a justification.
+
+    # Public API docs not needed for an app (not a package).
+    public_member_api_docs: false
+
+    # Single quotes vs double quotes is a style preference.
+    # The codebase uses single quotes consistently already.
+    prefer_double_quotes: false
+
+    # Cascades in tests reduce readability. Each assertion
+    # should be its own statement for clarity when debugging
+    # failures.
+    cascade_invocations: false
