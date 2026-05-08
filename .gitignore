@@ -50,3 +50,5 @@ macos/Pods/
 
 # Firebase config (contains project-specific keys)
 lib/firebase_options.dart
+.claude/
+.agents/

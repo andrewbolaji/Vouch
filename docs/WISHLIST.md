@@ -90,6 +90,15 @@ Every "good idea but not now" with reasoning and a tier. Items 6+ months old wit
 
 ---
 
+### Email link / passwordless sign-in
+**The idea:** Add email magic link as a sign-in option, removing the password step entirely.
+
+**Why pin, not build:** Google and Apple sign-in already solve the password-averse use case. Email link requires deep-link infrastructure (go_router), which is itself deferred. Not worth the complexity until there's evidence users are dropping off at the password field.
+
+**Trigger to promote:** go_router ships AND password-fatigue feedback from real users.
+
+---
+
 ### Suggestion daily cap: UTC alignment
 **The idea:** Switch suggestion rate-limit date key from local time to UTC, matching server-side enforcement.
 

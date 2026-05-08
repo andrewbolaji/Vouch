@@ -45,6 +45,7 @@ Architectural and product decisions with reasoning. Future-you reads this file a
 | 2026-05-07 | Password reset: defer to Firebase default web handler for v1 | In-app deep link handling requires go_router, which is itself deferred. Pinned in WISHLIST.md v1.1 with trigger: "When go_router ships." |
 | 2026-05-07 | Account deletion: v1 scope, non-negotiable | Apple App Store guideline 5.1.1(v) requires it. Block 1 ships auth-level deletion (FirebaseAuth.currentUser.delete()). Cloud Function for Firestore user data cleanup ships in Block 2 or 3 when Firestore data exists. Profile menu entry with confirmation modal. |
 | 2026-05-07 | AuthService owns authStateChanges() stream | Enforces single subscription per app instance. Preserves repository pattern (callers never import FirebaseAuth). Automatic disposal when MultiProvider tears down. Implementation: late final StreamSubscription in constructor, cancelled in dispose(). |
+| 2026-05-07 | Auth methods for v1: email + password, Google, Apple | Email link/passwordless deliberately deferred. Google/Apple already solve the password-averse use case. Email link requires deep-link infrastructure deferred to go_router. Pinned in WISHLIST.md v2 with trigger: "go_router ships AND password-fatigue feedback." |
 
 ---
 
