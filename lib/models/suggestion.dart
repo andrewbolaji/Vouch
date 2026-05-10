@@ -1,6 +1,6 @@
 enum SuggestionType { newRestaurant, correction, newCity, general }
 
-const int kDailySuggestionCap = 3;
+const int kDailySuggestionCap = 1;
 
 class Suggestion {
 

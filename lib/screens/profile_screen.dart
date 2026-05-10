@@ -224,7 +224,21 @@ class ProfileScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(BrandConfig.tagline, style: AppTheme.accentItalic),
+            Text.rich(
+              TextSpan(
+                style: AppTheme.accentItalic.copyWith(
+                  color: AppTheme.textPrimary,
+                ),
+                children: [
+                  const TextSpan(text: 'Where locals '),
+                  TextSpan(
+                    text: 'actually',
+                    style: TextStyle(color: AppTheme.accent),
+                  ),
+                  const TextSpan(text: ' eat'),
+                ],
+              ),
+            ),
             const SizedBox(height: AppTheme.spacingMd),
             Text(BrandConfig.description, style: AppTheme.bodyMedium),
             const SizedBox(height: AppTheme.spacingLg),

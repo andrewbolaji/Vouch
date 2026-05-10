@@ -22,7 +22,13 @@ class MockSecureStorage extends Mock implements SecureStorageService {}
 
 class MockUserInfo extends Mock implements fb.UserInfo {}
 
+class FakeAuthProvider extends Fake implements fb.AuthProvider {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeAuthProvider());
+  });
+
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
   // Mock the Firebase platform channels to prevent hanging
@@ -396,6 +402,54 @@ void main() {
       }
 
       expect(service.isLoading, isFalse);
+    });
+
+    test('signInWithGoogle happy path sets Google user via auth state', () async {
+      final service = createService();
+      final mockUser = MockFirebaseUser();
+      final mockCred = MockUserCredential();
+      final mockGoogleProvider = MockUserInfo();
+
+      // Configure mock user with Google provider
+      when(() => mockUser.uid).thenReturn('google-uid-1');
+      when(() => mockUser.email).thenReturn('user@gmail.com');
+      when(() => mockUser.displayName).thenReturn('Google User');
+      when(() => mockUser.photoURL)
+          .thenReturn('https://photo.example.com/avatar.jpg');
+      when(() => mockGoogleProvider.providerId).thenReturn('google.com');
+      when(() => mockUser.providerData).thenReturn([mockGoogleProvider]);
+      when(() => mockUser.getIdToken()).thenAnswer((_) async => 'google-token');
+      when(() => mockCred.user).thenReturn(mockUser);
+
+      when(
+        () => mockAuth.signInWithProvider(any()),
+      ).thenAnswer((_) async => mockCred);
+
+      var notifyCount = 0;
+      service.addListener(() => notifyCount++);
+
+      await service.signInWithGoogle();
+
+      // signInWithProvider was called with a GoogleAuthProvider
+      final captured = verify(
+        () => mockAuth.signInWithProvider(captureAny()),
+      ).captured;
+      expect(captured.single, isA<fb.GoogleAuthProvider>());
+
+      // Auth state stream fires, which sets the user
+      authStateController.add(mockUser);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(service.currentUser, isNotNull);
+      expect(service.currentUser!.uid, equals('google-uid-1'));
+      expect(service.currentUser!.email, equals('user@gmail.com'));
+      expect(service.currentUser!.displayName, equals('Google User'));
+      expect(service.currentUser!.method, equals(AuthMethod.google));
+      expect(service.isSignedIn, isTrue);
+      expect(service.isLoading, isFalse);
+
+      // Token was persisted
+      verify(() => mockStorage.saveToken('google-token')).called(1);
     });
   });
 }

@@ -1,8 +1,8 @@
 {
   "project_info": {
     "project_number": "400845601317",
-    "project_id": "vouch",
-    "storage_bucket": "vouch.firebasestorage.app"
+    "project_id": "majorcitymusteats",
+    "storage_bucket": "majorcitymusteats.firebasestorage.app"
   },
   "client": [
     {
@@ -12,7 +12,12 @@
           "package_name": "com.example.vouch"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "400845601317-134n5ro5s008sd7uo2rfvm27e1kgbat4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDQ2so1gFHmJRhQxxxIlVrb_NwHCXWck08"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "400845601317-134n5ro5s008sd7uo2rfvm27e1kgbat4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "400845601317-rs05c8rsj3ik8qer6m5ibgke42qkcc76.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.majorcitymusteats"
+              }
+            }
+          ]
         }
       }
     }

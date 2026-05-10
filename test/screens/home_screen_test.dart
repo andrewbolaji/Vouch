@@ -99,7 +99,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('No cities found'), findsOneWidget);
+        expect(find.text("We're not there yet"), findsOneWidget);
       },
     );
 

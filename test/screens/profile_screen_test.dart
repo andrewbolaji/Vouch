@@ -99,7 +99,7 @@ void main() {
         );
 
         expect(
-          find.text('Anonymous Local'),
+          find.text('Local (sign in to save)'),
           findsOneWidget,
         );
       },

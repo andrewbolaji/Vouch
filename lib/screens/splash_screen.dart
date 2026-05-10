@@ -104,9 +104,20 @@ class _SplashScreenState extends State<SplashScreen>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppTheme.spacingSm),
-                Text(
-                  BrandConfig.tagline,
-                  style: AppTheme.bodyMedium.copyWith(color: AppTheme.accent),
+                Text.rich(
+                  TextSpan(
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
+                    children: [
+                      const TextSpan(text: 'Where locals '),
+                      TextSpan(
+                        text: 'actually',
+                        style: TextStyle(color: AppTheme.accent),
+                      ),
+                      const TextSpan(text: ' eat'),
+                    ],
+                  ),
                 ),
               ],
             ),

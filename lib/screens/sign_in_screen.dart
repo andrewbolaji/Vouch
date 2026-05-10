@@ -110,7 +110,7 @@ class _SignInScreenState extends State<SignInScreen> {
             Text(
               _isSignUp
                   ? 'Join the locals who decide the rankings.'
-                  : 'Welcome back.',
+                  : 'Good to see you.',
               style: AppTheme.bodyLarge.copyWith(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: AppTheme.spacingXl),

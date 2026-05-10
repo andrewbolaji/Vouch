@@ -50,6 +50,17 @@ Every "good idea but not now" with reasoning and a tier. Items 6+ months old wit
 
 ---
 
+### Vote weight repositioning + transparency display
+**The idea:** Reposition premium tiers around vote weight as the headline feature: Free = 1x, Locals Pass = 3x, City Insider = 3x with insider tips and verified-visit badge. Add vote breakdown display on every restaurant detail page showing total votes, breakdown by tier, and weighted total (e.g., "142 free votes (worth 142) + 15 premium votes (worth 45) = 187 weighted"). Visible to all users including free. Transparency is the ethical defense.
+
+**Why v1.1:** Requires sufficient voting volume for weight to demonstrably move rankings. Launching with this before volume exists makes the feature feel hollow.
+
+**Trigger:** 6+ months post-launch AND voting volume sufficient that vote weight demonstrably moves rankings (estimated 1K+ DAU per active city).
+
+**Effort estimate:** Medium (schema changes to vote docs, Cloud Function for weighted tallying, UI for breakdown display).
+
+---
+
 ### Folder restructure (feature-first)
 **The idea:** Reorganize lib/ from flat structure (screens/, widgets/, providers/, services/) to feature-first (features/city/, features/restaurant/, features/auth/, etc.).
 
@@ -62,6 +73,15 @@ Every "good idea but not now" with reasoning and a tier. Items 6+ months old wit
 ---
 
 ## v2 candidates (pin, don't build)
+
+### Restaurant lifecycle management
+**The idea:** Vote decay (weighting recent votes higher) + Google Places API weekly verification for operational status and address changes (not user-reported corrections, those add moderation surface we are avoiding for v1). Closed restaurants stay listed but flagged as closed (do not scrub, keeps food memory of cities).
+
+**Why pin, not build:** Requires operational maturity and real data. Premature with seed data.
+
+**Trigger to promote:** 3+ cities live OR 200+ restaurants OR first "restaurant was closed" user complaint.
+
+---
 
 ### Operations metrics dashboard
 **The idea:** Surface data over time: vote trends per city, comment frequency, suggestion patterns, user retention signals.

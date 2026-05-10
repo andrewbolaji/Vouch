@@ -65,7 +65,7 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSignedIn => _currentUser != null && !_currentUser!.isAnonymous;
   String get displayName =>
-      _currentUser?.displayName ?? _currentUser?.email ?? 'Anonymous Local';
+      _currentUser?.displayName ?? _currentUser?.email ?? 'Local (sign in to save)';
 
   // -- Stream listener --
 

@@ -40,7 +40,7 @@ Tap any city card to see that city's restaurant rankings.
 
 Tap the search bar and start typing. The city grid updates as you type. To clear your search, delete the text in the search bar. The full list comes back.
 
-If no cities match your search, you will see "No cities found" with a suggestion to try a different search term.
+If no cities match your search, you will see "We're not there yet" with a note to suggest a city from your profile.
 
 ### City rankings
 
@@ -196,7 +196,7 @@ At the bottom of your profile, you will find the **Suggestion Box**. Use it to:
 - Request a **new city**.
 - Send **general** feedback.
 
-Pick a category, type your suggestion, and tap **Submit**. You can submit up to 3 suggestions per day. The counter at the top shows how many you have left.
+Pick a category, type your suggestion, and tap **Submit**. You can submit 1 suggestion per day. The counter at the top shows how many you have left.
 
 ---
 
@@ -214,4 +214,4 @@ On the home screen and city ranking pages, pull down to refresh the data.
 
 ---
 
-*Last updated: Block 1 (Firebase Auth wire-up). Updated every Block.*
+*Last updated: Block 2 (Google Sign-In fix, UI polish, documentation). Updated every Block.*

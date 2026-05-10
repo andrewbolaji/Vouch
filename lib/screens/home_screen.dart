@@ -90,21 +90,24 @@ class HomeScreen extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.search_off,
+                                Icons.explore_outlined,
                                 color: AppTheme.textTertiary,
                                 size: 48,
                               ),
                               const SizedBox(height: AppTheme.spacingMd),
                               Text(
-                                'No cities found',
+                                "We're not there yet",
                                 style: AppTheme.bodyLarge.copyWith(
                                   color: AppTheme.textSecondary,
                                 ),
                               ),
                               const SizedBox(height: AppTheme.spacingXs),
                               Text(
-                                'Try a different search term',
+                                'Tap your profile to suggest a city.'
+                                ' We add new ones based on'
+                                ' what locals ask for.',
                                 style: AppTheme.bodyMedium,
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
@@ -173,9 +176,20 @@ class _HomeHeader extends StatelessWidget {
               children: [
                 Text(BrandConfig.appName, style: AppTheme.displayMedium),
                 const SizedBox(height: 2),
-                Text(
-                  BrandConfig.tagline,
-                  style: AppTheme.bodySmall.copyWith(color: AppTheme.accent),
+                Text.rich(
+                  TextSpan(
+                    style: AppTheme.bodySmall.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
+                    children: [
+                      const TextSpan(text: 'Where locals '),
+                      TextSpan(
+                        text: 'actually',
+                        style: TextStyle(color: AppTheme.accent),
+                      ),
+                      const TextSpan(text: ' eat'),
+                    ],
+                  ),
                 ),
               ],
             ),

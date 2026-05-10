@@ -39,7 +39,7 @@ class _SuggestionBoxState extends State<SuggestionBox> {
           const SizedBox(height: AppTheme.spacingSm),
           Text(
             '${provider.remainingToday} of '
-            '$kDailySuggestionCap suggestions remaining today',
+            '$kDailySuggestionCap suggestion remaining today',
             style: AppTheme.bodySmall,
           ),
           const SizedBox(height: AppTheme.spacingMd),
