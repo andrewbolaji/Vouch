@@ -1,4 +1,4 @@
-package com.example.vouch
+package com.example.majorcitymusteats
 
 import io.flutter.embedding.android.FlutterActivity
 

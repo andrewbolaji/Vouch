@@ -38,5 +38,13 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # Fix gRPC-Core/BoringSSL build errors with newer Xcode/Clang versions
+    if ['gRPC-Core', 'BoringSSL-GRPC'].include?(target.name)
+      target.build_configurations.each do |config|
+        config.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
+        config.build_settings['GCC_OPTIMIZATION_LEVEL'] = '0'
+      end
+    end
   end
 end
