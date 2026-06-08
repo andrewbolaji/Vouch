@@ -404,6 +404,37 @@ void main() {
       expect(service.isLoading, isFalse);
     });
 
+    test('signInWithGoogle does not timeout on slow interactive flow',
+        () async {
+      // This is the fix: interactive provider sign-ins (Google, Apple)
+      // must NOT have a timeout, because the user controls how long the
+      // OAuth consent screen takes. Previously a 10s timeout caused
+      // "Couldn't reach Vouch" errors on real devices.
+      final service = createService();
+      final mockCred = MockUserCredential();
+      final mockUser = MockFirebaseUser();
+
+      when(() => mockUser.uid).thenReturn('slow-uid');
+      when(() => mockUser.email).thenReturn('slow@test.com');
+      when(() => mockUser.displayName).thenReturn('Slow User');
+      when(() => mockUser.photoURL).thenReturn(null);
+      when(() => mockUser.providerData).thenReturn([]);
+      when(() => mockUser.getIdToken()).thenAnswer((_) async => 'tok');
+      when(() => mockCred.user).thenReturn(mockUser);
+
+      // Simulate a 12-second interactive flow (exceeds old 10s timeout)
+      when(() => mockAuth.signInWithProvider(any())).thenAnswer(
+        (_) async {
+          await Future<void>.delayed(const Duration(seconds: 12));
+          return mockCred;
+        },
+      );
+
+      // This should complete without throwing NetworkException
+      await service.signInWithGoogle();
+      expect(service.isLoading, isFalse);
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
     test('signInWithGoogle happy path sets Google user via auth state', () async {
       final service = createService();
       final mockUser = MockFirebaseUser();

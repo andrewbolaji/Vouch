@@ -26,7 +26,9 @@ class AuthUser {
   bool get isAnonymous => method == AuthMethod.anonymous;
 }
 
-/// Timeout applied to every Firebase Auth call.
+/// Timeout for non-interactive Firebase Auth calls (email, backend ops).
+/// Interactive provider sign-ins (Google, Apple) are NOT timed because the
+/// user controls how long the OAuth consent screen takes.
 const _authTimeout = Duration(seconds: 10);
 
 class AuthService extends ChangeNotifier {
@@ -124,7 +126,7 @@ class AuthService extends ChangeNotifier {
         await prefs.setString(_prefKeyUserEmail, fbUser.email!);
       }
     } on Exception catch (e) {
-      debugPrint('AuthService: failed to cache display info: $e');
+      _log('cache', 'failed to cache display info: $e');
     }
   }
 
@@ -135,7 +137,7 @@ class AuthService extends ChangeNotifier {
         await _secureStorage?.saveToken(token);
       }
     } on Exception catch (e) {
-      debugPrint('AuthService: failed to persist token: $e');
+      _log('token', 'failed to persist token: $e');
     }
   }
 
@@ -146,7 +148,7 @@ class AuthService extends ChangeNotifier {
       await prefs.remove(_prefKeyUserName);
       await prefs.remove(_prefKeyUserEmail);
     } on Exception catch (e) {
-      debugPrint('AuthService: failed to clear cached data: $e');
+      _log('signout', 'failed to clear cached data: $e');
     }
   }
 
@@ -161,16 +163,16 @@ class AuthService extends ChangeNotifier {
           .signInWithEmailAndPassword(email: email, password: password)
           .timeout(_authTimeout, onTimeout: _onTimeout);
     } on fb.FirebaseAuthException catch (e) {
-      debugPrint('AuthService [email] FirebaseAuthException: '
+      _log('email', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
-      debugPrint('AuthService [email] TimeoutException after $_authTimeout');
+      _log('email', 'TimeoutException after $_authTimeout');
       _setLoading(false);
       throw const NetworkException();
     } on Exception catch (e) {
-      debugPrint('AuthService [email] unexpected: ${e.runtimeType}: $e');
+      _log('email', 'unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }
@@ -193,16 +195,16 @@ class AuthService extends ChangeNotifier {
       // Force a reload so displayName is available immediately
       await credential.user?.reload();
     } on fb.FirebaseAuthException catch (e) {
-      debugPrint('AuthService [signup] FirebaseAuthException: '
+      _log('signup', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
-      debugPrint('AuthService [signup] TimeoutException after $_authTimeout');
+      _log('signup', 'TimeoutException after $_authTimeout');
       _setLoading(false);
       throw const NetworkException();
     } on Exception catch (e) {
-      debugPrint('AuthService [signup] unexpected: ${e.runtimeType}: $e');
+      _log('signup', 'unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }
@@ -211,24 +213,21 @@ class AuthService extends ChangeNotifier {
 
   /// Sign in with Google.
   /// Throws [AuthException] or [NetworkException] on failure.
+  ///
+  /// No timeout: the user controls how long the interactive OAuth consent
+  /// screen takes. Timing out an interactive flow is a bug, not a safety net.
   Future<void> signInWithGoogle() async {
     _setLoading(true);
     try {
       final googleProvider = fb.GoogleAuthProvider();
-      await _firebaseAuth!
-          .signInWithProvider(googleProvider)
-          .timeout(_authTimeout, onTimeout: _onTimeout);
+      await _firebaseAuth!.signInWithProvider(googleProvider);
     } on fb.FirebaseAuthException catch (e) {
-      debugPrint('AuthService [google] FirebaseAuthException: '
+      _log('google', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
-    } on TimeoutException {
-      debugPrint('AuthService [google] TimeoutException after $_authTimeout');
-      _setLoading(false);
-      throw const NetworkException();
     } on Exception catch (e) {
-      debugPrint('AuthService [google] unexpected: ${e.runtimeType}: $e');
+      _log('google', 'unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }
@@ -237,24 +236,20 @@ class AuthService extends ChangeNotifier {
 
   /// Sign in with Apple.
   /// Throws [AuthException] or [NetworkException] on failure.
+  ///
+  /// No timeout: same reasoning as [signInWithGoogle].
   Future<void> signInWithApple() async {
     _setLoading(true);
     try {
       final appleProvider = fb.AppleAuthProvider();
-      await _firebaseAuth!
-          .signInWithProvider(appleProvider)
-          .timeout(_authTimeout, onTimeout: _onTimeout);
+      await _firebaseAuth!.signInWithProvider(appleProvider);
     } on fb.FirebaseAuthException catch (e) {
-      debugPrint('AuthService [apple] FirebaseAuthException: '
+      _log('apple', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
-    } on TimeoutException {
-      debugPrint('AuthService [apple] TimeoutException after $_authTimeout');
-      _setLoading(false);
-      throw const NetworkException();
     } on Exception catch (e) {
-      debugPrint('AuthService [apple] unexpected: ${e.runtimeType}: $e');
+      _log('apple', 'unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }
@@ -268,7 +263,7 @@ class AuthService extends ChangeNotifier {
       await _firebaseAuth!.signOut();
       await _clearPersistedData();
     } on Exception catch (e) {
-      debugPrint('AuthService: sign out error: $e');
+      _log('signout', '$e');
     }
     _setLoading(false);
   }
@@ -285,7 +280,7 @@ class AuthService extends ChangeNotifier {
         notifyListeners();
       }
     } on Exception catch (e) {
-      debugPrint('AuthService: failed to update display name: $e');
+      _log('profile', 'failed to update display name: $e');
     }
   }
 
@@ -329,6 +324,13 @@ class AuthService extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  /// Structured log for auth events. Uses [debugPrint] which is stripped
+  /// in release builds. The [tag] identifies the auth flow (email, google,
+  /// apple, signup, signout, etc.) for filtering in device logs.
+  static void _log(String tag, String message) {
+    debugPrint('AuthService [$tag] $message');
   }
 
   Never _onTimeout() {
