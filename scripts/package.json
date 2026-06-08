@@ -1,0 +1,13 @@
+{
+  "name": "vouch-scripts",
+  "private": true,
+  "scripts": {
+    "test": "jest --verbose"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

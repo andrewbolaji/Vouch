@@ -287,7 +287,7 @@ as double,
 /// @nodoc
 mixin _$Restaurant {
 
- String get id; String get cityId; String get name; String get cuisine; String get imageUrl; String get description; int get rank; int get voteCount; double get priceLevel; List<RestaurantLocation> get locations; String? get insiderTip; String? get whatToOrder; List<String> get vibeTags;
+ String get id; String get cityId; String get name; String get cuisine; String get imageUrl; String get description; int get rank; int get voteCount; double get priceLevel; List<RestaurantLocation> get locations; String? get insiderTip; String? get whatToOrder; List<String> get vibeTags; String? get placeId; bool get isMobileVenue; List<String> get openingHours; int get displayOrder;
 /// Create a copy of Restaurant
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +300,16 @@ $RestaurantCopyWith<Restaurant> get copyWith => _$RestaurantCopyWithImpl<Restaur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Restaurant&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name)&&(identical(other.cuisine, cuisine) || other.cuisine == cuisine)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.description, description) || other.description == description)&&(identical(other.rank, rank) || other.rank == rank)&&(identical(other.voteCount, voteCount) || other.voteCount == voteCount)&&(identical(other.priceLevel, priceLevel) || other.priceLevel == priceLevel)&&const DeepCollectionEquality().equals(other.locations, locations)&&(identical(other.insiderTip, insiderTip) || other.insiderTip == insiderTip)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&const DeepCollectionEquality().equals(other.vibeTags, vibeTags));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Restaurant&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name)&&(identical(other.cuisine, cuisine) || other.cuisine == cuisine)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.description, description) || other.description == description)&&(identical(other.rank, rank) || other.rank == rank)&&(identical(other.voteCount, voteCount) || other.voteCount == voteCount)&&(identical(other.priceLevel, priceLevel) || other.priceLevel == priceLevel)&&const DeepCollectionEquality().equals(other.locations, locations)&&(identical(other.insiderTip, insiderTip) || other.insiderTip == insiderTip)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&const DeepCollectionEquality().equals(other.vibeTags, vibeTags)&&(identical(other.placeId, placeId) || other.placeId == placeId)&&(identical(other.isMobileVenue, isMobileVenue) || other.isMobileVenue == isMobileVenue)&&const DeepCollectionEquality().equals(other.openingHours, openingHours)&&(identical(other.displayOrder, displayOrder) || other.displayOrder == displayOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,cityId,name,cuisine,imageUrl,description,rank,voteCount,priceLevel,const DeepCollectionEquality().hash(locations),insiderTip,whatToOrder,const DeepCollectionEquality().hash(vibeTags));
+int get hashCode => Object.hash(runtimeType,id,cityId,name,cuisine,imageUrl,description,rank,voteCount,priceLevel,const DeepCollectionEquality().hash(locations),insiderTip,whatToOrder,const DeepCollectionEquality().hash(vibeTags),placeId,isMobileVenue,const DeepCollectionEquality().hash(openingHours),displayOrder);
 
 @override
 String toString() {
-  return 'Restaurant(id: $id, cityId: $cityId, name: $name, cuisine: $cuisine, imageUrl: $imageUrl, description: $description, rank: $rank, voteCount: $voteCount, priceLevel: $priceLevel, locations: $locations, insiderTip: $insiderTip, whatToOrder: $whatToOrder, vibeTags: $vibeTags)';
+  return 'Restaurant(id: $id, cityId: $cityId, name: $name, cuisine: $cuisine, imageUrl: $imageUrl, description: $description, rank: $rank, voteCount: $voteCount, priceLevel: $priceLevel, locations: $locations, insiderTip: $insiderTip, whatToOrder: $whatToOrder, vibeTags: $vibeTags, placeId: $placeId, isMobileVenue: $isMobileVenue, openingHours: $openingHours, displayOrder: $displayOrder)';
 }
 
 
@@ -320,7 +320,7 @@ abstract mixin class $RestaurantCopyWith<$Res>  {
   factory $RestaurantCopyWith(Restaurant value, $Res Function(Restaurant) _then) = _$RestaurantCopyWithImpl;
 @useResult
 $Res call({
- String id, String cityId, String name, String cuisine, String imageUrl, String description, int rank, int voteCount, double priceLevel, List<RestaurantLocation> locations, String? insiderTip, String? whatToOrder, List<String> vibeTags
+ String id, String cityId, String name, String cuisine, String imageUrl, String description, int rank, int voteCount, double priceLevel, List<RestaurantLocation> locations, String? insiderTip, String? whatToOrder, List<String> vibeTags, String? placeId, bool isMobileVenue, List<String> openingHours, int displayOrder
 });
 
 
@@ -337,7 +337,7 @@ class _$RestaurantCopyWithImpl<$Res>
 
 /// Create a copy of Restaurant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? cityId = null,Object? name = null,Object? cuisine = null,Object? imageUrl = null,Object? description = null,Object? rank = null,Object? voteCount = null,Object? priceLevel = null,Object? locations = null,Object? insiderTip = freezed,Object? whatToOrder = freezed,Object? vibeTags = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? cityId = null,Object? name = null,Object? cuisine = null,Object? imageUrl = null,Object? description = null,Object? rank = null,Object? voteCount = null,Object? priceLevel = null,Object? locations = null,Object? insiderTip = freezed,Object? whatToOrder = freezed,Object? vibeTags = null,Object? placeId = freezed,Object? isMobileVenue = null,Object? openingHours = null,Object? displayOrder = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
@@ -352,7 +352,11 @@ as double,locations: null == locations ? _self.locations : locations // ignore: 
 as List<RestaurantLocation>,insiderTip: freezed == insiderTip ? _self.insiderTip : insiderTip // ignore: cast_nullable_to_non_nullable
 as String?,whatToOrder: freezed == whatToOrder ? _self.whatToOrder : whatToOrder // ignore: cast_nullable_to_non_nullable
 as String?,vibeTags: null == vibeTags ? _self.vibeTags : vibeTags // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,placeId: freezed == placeId ? _self.placeId : placeId // ignore: cast_nullable_to_non_nullable
+as String?,isMobileVenue: null == isMobileVenue ? _self.isMobileVenue : isMobileVenue // ignore: cast_nullable_to_non_nullable
+as bool,openingHours: null == openingHours ? _self.openingHours : openingHours // ignore: cast_nullable_to_non_nullable
+as List<String>,displayOrder: null == displayOrder ? _self.displayOrder : displayOrder // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -437,10 +441,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String cityId,  String name,  String cuisine,  String imageUrl,  String description,  int rank,  int voteCount,  double priceLevel,  List<RestaurantLocation> locations,  String? insiderTip,  String? whatToOrder,  List<String> vibeTags)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String cityId,  String name,  String cuisine,  String imageUrl,  String description,  int rank,  int voteCount,  double priceLevel,  List<RestaurantLocation> locations,  String? insiderTip,  String? whatToOrder,  List<String> vibeTags,  String? placeId,  bool isMobileVenue,  List<String> openingHours,  int displayOrder)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Restaurant() when $default != null:
-return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_that.description,_that.rank,_that.voteCount,_that.priceLevel,_that.locations,_that.insiderTip,_that.whatToOrder,_that.vibeTags);case _:
+return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_that.description,_that.rank,_that.voteCount,_that.priceLevel,_that.locations,_that.insiderTip,_that.whatToOrder,_that.vibeTags,_that.placeId,_that.isMobileVenue,_that.openingHours,_that.displayOrder);case _:
   return orElse();
 
 }
@@ -458,10 +462,10 @@ return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String cityId,  String name,  String cuisine,  String imageUrl,  String description,  int rank,  int voteCount,  double priceLevel,  List<RestaurantLocation> locations,  String? insiderTip,  String? whatToOrder,  List<String> vibeTags)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String cityId,  String name,  String cuisine,  String imageUrl,  String description,  int rank,  int voteCount,  double priceLevel,  List<RestaurantLocation> locations,  String? insiderTip,  String? whatToOrder,  List<String> vibeTags,  String? placeId,  bool isMobileVenue,  List<String> openingHours,  int displayOrder)  $default,) {final _that = this;
 switch (_that) {
 case _Restaurant():
-return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_that.description,_that.rank,_that.voteCount,_that.priceLevel,_that.locations,_that.insiderTip,_that.whatToOrder,_that.vibeTags);case _:
+return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_that.description,_that.rank,_that.voteCount,_that.priceLevel,_that.locations,_that.insiderTip,_that.whatToOrder,_that.vibeTags,_that.placeId,_that.isMobileVenue,_that.openingHours,_that.displayOrder);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -478,10 +482,10 @@ return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String cityId,  String name,  String cuisine,  String imageUrl,  String description,  int rank,  int voteCount,  double priceLevel,  List<RestaurantLocation> locations,  String? insiderTip,  String? whatToOrder,  List<String> vibeTags)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String cityId,  String name,  String cuisine,  String imageUrl,  String description,  int rank,  int voteCount,  double priceLevel,  List<RestaurantLocation> locations,  String? insiderTip,  String? whatToOrder,  List<String> vibeTags,  String? placeId,  bool isMobileVenue,  List<String> openingHours,  int displayOrder)?  $default,) {final _that = this;
 switch (_that) {
 case _Restaurant() when $default != null:
-return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_that.description,_that.rank,_that.voteCount,_that.priceLevel,_that.locations,_that.insiderTip,_that.whatToOrder,_that.vibeTags);case _:
+return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_that.description,_that.rank,_that.voteCount,_that.priceLevel,_that.locations,_that.insiderTip,_that.whatToOrder,_that.vibeTags,_that.placeId,_that.isMobileVenue,_that.openingHours,_that.displayOrder);case _:
   return null;
 
 }
@@ -493,7 +497,7 @@ return $default(_that.id,_that.cityId,_that.name,_that.cuisine,_that.imageUrl,_t
 @JsonSerializable()
 
 class _Restaurant extends Restaurant {
-  const _Restaurant({required this.id, required this.cityId, required this.name, required this.cuisine, required this.imageUrl, required this.description, required this.rank, this.voteCount = 0, this.priceLevel = 2, final  List<RestaurantLocation> locations = const [], this.insiderTip, this.whatToOrder, final  List<String> vibeTags = const []}): _locations = locations,_vibeTags = vibeTags,super._();
+  const _Restaurant({required this.id, required this.cityId, required this.name, required this.cuisine, required this.imageUrl, required this.description, required this.rank, this.voteCount = 0, this.priceLevel = 2, final  List<RestaurantLocation> locations = const [], this.insiderTip, this.whatToOrder, final  List<String> vibeTags = const [], this.placeId, this.isMobileVenue = false, final  List<String> openingHours = const [], this.displayOrder = 0}): _locations = locations,_vibeTags = vibeTags,_openingHours = openingHours,super._();
   factory _Restaurant.fromJson(Map<String, dynamic> json) => _$RestaurantFromJson(json);
 
 @override final  String id;
@@ -521,6 +525,16 @@ class _Restaurant extends Restaurant {
   return EqualUnmodifiableListView(_vibeTags);
 }
 
+@override final  String? placeId;
+@override@JsonKey() final  bool isMobileVenue;
+ final  List<String> _openingHours;
+@override@JsonKey() List<String> get openingHours {
+  if (_openingHours is EqualUnmodifiableListView) return _openingHours;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_openingHours);
+}
+
+@override@JsonKey() final  int displayOrder;
 
 /// Create a copy of Restaurant
 /// with the given fields replaced by the non-null parameter values.
@@ -535,16 +549,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Restaurant&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name)&&(identical(other.cuisine, cuisine) || other.cuisine == cuisine)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.description, description) || other.description == description)&&(identical(other.rank, rank) || other.rank == rank)&&(identical(other.voteCount, voteCount) || other.voteCount == voteCount)&&(identical(other.priceLevel, priceLevel) || other.priceLevel == priceLevel)&&const DeepCollectionEquality().equals(other._locations, _locations)&&(identical(other.insiderTip, insiderTip) || other.insiderTip == insiderTip)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&const DeepCollectionEquality().equals(other._vibeTags, _vibeTags));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Restaurant&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name)&&(identical(other.cuisine, cuisine) || other.cuisine == cuisine)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.description, description) || other.description == description)&&(identical(other.rank, rank) || other.rank == rank)&&(identical(other.voteCount, voteCount) || other.voteCount == voteCount)&&(identical(other.priceLevel, priceLevel) || other.priceLevel == priceLevel)&&const DeepCollectionEquality().equals(other._locations, _locations)&&(identical(other.insiderTip, insiderTip) || other.insiderTip == insiderTip)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&const DeepCollectionEquality().equals(other._vibeTags, _vibeTags)&&(identical(other.placeId, placeId) || other.placeId == placeId)&&(identical(other.isMobileVenue, isMobileVenue) || other.isMobileVenue == isMobileVenue)&&const DeepCollectionEquality().equals(other._openingHours, _openingHours)&&(identical(other.displayOrder, displayOrder) || other.displayOrder == displayOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,cityId,name,cuisine,imageUrl,description,rank,voteCount,priceLevel,const DeepCollectionEquality().hash(_locations),insiderTip,whatToOrder,const DeepCollectionEquality().hash(_vibeTags));
+int get hashCode => Object.hash(runtimeType,id,cityId,name,cuisine,imageUrl,description,rank,voteCount,priceLevel,const DeepCollectionEquality().hash(_locations),insiderTip,whatToOrder,const DeepCollectionEquality().hash(_vibeTags),placeId,isMobileVenue,const DeepCollectionEquality().hash(_openingHours),displayOrder);
 
 @override
 String toString() {
-  return 'Restaurant(id: $id, cityId: $cityId, name: $name, cuisine: $cuisine, imageUrl: $imageUrl, description: $description, rank: $rank, voteCount: $voteCount, priceLevel: $priceLevel, locations: $locations, insiderTip: $insiderTip, whatToOrder: $whatToOrder, vibeTags: $vibeTags)';
+  return 'Restaurant(id: $id, cityId: $cityId, name: $name, cuisine: $cuisine, imageUrl: $imageUrl, description: $description, rank: $rank, voteCount: $voteCount, priceLevel: $priceLevel, locations: $locations, insiderTip: $insiderTip, whatToOrder: $whatToOrder, vibeTags: $vibeTags, placeId: $placeId, isMobileVenue: $isMobileVenue, openingHours: $openingHours, displayOrder: $displayOrder)';
 }
 
 
@@ -555,7 +569,7 @@ abstract mixin class _$RestaurantCopyWith<$Res> implements $RestaurantCopyWith<$
   factory _$RestaurantCopyWith(_Restaurant value, $Res Function(_Restaurant) _then) = __$RestaurantCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String cityId, String name, String cuisine, String imageUrl, String description, int rank, int voteCount, double priceLevel, List<RestaurantLocation> locations, String? insiderTip, String? whatToOrder, List<String> vibeTags
+ String id, String cityId, String name, String cuisine, String imageUrl, String description, int rank, int voteCount, double priceLevel, List<RestaurantLocation> locations, String? insiderTip, String? whatToOrder, List<String> vibeTags, String? placeId, bool isMobileVenue, List<String> openingHours, int displayOrder
 });
 
 
@@ -572,7 +586,7 @@ class __$RestaurantCopyWithImpl<$Res>
 
 /// Create a copy of Restaurant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? cityId = null,Object? name = null,Object? cuisine = null,Object? imageUrl = null,Object? description = null,Object? rank = null,Object? voteCount = null,Object? priceLevel = null,Object? locations = null,Object? insiderTip = freezed,Object? whatToOrder = freezed,Object? vibeTags = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? cityId = null,Object? name = null,Object? cuisine = null,Object? imageUrl = null,Object? description = null,Object? rank = null,Object? voteCount = null,Object? priceLevel = null,Object? locations = null,Object? insiderTip = freezed,Object? whatToOrder = freezed,Object? vibeTags = null,Object? placeId = freezed,Object? isMobileVenue = null,Object? openingHours = null,Object? displayOrder = null,}) {
   return _then(_Restaurant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
@@ -587,7 +601,11 @@ as double,locations: null == locations ? _self._locations : locations // ignore:
 as List<RestaurantLocation>,insiderTip: freezed == insiderTip ? _self.insiderTip : insiderTip // ignore: cast_nullable_to_non_nullable
 as String?,whatToOrder: freezed == whatToOrder ? _self.whatToOrder : whatToOrder // ignore: cast_nullable_to_non_nullable
 as String?,vibeTags: null == vibeTags ? _self._vibeTags : vibeTags // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,placeId: freezed == placeId ? _self.placeId : placeId // ignore: cast_nullable_to_non_nullable
+as String?,isMobileVenue: null == isMobileVenue ? _self.isMobileVenue : isMobileVenue // ignore: cast_nullable_to_non_nullable
+as bool,openingHours: null == openingHours ? _self._openingHours : openingHours // ignore: cast_nullable_to_non_nullable
+as List<String>,displayOrder: null == displayOrder ? _self.displayOrder : displayOrder // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

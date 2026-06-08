@@ -53,5 +53,10 @@ lib/firebase_options.dart
 .claude/
 .agents/
 
-# Node modules (Cloud Functions, test-rules)
+# Node modules (Cloud Functions, test-rules, scripts)
 **/node_modules/
+
+# Service account keys (never commit)
+**/serviceAccountKey*.json
+**/*credentials*.json
+**/*sa-*.json

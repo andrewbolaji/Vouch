@@ -5,7 +5,8 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "cityId", "order": "ASCENDING" },
-        { "fieldPath": "rank", "order": "ASCENDING" }
+        { "fieldPath": "rank", "order": "ASCENDING" },
+        { "fieldPath": "displayOrder", "order": "ASCENDING" }
       ]
     },
     {

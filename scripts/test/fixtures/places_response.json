@@ -1,0 +1,22 @@
+{
+  "places": [
+    {
+      "id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+      "displayName": { "text": "Turkey Leg Hut" },
+      "formattedAddress": "4830 Almeda Rd, Houston, TX 77004, USA",
+      "location": { "latitude": 29.7306, "longitude": -95.3755 },
+      "priceLevel": "PRICE_LEVEL_MODERATE",
+      "currentOpeningHours": {
+        "weekdayDescriptions": [
+          "Monday: 11:00 AM - 9:00 PM",
+          "Tuesday: 11:00 AM - 9:00 PM",
+          "Wednesday: 11:00 AM - 9:00 PM",
+          "Thursday: 11:00 AM - 9:00 PM",
+          "Friday: 11:00 AM - 10:00 PM",
+          "Saturday: 11:00 AM - 10:00 PM",
+          "Sunday: 11:00 AM - 8:00 PM"
+        ]
+      }
+    }
+  ]
+}

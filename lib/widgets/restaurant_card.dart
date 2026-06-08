@@ -15,10 +15,12 @@ class RestaurantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showRank = !restaurant.isUnranked;
+    final showVotes = restaurant.voteCount > 0;
     return Semantics(
       button: true,
-      label: '#${restaurant.rank} ${restaurant.name}, '
-          '${restaurant.cuisine}',
+      label: '${showRank ? '#${restaurant.rank} ' : ''}'
+          '${restaurant.name}, ${restaurant.cuisine}',
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -63,8 +65,10 @@ class RestaurantCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        RatingPill(rank: restaurant.rank),
-                        const SizedBox(width: AppTheme.spacingSm),
+                        if (showRank) ...[
+                          RatingPill(rank: restaurant.rank),
+                          const SizedBox(width: AppTheme.spacingSm),
+                        ],
                         Expanded(
                           child: Text(
                             restaurant.name,
@@ -80,13 +84,15 @@ class RestaurantCard extends StatelessWidget {
                       '${restaurant.cuisine}  ${restaurant.priceLevelDisplay}',
                       style: AppTheme.bodySmall,
                     ),
-                    const SizedBox(height: AppTheme.spacingXs),
-                    Text(
-                      '${formatCount(restaurant.voteCount)} votes',
-                      style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.accent,
+                    if (showVotes) ...[
+                      const SizedBox(height: AppTheme.spacingXs),
+                      Text(
+                        '${formatCount(restaurant.voteCount)} votes',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.accent,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

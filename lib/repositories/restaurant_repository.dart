@@ -22,8 +22,10 @@ class RestaurantRepository {
     required bool canViewTop10,
   }) async {
     try {
-      var query =
-          _restaurantsRef.where('cityId', isEqualTo: cityId).orderBy('rank');
+      var query = _restaurantsRef
+          .where('cityId', isEqualTo: cityId)
+          .orderBy('rank')
+          .orderBy('displayOrder');
 
       if (!canViewTop10) {
         query = query.where('rank', isLessThanOrEqualTo: 5);

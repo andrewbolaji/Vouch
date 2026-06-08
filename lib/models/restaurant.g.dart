@@ -42,6 +42,14 @@ _Restaurant _$RestaurantFromJson(Map<String, dynamic> json) => _Restaurant(
   vibeTags:
       (json['vibeTags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
+  placeId: json['placeId'] as String?,
+  isMobileVenue: json['isMobileVenue'] as bool? ?? false,
+  openingHours:
+      (json['openingHours'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$RestaurantToJson(_Restaurant instance) =>
@@ -59,4 +67,8 @@ Map<String, dynamic> _$RestaurantToJson(_Restaurant instance) =>
       'insiderTip': instance.insiderTip,
       'whatToOrder': instance.whatToOrder,
       'vibeTags': instance.vibeTags,
+      'placeId': instance.placeId,
+      'isMobileVenue': instance.isMobileVenue,
+      'openingHours': instance.openingHours,
+      'displayOrder': instance.displayOrder,
     };
