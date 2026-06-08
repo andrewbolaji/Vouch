@@ -9,10 +9,13 @@ class PremiumBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacingXsSm,
+        vertical: AppTheme.spacingXxs,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.accent.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.spacingXs),
         border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
       ),
       child: Text(

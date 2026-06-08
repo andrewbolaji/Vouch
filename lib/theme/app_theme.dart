@@ -26,7 +26,7 @@ class AppTheme {
   /// (buttons, badges).
   /// Dark themes get black text on accent; light themes get white.
   static Color get onAccent =>
-      brightness == Brightness.dark ? Colors.black : Colors.white;
+      brightness == Brightness.dark ? background : Colors.white;
 
   /// Standard accent button style used across upgrade, onboarding,
   /// sign-in, etc.
@@ -41,7 +41,9 @@ class AppTheme {
   );
 
   // Spacing
+  static const double spacingXxs = 2;
   static const double spacingXs = 4;
+  static const double spacingXsSm = 6;
   static const double spacingSm = 8;
   static const double spacingMd = 16;
   static const double spacingLg = 24;
@@ -155,6 +157,18 @@ class AppTheme {
     color: textPrimary,
     letterSpacing: 0.5,
   );
+
+  static TextStyle get rankDisplay => _useSerif
+      ? GoogleFonts.dmSerifDisplay(
+          fontSize: 20,
+          fontWeight: FontWeight.w400,
+          color: textPrimary,
+        )
+      : GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
+        );
 
   // ThemeData
   static ThemeData get themeData => ThemeData(

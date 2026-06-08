@@ -129,15 +129,19 @@ class _NotificationToggle extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: AppTheme.labelLarge),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppTheme.spacingXs),
                 Text(subtitle, style: AppTheme.bodySmall),
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeTrackColor: AppTheme.accent,
+          Semantics(
+            toggled: value,
+            label: title,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeTrackColor: AppTheme.accent,
+            ),
           ),
         ],
       ),

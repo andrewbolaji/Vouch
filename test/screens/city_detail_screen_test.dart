@@ -10,13 +10,16 @@ import 'package:vouch/screens/city_detail_screen.dart';
 import 'package:vouch/services/auth_service.dart';
 
 Widget buildTestApp(Widget child) {
+  final auth = AuthService.mock();
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider(create: (_) => AppState()),
+      ChangeNotifierProvider(create: (_) => AppState(useFirebase: false)),
       ChangeNotifierProvider(create: (_) => MembershipProvider()),
-      ChangeNotifierProvider(create: (_) => SavedProvider()),
-      ChangeNotifierProvider(create: (_) => SuggestionProvider()),
-      ChangeNotifierProvider(create: (_) => AuthService.mock()),
+      ChangeNotifierProvider(create: (_) => SavedProvider(authService: auth)),
+      ChangeNotifierProvider(
+        create: (_) => SuggestionProvider(authService: auth),
+      ),
+      ChangeNotifierProvider.value(value: auth),
     ],
     child: MaterialApp(home: child),
   );

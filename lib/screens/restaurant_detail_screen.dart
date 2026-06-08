@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
+import 'package:vouch/screens/sign_in_screen.dart';
 import 'package:vouch/screens/upgrade_screen.dart';
+import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/share_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 import 'package:vouch/widgets/comment_tile.dart';
@@ -44,6 +46,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     final appState = context.watch<AppState>();
     final membership = context.watch<MembershipProvider>();
     final savedProvider = context.watch<SavedProvider>();
+    final auth = context.watch<AuthService>();
     final restaurant = appState.restaurantById(widget.restaurantId);
 
     if (restaurant == null) {
@@ -117,7 +120,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                               restaurant.name,
                               style: AppTheme.displayMedium,
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppTheme.spacingXs),
                             Text(
                               '${restaurant.cuisine}'
                               '  ${restaurant.priceLevelDisplay}',
@@ -137,7 +140,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       children: restaurant.vibeTags.map((tag) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: AppTheme.spacingSm + 2,
+                            horizontal: AppTheme.spacingSm +
+                                AppTheme.spacingXxs,
                             vertical: AppTheme.spacingXs,
                           ),
                           decoration: BoxDecoration(
@@ -169,11 +173,43 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         onTap: () => appState.toggleVote(widget.restaurantId),
                       ),
                       const Spacer(),
-                      if (membership.canSaveRestaurants)
+                      if (!auth.isSignedIn)
+                        Semantics(
+                          button: true,
+                          label: 'Sign in to save restaurants',
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const SignInScreen(),
+                              ),
+                            ),
+                            child: SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: Center(
+                                child: Icon(
+                                  Icons.bookmark_border,
+                                  color: AppTheme.textTertiary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (membership.canSaveRestaurants)
                         SaveButton(
                           isSaved: isSaved,
-                          onTap: () =>
-                              savedProvider.toggleSaved(widget.restaurantId),
+                          onTap: () async {
+                            final error = await savedProvider
+                                .toggleSaved(widget.restaurantId);
+                            if (error != null && mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(error.message),
+                                  backgroundColor: AppTheme.error,
+                                ),
+                              );
+                            }
+                          },
                         )
                       else
                         Semantics(
@@ -268,12 +304,16 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                               ),
                             ),
                           ),
-                          GestureDetector(
-                            onTap: _cancelReply,
-                            child: Icon(
-                              Icons.close,
-                              color: AppTheme.textTertiary,
-                              size: 18,
+                          Semantics(
+                            button: true,
+                            label: 'Cancel reply',
+                            child: GestureDetector(
+                              onTap: _cancelReply,
+                              child: Icon(
+                                Icons.close,
+                                color: AppTheme.textTertiary,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ],

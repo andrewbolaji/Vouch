@@ -123,14 +123,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: List.generate(_pages.length, (index) {
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        margin: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacingXs,
+                      ),
                         width: _currentPage == index ? 24 : 8,
-                        height: 8,
+                        height: AppTheme.spacingSm,
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? AppTheme.accent
                               : AppTheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.spacingXs,
+                          ),
                         ),
                       );
                     }),

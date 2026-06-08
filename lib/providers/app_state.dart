@@ -5,13 +5,30 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vouch/data/seed_data.dart';
 import 'package:vouch/models/models.dart';
+import 'package:vouch/repositories/repositories.dart';
 
-const bool kUseFirebase = false;
+const bool kUseFirebase = true;
 
 class AppState extends ChangeNotifier {
-  AppState() {
+  AppState({
+    CityRepository? cityRepo,
+    RestaurantRepository? restaurantRepo,
+    CommentRepository? commentRepo,
+    VoteRepository? voteRepo,
+    bool? useFirebase,
+  })  : _cityRepo = cityRepo,
+        _restaurantRepo = restaurantRepo,
+        _commentRepo = commentRepo,
+        _voteRepo = voteRepo,
+        _useFirebase = useFirebase ?? kUseFirebase {
     unawaited(_loadData());
   }
+
+  final CityRepository? _cityRepo;
+  final RestaurantRepository? _restaurantRepo;
+  final CommentRepository? _commentRepo;
+  final VoteRepository? _voteRepo;
+  final bool _useFirebase;
 
   static const String _votedKey = 'voted_restaurant_ids';
   static final DateTime _seedDate = DateTime(2026, 4, 27);
@@ -21,6 +38,7 @@ class AppState extends ChangeNotifier {
   List<Comment> _comments = [];
   final Set<String> _votedRestaurantIds = {};
   bool _isLoading = true;
+  bool _isOffline = false;
   String? _searchQuery;
 
   // Getters
@@ -41,6 +59,7 @@ class AppState extends ChangeNotifier {
 
   List<Restaurant> get restaurants => List.unmodifiable(_restaurants);
   bool get isLoading => _isLoading;
+  bool get isOffline => _isOffline;
   String? get searchQuery => _searchQuery;
 
   List<Restaurant> restaurantsForCity(String cityId) {
@@ -97,12 +116,18 @@ class AppState extends ChangeNotifier {
       _restaurants[index] = restaurant.copyWith(
         voteCount: restaurant.voteCount - 1,
       );
+      if (_useFirebase && _voteRepo != null) {
+        unawaited(_voteRepo.unvote(restaurantId, 'anonymous'));
+      }
     } else {
       _votedRestaurantIds.add(restaurantId);
       _restaurants[index] = restaurant.copyWith(
         voteCount: restaurant.voteCount + 1,
       );
       unawaited(HapticFeedback.lightImpact());
+      if (_useFirebase && _voteRepo != null) {
+        unawaited(_voteRepo.vote(restaurantId, 'anonymous'));
+      }
     }
     notifyListeners();
     unawaited(_saveVotes());
@@ -132,8 +157,6 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Remove voted IDs that no longer exist in
-  /// current restaurant data.
   void _pruneOrphanedVotes() {
     final validIds = _restaurants.map((r) => r.id).toSet();
     final orphans = _votedRestaurantIds.difference(validIds);
@@ -165,6 +188,12 @@ class AppState extends ChangeNotifier {
     );
     _comments.add(comment);
     notifyListeners();
+
+    if (_useFirebase && _commentRepo != null) {
+      unawaited(
+        _commentRepo.add(restaurantId, comment),
+      );
+    }
   }
 
   Future<void> refresh() async {
@@ -176,14 +205,12 @@ class AppState extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Simulate network delay
-    await Future<void>.delayed(
-      const Duration(milliseconds: 500),
-    );
-
-    if (kUseFirebase) {
-      // TODO(vouch): Load from Firebase.
+    if (_useFirebase) {
+      await _loadFromFirestore();
     } else {
+      await Future<void>.delayed(
+        const Duration(milliseconds: 500),
+      );
       _cities = List.from(SeedData.cities);
       _restaurants = List.from(SeedData.restaurants);
       _comments = _generateSeedComments();
@@ -194,6 +221,31 @@ class AppState extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> _loadFromFirestore() async {
+    try {
+      final cityRepo = _cityRepo ?? CityRepository();
+      final restaurantRepo = _restaurantRepo ?? RestaurantRepository();
+
+      _cities = await cityRepo.getCities();
+      _restaurants = [];
+      for (final city in _cities) {
+        final cityRestaurants = await restaurantRepo.getForCity(
+          city.id,
+          canViewTop10: true,
+        );
+        _restaurants.addAll(cityRestaurants);
+      }
+      _isOffline = false;
+    } on Exception catch (e) {
+      debugPrint('AppState: Firestore load failed: $e');
+      _isOffline = true;
+      // Fall back to seed data on failure
+      _cities = List.from(SeedData.cities);
+      _restaurants = List.from(SeedData.restaurants);
+      _comments = _generateSeedComments();
+    }
   }
 
   List<Comment> _generateSeedComments() {

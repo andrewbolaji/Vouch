@@ -52,7 +52,9 @@ class _ShimmerCityCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingSm + 2),
+            padding: const EdgeInsets.all(
+              AppTheme.spacingSm + AppTheme.spacingXxs,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -61,16 +63,18 @@ class _ShimmerCityCard extends StatelessWidget {
                   height: 14,
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppTheme.spacingXs),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(
+                  height: AppTheme.spacingXsSm,
+                ),
                 Container(
                   width: 140,
                   height: 10,
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppTheme.spacingXs),
                   ),
                 ),
               ],
@@ -139,25 +143,25 @@ class _ShimmerRestaurantCard extends StatelessWidget {
                     height: 14,
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppTheme.spacingXs),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacingSm),
                   Container(
                     width: 100,
                     height: 10,
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppTheme.spacingXs),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacingSm),
                   Container(
                     width: 60,
                     height: 10,
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppTheme.spacingXs),
                     ),
                   ),
                 ],

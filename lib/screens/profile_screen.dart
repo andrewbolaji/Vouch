@@ -67,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(auth.displayName, style: AppTheme.headlineMedium),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppTheme.spacingXs),
                         PremiumBadge(label: membership.tierName),
                       ],
                     ),

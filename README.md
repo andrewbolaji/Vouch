@@ -23,14 +23,35 @@ Curated Top 10 restaurant rankings per city, voted on by locals.
 ```bash
 flutter pub get
 flutter run
-flutter test        # 100 tests, ~15s
-flutter analyze     # 0 issues expected
+flutter test                    # ~185 Dart tests
+dart analyze lib/               # 0 warnings expected
+```
+
+### Rules and Cloud Function tests
+
+Requires OpenJDK 21+ for the Firebase emulator:
+
+```bash
+brew install openjdk@21
+export PATH="/usr/local/opt/openjdk@21/bin:$PATH"
+
+# Install test dependencies (one-time)
+cd test-rules && npm install && cd ..
+cd functions && npm install && cd ..
+
+# Run rules tests (55 tests)
+firebase emulators:exec --only firestore 'cd test-rules && npx jest'
+
+# Run Cloud Function tests (8 tests)
+firebase emulators:exec --only firestore \
+  'npx --prefix functions jest --config functions/jest.config.js'
 ```
 
 ## Tech stack
 
 - Flutter 3.10+ (cross-platform)
 - Provider for state management (Riverpod migration planned)
-- Firebase (Firestore, Auth, Messaging) -- currently in mock/seed data mode
+- Firebase (Firestore, Auth, Cloud Functions) with security rules
+- freezed + json_serializable for Firestore-ready models
 - RevenueCat for IAP -- stubbed, awaiting App Store Connect setup
-- SharedPreferences for local persistence
+- SharedPreferences for offline caching

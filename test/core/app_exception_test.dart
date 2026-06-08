@@ -60,7 +60,10 @@ void main() {
         NetworkException() => 'network',
         AuthException() => 'auth:${e.kind}',
         PermissionDenied() => 'denied',
+        NotFound() => 'not-found',
+        ServiceUnavailable() => 'unavailable',
         RateLimited() => 'limited',
+        FirestoreWriteException() => 'write-error',
       };
       expect(result, equals('auth:${AuthErrorKind.invalidCredentials}'));
     });

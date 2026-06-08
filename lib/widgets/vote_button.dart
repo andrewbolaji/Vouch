@@ -82,7 +82,9 @@ class _VoteButtonState extends State<VoteButton>
                 scale: _scaleAnimation,
                 child: Icon(Icons.arrow_upward_rounded, color: color, size: 18),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(
+                width: AppTheme.spacingXsSm,
+              ),
               Text(
                 formatCount(widget.voteCount),
                 style: AppTheme.labelLarge.copyWith(color: color),

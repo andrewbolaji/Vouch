@@ -59,10 +59,14 @@ class UpgradeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppTheme.spacingSm),
-                  Switch(
-                    value: membership.isYearlyBilling,
-                    onChanged: (_) => membership.toggleBillingCycle(),
-                    activeTrackColor: AppTheme.accent,
+                  Semantics(
+                    toggled: membership.isYearlyBilling,
+                    label: 'Yearly billing',
+                    child: Switch(
+                      value: membership.isYearlyBilling,
+                      onChanged: (_) => membership.toggleBillingCycle(),
+                      activeTrackColor: AppTheme.accent,
+                    ),
                   ),
                   const SizedBox(width: AppTheme.spacingSm),
                   Text(
@@ -115,7 +119,9 @@ class UpgradeScreen extends StatelessWidget {
                     const SizedBox(height: AppTheme.spacingMd),
                     ...tier.features.map(
                       (feature) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.only(
+                          bottom: AppTheme.spacingXsSm,
+                        ),
                         child: Row(
                           children: [
                             Icon(

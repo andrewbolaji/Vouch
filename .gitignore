@@ -52,3 +52,6 @@ macos/Pods/
 lib/firebase_options.dart
 .claude/
 .agents/
+
+# Node modules (Cloud Functions, test-rules)
+**/node_modules/

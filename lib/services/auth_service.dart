@@ -57,6 +57,17 @@ class AuthService extends ChangeNotifier {
   AuthUser? _currentUser;
   bool _isLoading = false;
 
+  /// Test only: updates the current user and notifies listeners.
+  @visibleForTesting
+  void setMockUser(AuthUser? user) {
+    assert(
+      _firebaseAuth == null,
+      'setMockUser is only for .mock() instances',
+    );
+    _currentUser = user;
+    notifyListeners();
+  }
+
   // Display-name caching keys (SharedPreferences, not sensitive)
   static const String _prefKeyUserName = 'auth_user_name';
   static const String _prefKeyUserEmail = 'auth_user_email';
@@ -65,7 +76,9 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSignedIn => _currentUser != null && !_currentUser!.isAnonymous;
   String get displayName =>
-      _currentUser?.displayName ?? _currentUser?.email ?? 'Local (sign in to save)';
+      _currentUser?.displayName ??
+      _currentUser?.email ??
+      'Local (sign in to save)';
 
   // -- Stream listener --
 
@@ -148,12 +161,16 @@ class AuthService extends ChangeNotifier {
           .signInWithEmailAndPassword(email: email, password: password)
           .timeout(_authTimeout, onTimeout: _onTimeout);
     } on fb.FirebaseAuthException catch (e) {
+      debugPrint('AuthService [email] FirebaseAuthException: '
+          'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
+      debugPrint('AuthService [email] TimeoutException after $_authTimeout');
       _setLoading(false);
       throw const NetworkException();
-    } on Exception {
+    } on Exception catch (e) {
+      debugPrint('AuthService [email] unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }
@@ -176,12 +193,16 @@ class AuthService extends ChangeNotifier {
       // Force a reload so displayName is available immediately
       await credential.user?.reload();
     } on fb.FirebaseAuthException catch (e) {
+      debugPrint('AuthService [signup] FirebaseAuthException: '
+          'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
+      debugPrint('AuthService [signup] TimeoutException after $_authTimeout');
       _setLoading(false);
       throw const NetworkException();
-    } on Exception {
+    } on Exception catch (e) {
+      debugPrint('AuthService [signup] unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }
@@ -198,12 +219,16 @@ class AuthService extends ChangeNotifier {
           .signInWithProvider(googleProvider)
           .timeout(_authTimeout, onTimeout: _onTimeout);
     } on fb.FirebaseAuthException catch (e) {
+      debugPrint('AuthService [google] FirebaseAuthException: '
+          'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
+      debugPrint('AuthService [google] TimeoutException after $_authTimeout');
       _setLoading(false);
       throw const NetworkException();
-    } on Exception {
+    } on Exception catch (e) {
+      debugPrint('AuthService [google] unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }
@@ -220,12 +245,16 @@ class AuthService extends ChangeNotifier {
           .signInWithProvider(appleProvider)
           .timeout(_authTimeout, onTimeout: _onTimeout);
     } on fb.FirebaseAuthException catch (e) {
+      debugPrint('AuthService [apple] FirebaseAuthException: '
+          'code=${e.code}, message=${e.message}');
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
+      debugPrint('AuthService [apple] TimeoutException after $_authTimeout');
       _setLoading(false);
       throw const NetworkException();
-    } on Exception {
+    } on Exception catch (e) {
+      debugPrint('AuthService [apple] unexpected: ${e.runtimeType}: $e');
       _setLoading(false);
       throw AuthException.unknown;
     }

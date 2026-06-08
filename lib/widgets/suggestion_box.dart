@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vouch/models/models.dart';
+import 'package:vouch/core/error/app_exception.dart';
+import 'package:vouch/models/suggestion.dart';
 import 'package:vouch/providers/suggestion_provider.dart';
 import 'package:vouch/theme/app_theme.dart';
 
@@ -95,7 +96,9 @@ class _SuggestionBoxState extends State<SuggestionBox> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: provider.canSubmitToday ? _submit : null,
+              onPressed: provider.canSubmitToday && !provider.isSubmitting
+                  ? _submit
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.accent,
                 foregroundColor: AppTheme.onAccent,
@@ -107,7 +110,18 @@ class _SuggestionBoxState extends State<SuggestionBox> {
                   borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 ),
               ),
-              child: Text('Submit', style: AppTheme.buttonText),
+              child: provider.isSubmitting
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppTheme.onAccent,
+                        ),
+                      ),
+                    )
+                  : Text('Submit', style: AppTheme.buttonText),
             ),
           ),
         ],
@@ -115,21 +129,39 @@ class _SuggestionBoxState extends State<SuggestionBox> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_textController.text.trim().isEmpty) return;
 
     final provider = context.read<SuggestionProvider>();
-    final success = provider.submitSuggestion(
-      type: _selectedType,
-      text: _textController.text.trim(),
-    );
-
-    if (success) {
+    try {
+      await provider.submitSuggestion(
+        type: _selectedType,
+        text: _textController.text.trim(),
+      );
+      if (!mounted) return;
       _textController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Suggestion submitted.'),
+          content: const Text('Suggestion submitted. Thanks!'),
           backgroundColor: AppTheme.accent,
+        ),
+      );
+    } on RateLimited {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            "You've hit the limit for today. Try again tomorrow.",
+          ),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    } on AppException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppTheme.error,
         ),
       );
     }

@@ -1,20 +1,25 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:vouch/models/timestamp_converter.dart';
+
+part 'suggestion.freezed.dart';
+part 'suggestion.g.dart';
+
 enum SuggestionType { newRestaurant, correction, newCity, general }
 
 const int kDailySuggestionCap = 1;
 
-class Suggestion {
+@freezed
+abstract class Suggestion with _$Suggestion {
+  const factory Suggestion({
+    required String id,
+    required String userId,
+    required SuggestionType type,
+    required String text,
+    @TimestampConverter() required DateTime createdAt,
+    String? cityId,
+    @Default('pending') String status,
+  }) = _Suggestion;
 
-  const Suggestion({
-    required this.id,
-    required this.userId,
-    required this.type,
-    required this.text,
-    required this.createdAt, this.cityId,
-  });
-  final String id;
-  final String userId;
-  final SuggestionType type;
-  final String text;
-  final String? cityId;
-  final DateTime createdAt;
+  factory Suggestion.fromJson(Map<String, dynamic> json) =>
+      _$SuggestionFromJson(json);
 }

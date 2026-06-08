@@ -2,8 +2,138 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    // -------------------------------------------------------
+    // Helper functions
+    // -------------------------------------------------------
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function membershipTier() {
+      return request.auth.token.membershipTier;
+    }
+
+    function isPaidTier() {
+      return membershipTier() in ['localsPass', 'cityInsider'];
+    }
+
+    function isCityInsider() {
+      return membershipTier() == 'cityInsider';
+    }
+
+    // -------------------------------------------------------
+    // cities - read-only for authenticated users, no client writes
+    // -------------------------------------------------------
+    match /cities/{cityId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------
+    // restaurants - rank-based read gating via custom claims
+    //
+    // Free users (no claim or claim == "free") can only read
+    // restaurants with rank <= 5. localsPass and cityInsider
+    // can read all restaurants.
+    // -------------------------------------------------------
+    match /restaurants/{restaurantId} {
+      allow read: if isAuthenticated()
+        && (resource.data.rank <= 5 || isPaidTier());
+      allow write: if false;
+
+      // ---------------------------------------------------
+      // insiderNotes subcollection - cityInsider only
+      // ---------------------------------------------------
+      match /insiderNotes/{noteId} {
+        allow read: if isAuthenticated() && isCityInsider();
+        allow write: if false;
+      }
+
+      // ---------------------------------------------------
+      // votes subcollection - doc ID = user UID
+      //
+      // Users can create and delete their own vote doc only.
+      // No updates allowed.
+      // Reads allowed so clients can check hasVoted via
+      // a single doc get.
+      // ---------------------------------------------------
+      match /votes/{userId} {
+        allow read: if isAuthenticated();
+        allow create: if isOwner(userId);
+        allow update: if false;
+        allow delete: if isOwner(userId);
+      }
+
+      // ---------------------------------------------------
+      // comments subcollection
+      //
+      // Create with validation, delete own only, no updates.
+      // ---------------------------------------------------
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+
+        allow create: if isAuthenticated()
+          // userId must match the authenticated user
+          && request.resource.data.userId == request.auth.uid
+          // text must be a non-empty string, max 500 chars
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          // userName must match the user's actual displayName
+          && request.resource.data.userName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
+          // isInsider must reflect the real custom claim
+          && request.resource.data.isInsider == (request.auth.token.membershipTier == 'cityInsider')
+          // createdAt must be the server timestamp
+          && request.resource.data.createdAt == request.time;
+
+        // Only the comment author can delete their own comment
+        allow delete: if isAuthenticated()
+          && resource.data.userId == request.auth.uid;
+
+        allow update: if false;
+      }
+    }
+
+    // -------------------------------------------------------
+    // users - read/write own doc only
+    // -------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid);
+      // Cannot change the uid field on update
+      allow update: if isOwner(uid)
+        && request.resource.data.uid == resource.data.uid;
+
+      // ---------------------------------------------------
+      // suggestionCounts subcollection
+      //
+      // Cloud Function writes these for rate limiting.
+      // Clients can read their own counts for display.
+      // ---------------------------------------------------
+      match /suggestionCounts/{dateKey} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    // -------------------------------------------------------
+    // suggestions - no direct client creates
+    //
+    // Only the Cloud Function (admin SDK) can create
+    // suggestions. Authenticated users can read their own.
+    // -------------------------------------------------------
+    match /suggestions/{suggestionId} {
+      allow read: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

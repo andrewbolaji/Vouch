@@ -81,7 +81,7 @@ class AuthException extends AppException {
   );
 }
 
-// -- Firestore (designed now, populated in Block 2) --
+// -- Firestore --
 
 class PermissionDenied extends AppException {
   const PermissionDenied([
@@ -89,9 +89,29 @@ class PermissionDenied extends AppException {
   ]);
 }
 
+class NotFound extends AppException {
+  const NotFound([
+    super.message = "That content doesn't exist or was removed.",
+  ]);
+}
+
+class ServiceUnavailable extends AppException {
+  const ServiceUnavailable([
+    super.message = 'Vouch is temporarily unavailable. '
+        'Please try again in a moment.',
+  ]);
+}
+
 class RateLimited extends AppException {
   const RateLimited([
     super.message = "You've hit the limit for today. "
         'Try again tomorrow.',
+  ]);
+}
+
+class FirestoreWriteException extends AppException {
+  const FirestoreWriteException([
+    super.message = 'Could not save your changes. '
+        'Check your connection and try again.',
   ]);
 }

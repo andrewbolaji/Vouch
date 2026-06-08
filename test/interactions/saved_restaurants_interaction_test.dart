@@ -1,10 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vouch/models/user_profile.dart';
+import 'package:vouch/providers/saved_provider.dart';
+import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/screens/restaurant_detail_screen.dart';
 import 'package:vouch/screens/saved_restaurants_screen.dart';
+import 'package:vouch/services/auth_service.dart';
 
 import '../helpers/test_app.dart';
+
+const _testUser = AuthUser(
+  uid: 'test-uid',
+  email: 'test@test.com',
+  method: AuthMethod.email,
+);
+
+class _FakeUserRepo implements UserRepository {
+  _FakeUserRepo(this._data);
+  final Map<String, List<String>> _data;
+
+  @override
+  Future<List<String>> getSavedIds(String uid) async =>
+      List.from(_data[uid] ?? []);
+  @override
+  Future<void> updateSaved(
+    String uid,
+    String id, {
+    required bool add,
+  }) async {}
+  @override
+  Future<UserProfile?> getUser(String uid) => throw UnimplementedError();
+  @override
+  Future<void> createUser(UserProfile p) => throw UnimplementedError();
+  @override
+  Future<void> updateLastActive(String uid) => throw UnimplementedError();
+}
 
 void main() {
   setUp(() {
@@ -34,26 +65,32 @@ void main() {
     testWidgets(
       'tapping saved restaurant navigates to detail',
       (tester) async {
-        SharedPreferences.setMockInitialValues({
-          'saved_restaurant_ids': ['hou-1'],
+        final auth = AuthService.mock(initialUser: _testUser);
+        final repo = _FakeUserRepo({
+          'test-uid': ['hou-1'],
         });
+        final saved = SavedProvider(
+          authService: auth,
+          userRepository: repo,
+        );
 
         await tester.pumpWidget(
-          buildTestApp(const SavedRestaurantsScreen()),
+          buildTestApp(
+            const SavedRestaurantsScreen(),
+            authOverride: auth,
+            savedOverride: saved,
+          ),
         );
         await tester.pumpAndSettle(seedLoadDuration);
 
-        // Saved restaurant should be visible
         expect(
           find.text('Turkey Leg Hut'),
           findsOneWidget,
         );
 
-        // Tap it
         await tester.tap(find.text('Turkey Leg Hut'));
         await tester.pumpAndSettle(seedLoadDuration);
 
-        // Should navigate to detail
         expect(
           find.byType(RestaurantDetailScreen),
           findsOneWidget,
@@ -64,16 +101,24 @@ void main() {
     testWidgets(
       'multiple saved restaurants grouped by city',
       (tester) async {
-        SharedPreferences.setMockInitialValues({
-          'saved_restaurant_ids': ['hou-1', 'nyc-1'],
+        final auth = AuthService.mock(initialUser: _testUser);
+        final repo = _FakeUserRepo({
+          'test-uid': ['hou-1', 'nyc-1'],
         });
+        final saved = SavedProvider(
+          authService: auth,
+          userRepository: repo,
+        );
 
         await tester.pumpWidget(
-          buildTestApp(const SavedRestaurantsScreen()),
+          buildTestApp(
+            const SavedRestaurantsScreen(),
+            authOverride: auth,
+            savedOverride: saved,
+          ),
         );
         await tester.pumpAndSettle(seedLoadDuration);
 
-        // Both restaurants visible
         expect(
           find.text('Turkey Leg Hut'),
           findsOneWidget,
@@ -83,7 +128,6 @@ void main() {
           findsOneWidget,
         );
 
-        // City headers visible
         expect(
           find.text('Houston, TX'),
           findsOneWidget,

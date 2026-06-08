@@ -10,12 +10,12 @@ void main() {
     });
 
     test('starts in loading state', () {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       expect(state.isLoading, isTrue);
     });
 
     test('loads cities after initialization', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
 
       // Wait for async load
       await Future<void>.delayed(
@@ -28,7 +28,7 @@ void main() {
     });
 
     test('restaurantsForCity returns sorted results', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -45,7 +45,7 @@ void main() {
     });
 
     test('restaurantById returns correct restaurant', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -56,7 +56,7 @@ void main() {
     });
 
     test('restaurantById returns null for invalid id', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -65,7 +65,7 @@ void main() {
     });
 
     test('toggleVote increments then decrements', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -89,7 +89,7 @@ void main() {
     });
 
     test('toggleVote ignores invalid restaurant id', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -104,7 +104,7 @@ void main() {
         'voted_restaurant_ids': ['hou-1', 'nyc-1'],
       });
 
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -115,7 +115,7 @@ void main() {
     });
 
     test('setSearchQuery filters cities', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -130,7 +130,7 @@ void main() {
     });
 
     test('search is case insensitive', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -141,7 +141,7 @@ void main() {
     });
 
     test('search with no results returns empty', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -151,7 +151,7 @@ void main() {
     });
 
     test('addComment creates a new comment', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -171,7 +171,7 @@ void main() {
     });
 
     test('addComment with parentId creates a reply', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -187,7 +187,7 @@ void main() {
     });
 
     test('refresh reloads data', () async {
-      final state = AppState();
+      final state = AppState(useFirebase: false);
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );

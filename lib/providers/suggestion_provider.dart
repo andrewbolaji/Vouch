@@ -1,90 +1,138 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vouch/models/models.dart';
+import 'package:vouch/core/error/app_exception.dart';
+import 'package:vouch/models/suggestion.dart';
+import 'package:vouch/repositories/suggestion_repository.dart';
+import 'package:vouch/services/auth_service.dart';
 
 class SuggestionProvider extends ChangeNotifier {
-  SuggestionProvider() {
-    unawaited(_loadDailyCounts());
+  SuggestionProvider({
+    required AuthService authService,
+    SuggestionRepository? suggestionRepository,
+  })  : _authService = authService,
+        _suggestionRepo = suggestionRepository {
+    _authService.addListener(_onAuthChanged);
+    _onAuthChanged();
   }
 
-  static const String _prefKey = 'suggestion_daily_counts';
+  final AuthService _authService;
+  final SuggestionRepository? _suggestionRepo;
 
-  final List<Suggestion> _suggestions = [];
-  Map<String, int> _dailyCounts = {};
+  int _remaining = kDailySuggestionCap;
+  bool _isSubmitting = false;
 
-  List<Suggestion> get suggestions =>
-      List.unmodifiable(_suggestions);
+  int get remainingToday => _remaining;
+  bool get canSubmitToday => _remaining > 0;
+  bool get isSubmitting => _isSubmitting;
 
-  int get todayCount {
-    final today = _todayKey();
-    return _dailyCounts[today] ?? 0;
+  // -- Auth reaction --
+
+  String? get _currentUid {
+    final user = _authService.currentUser;
+    return (user != null && !user.isAnonymous) ? user.uid : null;
   }
 
-  bool get canSubmitToday => todayCount < kDailySuggestionCap;
+  void _onAuthChanged() {
+    final uid = _currentUid;
+    if (uid != null) {
+      unawaited(_loadRemaining(uid));
+    } else {
+      _remaining = kDailySuggestionCap;
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
 
-  int get remainingToday => kDailySuggestionCap - todayCount;
+  Future<void> _loadRemaining(String uid) async {
+    if (_suggestionRepo == null) {
+      notifyListeners();
+      return;
+    }
+    try {
+      final remaining = await _suggestionRepo.getRemainingToday(uid);
+      if (_currentUid != uid) return;
+      _remaining = remaining;
+    } on Exception catch (e) {
+      debugPrint('SuggestionProvider: server load failed: $e');
+      if (_currentUid != uid) return;
+      await _loadFromDisk(uid);
+    }
+    notifyListeners();
+  }
 
-  bool submitSuggestion({
+  /// Submits a suggestion via the Cloud Function.
+  ///
+  /// Throws [PermissionDenied] if not signed in.
+  /// Throws [RateLimited] if the server rejects for daily cap.
+  /// Throws [AppException] subclasses on other errors.
+  Future<void> submitSuggestion({
     required SuggestionType type,
     required String text,
     String? cityId,
-  }) {
-    if (!canSubmitToday) return false;
+  }) async {
+    if (!_authService.isSignedIn) {
+      throw const PermissionDenied('Sign in to submit a suggestion.');
+    }
 
-    final suggestion = Suggestion(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: 'anonymous',
-      type: type,
-      text: text,
-      cityId: cityId,
-      createdAt: DateTime.now(),
-    );
+    if (_suggestionRepo == null) {
+      throw const FirestoreWriteException(
+        'Suggestion service not available.',
+      );
+    }
 
-    _suggestions.add(suggestion);
-    final today = _todayKey();
-    _dailyCounts[today] = (_dailyCounts[today] ?? 0) + 1;
+    _isSubmitting = true;
     notifyListeners();
-    unawaited(_saveDailyCounts());
-    return true;
+
+    try {
+      await _suggestionRepo.submit(
+        type: type.name,
+        text: text,
+        cityId: cityId,
+      );
+      _remaining = (_remaining - 1).clamp(0, kDailySuggestionCap);
+      final uid = _currentUid;
+      if (uid != null) unawaited(_saveToDisk(uid));
+    } on RateLimited {
+      _remaining = 0;
+      final uid = _currentUid;
+      if (uid != null) unawaited(_saveToDisk(uid));
+      rethrow;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
   }
 
-  String _todayKey() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}'
-        '-${now.day.toString().padLeft(2, '0')}';
-  }
+  // -- Per-uid disk cache --
 
-  Future<void> _loadDailyCounts() async {
+  static const String _prefPrefix = 'suggestion_remaining_';
+
+  Future<void> _loadFromDisk(String uid) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_prefKey);
-      if (raw != null) {
-        final decoded = jsonDecode(raw) as Map<String, dynamic>;
-        _dailyCounts = decoded.map(
-          (k, v) => MapEntry(k, v as int),
-        );
+      final cached = prefs.getInt('$_prefPrefix$uid');
+      if (cached != null) {
+        _remaining = cached;
       }
     } on Exception catch (e) {
-      debugPrint(
-        'SuggestionProvider: failed to load counts: $e',
-      );
+      debugPrint('SuggestionProvider: cache read failed: $e');
     }
   }
 
-  Future<void> _saveDailyCounts() async {
+  Future<void> _saveToDisk(String uid) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _prefKey,
-        jsonEncode(_dailyCounts),
-      );
+      await prefs.setInt('$_prefPrefix$uid', _remaining);
     } on Exception catch (e) {
-      debugPrint(
-        'SuggestionProvider: failed to save counts: $e',
-      );
+      debugPrint('SuggestionProvider: cache write failed: $e');
     }
+  }
+
+  @override
+  void dispose() {
+    _authService.removeListener(_onAuthChanged);
+    super.dispose();
   }
 }

@@ -1,21 +1,22 @@
-class Comment {
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:vouch/models/timestamp_converter.dart';
 
-  const Comment({
-    required this.id,
-    required this.restaurantId,
-    required this.userId,
-    required this.userName,
-    required this.text,
-    required this.createdAt,
-    this.parentId,
-    this.isInsider = false,
-  });
-  final String id;
-  final String restaurantId;
-  final String userId;
-  final String userName;
-  final String text;
-  final DateTime createdAt;
-  final String? parentId;
-  final bool isInsider;
+part 'comment.freezed.dart';
+part 'comment.g.dart';
+
+@freezed
+abstract class Comment with _$Comment {
+  const factory Comment({
+    required String id,
+    required String restaurantId,
+    required String userId,
+    required String userName,
+    required String text,
+    @TimestampConverter() required DateTime createdAt,
+    String? parentId,
+    @Default(false) bool isInsider,
+  }) = _Comment;
+
+  factory Comment.fromJson(Map<String, dynamic> json) =>
+      _$CommentFromJson(json);
 }

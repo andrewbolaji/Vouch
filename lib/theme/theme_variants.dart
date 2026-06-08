@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 enum AppThemeVariant { editorialDark, instagramDark, editorialLight }
 
-const AppThemeVariant kActiveTheme = AppThemeVariant.instagramDark;
+const AppThemeVariant kActiveTheme = AppThemeVariant.editorialDark;
 
 class ThemeColors {
 
@@ -40,17 +40,17 @@ class ThemePalettes {
   ThemePalettes._();
 
   static const editorialDark = ThemeColors(
-    background: Color(0xFF141110),
-    surface: Color(0xFF1C1917),
-    surfaceVariant: Color(0xFF262220),
-    accent: Color(0xFFE89B5C),
-    accentMuted: Color(0xFFB87A45),
+    background: Color(0xFF0F0D0B),
+    surface: Color(0xFF1A1714),
+    surfaceVariant: Color(0xFF252118),
+    accent: Color(0xFFFF5436),
+    accentMuted: Color(0xFFCC432B),
     textPrimary: Color(0xFFF5F0EB),
     textSecondary: Color(0xFFB8AFA6),
     textTertiary: Color(0xFF7A7269),
     divider: Color(0xFF2E2A27),
     error: Color(0xFFCF6679),
-    cardBackground: Color(0xFF1C1917),
+    cardBackground: Color(0xFF1A1714),
     primaryMuted: Color(0xFF3D3530),
     brightness: Brightness.dark,
   );

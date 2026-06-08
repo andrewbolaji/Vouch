@@ -15,9 +15,13 @@ class RestaurantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return Semantics(
+      button: true,
+      label: '#${restaurant.rank} ${restaurant.name}, '
+          '${restaurant.cuisine}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
         decoration: BoxDecoration(
           color: AppTheme.cardBackground,
@@ -71,12 +75,12 @@ class RestaurantCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppTheme.spacingXs),
                     Text(
                       '${restaurant.cuisine}  ${restaurant.priceLevelDisplay}',
                       style: AppTheme.bodySmall,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppTheme.spacingXs),
                     Text(
                       '${formatCount(restaurant.voteCount)} votes',
                       style: AppTheme.bodySmall.copyWith(
@@ -93,6 +97,7 @@ class RestaurantCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -175,7 +175,7 @@ class _HomeHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(BrandConfig.appName, style: AppTheme.displayMedium),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppTheme.spacingXxs),
                 Text.rich(
                   TextSpan(
                     style: AppTheme.bodySmall.copyWith(
@@ -281,7 +281,9 @@ class _CityCard extends StatelessWidget {
               ),
               Container(
                 color: AppTheme.cardBackground,
-                padding: const EdgeInsets.all(AppTheme.spacingSm + 2),
+                padding: const EdgeInsets.all(
+                  AppTheme.spacingSm + AppTheme.spacingXxs,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -291,7 +293,7 @@ class _CityCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppTheme.spacingXxs),
                     Text(
                       description,
                       style: AppTheme.bodySmall,

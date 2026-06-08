@@ -37,7 +37,7 @@ class CommentTile extends StatelessWidget {
               const SizedBox(width: AppTheme.spacingSm),
               Text(comment.userName, style: AppTheme.labelMedium),
               if (comment.isInsider) ...[
-                const SizedBox(width: 6),
+                const SizedBox(width: AppTheme.spacingXsSm),
                 const PremiumBadge(label: 'Insider'),
               ],
               const Spacer(),
@@ -50,12 +50,19 @@ class CommentTile extends StatelessWidget {
           ),
           if (onReply != null)
             Padding(
-              padding: const EdgeInsets.only(left: 36, top: 4),
-              child: GestureDetector(
-                onTap: () => onReply?.call(comment.id),
-                child: Text(
-                  'Reply',
-                  style: AppTheme.bodySmall.copyWith(color: AppTheme.accent),
+              padding: const EdgeInsets.only(
+                left: 36,
+                top: AppTheme.spacingXs,
+              ),
+              child: Semantics(
+                button: true,
+                label: 'Reply to ${comment.userName}',
+                child: GestureDetector(
+                  onTap: () => onReply?.call(comment.id),
+                  child: Text(
+                    'Reply',
+                    style: AppTheme.bodySmall.copyWith(color: AppTheme.accent),
+                  ),
                 ),
               ),
             ),
@@ -87,7 +94,7 @@ class CommentTile extends StatelessWidget {
                                     style: AppTheme.labelMedium,
                                   ),
                                   if (reply.isInsider) ...[
-                                    const SizedBox(width: 6),
+                                    const SizedBox(width: AppTheme.spacingXsSm),
                                     const PremiumBadge(label: 'Insider'),
                                   ],
                                 ],

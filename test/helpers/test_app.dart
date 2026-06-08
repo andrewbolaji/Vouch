@@ -18,20 +18,28 @@ Widget buildTestApp(
   Widget child, {
   MembershipProvider? membershipOverride,
   AuthService? authOverride,
+  SavedProvider? savedOverride,
+  SuggestionProvider? suggestionOverride,
 }) {
+  final auth = authOverride ?? AuthService.mock();
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider(create: (_) => AppState()),
+      ChangeNotifierProvider(
+        create: (_) => AppState(useFirebase: false),
+      ),
       ChangeNotifierProvider(
         create: (_) =>
             membershipOverride ?? MembershipProvider(),
       ),
-      ChangeNotifierProvider(create: (_) => SavedProvider()),
+      ChangeNotifierProvider.value(value: auth),
       ChangeNotifierProvider(
-        create: (_) => SuggestionProvider(),
+        create: (_) =>
+            savedOverride ?? SavedProvider(authService: auth),
       ),
       ChangeNotifierProvider(
-        create: (_) => authOverride ?? AuthService.mock(),
+        create: (_) =>
+            suggestionOverride ??
+            SuggestionProvider(authService: auth),
       ),
     ],
     child: MaterialApp(home: child),

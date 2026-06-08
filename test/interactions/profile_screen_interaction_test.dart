@@ -5,10 +5,31 @@ import 'package:vouch/config/brand_config.dart';
 import 'package:vouch/screens/notification_settings_screen.dart';
 import 'package:vouch/screens/profile_screen.dart';
 import 'package:vouch/screens/saved_restaurants_screen.dart';
+import 'package:vouch/models/suggestion.dart';
+import 'package:vouch/providers/suggestion_provider.dart';
+import 'package:vouch/repositories/suggestion_repository.dart';
 import 'package:vouch/screens/sign_in_screen.dart';
 import 'package:vouch/screens/upgrade_screen.dart';
+import 'package:vouch/services/auth_service.dart';
 
 import '../helpers/test_app.dart';
+
+const _testUser = AuthUser(
+  uid: 'test-uid',
+  email: 'test@test.com',
+  method: AuthMethod.email,
+);
+
+class _FakeSuggestionRepo implements SuggestionRepository {
+  @override
+  Future<void> submit({
+    required String type,
+    required String text,
+    String? cityId,
+  }) async {}
+  @override
+  Future<int> getRemainingToday(String userId) async => kDailySuggestionCap;
+}
 
 void main() {
   setUp(() {
@@ -116,10 +137,19 @@ void main() {
     );
 
     testWidgets(
-      'suggestion box submits and clears',
+      'suggestion box submits and clears for signed-in user',
       (tester) async {
+        final auth = AuthService.mock(initialUser: _testUser);
+        final suggestion = SuggestionProvider(
+          authService: auth,
+          suggestionRepository: _FakeSuggestionRepo(),
+        );
         await tester.pumpWidget(
-          buildTestApp(const ProfileScreen()),
+          buildTestApp(
+            const ProfileScreen(),
+            authOverride: auth,
+            suggestionOverride: suggestion,
+          ),
         );
         await tester.pumpAndSettle(seedLoadDuration);
 
@@ -149,7 +179,7 @@ void main() {
 
         // Should show success snackbar
         expect(
-          find.text('Suggestion submitted.'),
+          find.text('Suggestion submitted. Thanks!'),
           findsOneWidget,
         );
       },

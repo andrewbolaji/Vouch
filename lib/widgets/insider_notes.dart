@@ -36,20 +36,20 @@ class InsiderNotes extends StatelessWidget {
               const SizedBox(width: AppTheme.spacingSm),
               Text(
                 'Insider Notes',
-                style: AppTheme.labelLarge.copyWith(color: AppTheme.accent),
+                style: AppTheme.accentItalic,
               ),
             ],
           ),
           if (whatToOrder != null) ...[
             const SizedBox(height: AppTheme.spacingMd),
             Text('What to order', style: AppTheme.labelMedium),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppTheme.spacingXs),
             Text(whatToOrder!, style: AppTheme.bodyMedium),
           ],
           if (tip != null) ...[
             const SizedBox(height: AppTheme.spacingMd),
             Text('Pro tip', style: AppTheme.labelMedium),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppTheme.spacingXs),
             Text(tip!, style: AppTheme.bodyMedium),
           ],
         ],
