@@ -68,6 +68,7 @@ Architectural and product decisions with reasoning. Future-you reads this file a
 | 2026-06-08 | Places match requires name similarity (>= 0.5 token overlap) + Houston metro city/bbox match | Wrong Place ID is worse than no data. Address-less rows always go to manual review. Metro check covers suburbs (Katy, Pearland, Spring, Sugar Land, etc.) via city name set and lat/lng bounding box. |
 | 2026-06-08 | openingHours stored but not surfaced | Stale hours are worse than no hours. Stored for the v2 refresh job. |
 | 2026-06-08 | No rank-from-votes process exists yet | Vote Cloud Functions increment/decrement voteCount but nothing computes rank from voteCount. Top 10 stays empty until the rank computation Cloud Function ships (next Block). |
+| 2026-06-08 | Demo image override layer (display-time only, never touches Firestore) | PRE-LAUNCH CHECKLIST: kUseDemoImageOverrides must be set to false or the file deleted before any public store build. Removal: delete lib/config/demo_image_overrides.dart, assets/demo/, and the pubspec assets entry. |
 
 ---
 

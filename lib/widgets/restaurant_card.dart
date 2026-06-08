@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:vouch/core/utils/format_utils.dart';
 import 'package:vouch/models/models.dart';
 import 'package:vouch/theme/app_theme.dart';
 import 'package:vouch/widgets/rating_pill.dart';
+import 'package:vouch/widgets/restaurant_image.dart';
 
 class RestaurantCard extends StatelessWidget {
 
@@ -38,22 +38,10 @@ class RestaurantCard extends StatelessWidget {
                 topLeft: Radius.circular(AppTheme.radiusMd),
                 bottomLeft: Radius.circular(AppTheme.radiusMd),
               ),
-              child: CachedNetworkImage(
-                imageUrl: restaurant.imageUrl,
+              child: RestaurantImage(
+                restaurant: restaurant,
                 width: 100,
                 height: 100,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  width: 100,
-                  height: 100,
-                  color: AppTheme.surfaceVariant,
-                ),
-                errorWidget: (context, url, error) => Container(
-                  width: 100,
-                  height: 100,
-                  color: AppTheme.surfaceVariant,
-                  child: Icon(Icons.restaurant, color: AppTheme.textTertiary),
-                ),
               ),
             ),
             // Content

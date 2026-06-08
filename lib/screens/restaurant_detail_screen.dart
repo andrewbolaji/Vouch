@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +17,7 @@ import 'package:vouch/widgets/location_card.dart';
 import 'package:vouch/widgets/paywall_gate.dart';
 import 'package:vouch/widgets/rating_pill.dart';
 import 'package:vouch/widgets/save_button.dart';
+import 'package:vouch/widgets/restaurant_image.dart';
 import 'package:vouch/widgets/vote_button.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
@@ -77,19 +77,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             backgroundColor: AppTheme.background,
             foregroundColor: AppTheme.textPrimary,
             flexibleSpace: FlexibleSpaceBar(
-              background: CachedNetworkImage(
-                imageUrl: restaurant.imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) =>
-                    Container(color: AppTheme.surfaceVariant),
-                errorWidget: (context, url, error) => ColoredBox(
-                  color: AppTheme.surfaceVariant,
-                  child: Icon(
-                    Icons.restaurant,
-                    color: AppTheme.textTertiary,
-                    size: 60,
-                  ),
-                ),
+              background: RestaurantImage(
+                restaurant: restaurant,
+                iconSize: 60,
               ),
             ),
             actions: [
