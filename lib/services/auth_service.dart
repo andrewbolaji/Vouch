@@ -326,9 +326,10 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Structured log for auth events. Uses [debugPrint] which is stripped
-  /// in release builds. The [tag] identifies the auth flow (email, google,
-  /// apple, signup, signout, etc.) for filtering in device logs.
+  /// Structured log for auth events. Uses [debugPrint], which throttles
+  /// output but still runs in release builds. Replace with Crashlytics
+  /// or a proper logger before production. The [tag] identifies the auth
+  /// flow (email, google, apple, signup, signout, etc.) for filtering.
   static void _log(String tag, String message) {
     debugPrint('AuthService [$tag] $message');
   }

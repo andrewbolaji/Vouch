@@ -29,6 +29,8 @@ dev_dependencies:
   fake_cloud_firestore: ^4.1.0
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   freezed: ^3.0.6
   json_serializable: ^6.9.5
   mocktail: ^1.0.5
