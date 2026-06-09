@@ -7,6 +7,7 @@ import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
+import 'package:vouch/screens/blocked_users_screen.dart';
 import 'package:vouch/screens/notification_settings_screen.dart';
 import 'package:vouch/screens/saved_restaurants_screen.dart';
 import 'package:vouch/screens/sign_in_screen.dart';
@@ -105,6 +106,15 @@ class ProfileScreen extends StatelessWidget {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => const UpgradeScreen(),
+              ),
+            ),
+            _ProfileMenuItem(
+              icon: Icons.block,
+              label: 'Blocked Users',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const BlockedUsersScreen(),
+                ),
               ),
             ),
             _ProfileMenuItem(

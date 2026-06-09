@@ -1,18 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vouch/core/utils/block_filter.dart';
 import 'package:vouch/models/comment.dart';
 
-/// Tests for the block-list filtering logic.
+/// Tests for the production [filterBlockedComments] function.
 ///
-/// The actual filtering is applied in the UI layer (AppState or screen),
-/// but the logic is simple enough to test as a pure function:
-/// given a list of comments and a set of blocked user IDs,
-/// filter out comments from blocked users.
-List<Comment> filterBlocked(
-  List<Comment> comments,
-  Set<String> blockedIds,
-) {
-  return comments.where((c) => !blockedIds.contains(c.userId)).toList();
-}
+/// Both this test and the restaurant detail screen import and call
+/// the same function from lib/core/utils/block_filter.dart.
+/// If the production logic changes, these tests break.
 
 void main() {
   final now = DateTime(2026, 6, 9);
@@ -44,9 +38,9 @@ void main() {
     createdAt: now,
   );
 
-  group('Block filtering', () {
-    test('blocked user comments are filtered out', () {
-      final result = filterBlocked(
+  group('filterBlockedComments', () {
+    test('blocked user comments are excluded', () {
+      final result = filterBlockedComments(
         [commentA, commentB, commentC],
         {'user-b'},
       );
@@ -55,7 +49,7 @@ void main() {
     });
 
     test('empty blocklist returns all comments', () {
-      final result = filterBlocked(
+      final result = filterBlockedComments(
         [commentA, commentB, commentC],
         {},
       );
@@ -63,7 +57,7 @@ void main() {
     });
 
     test('blocking all users returns empty list', () {
-      final result = filterBlocked(
+      final result = filterBlockedComments(
         [commentA, commentB, commentC],
         {'user-a', 'user-b', 'user-c'},
       );
@@ -72,15 +66,13 @@ void main() {
 
     test('unblocking restores visibility', () {
       final blocked = {'user-b'};
-      final filtered = filterBlocked(
-        [commentA, commentB, commentC],
-        blocked,
+      expect(
+        filterBlockedComments([commentA, commentB, commentC], blocked),
+        hasLength(2),
       );
-      expect(filtered, hasLength(2));
 
-      // Simulate unblock
       blocked.remove('user-b');
-      final restored = filterBlocked(
+      final restored = filterBlockedComments(
         [commentA, commentB, commentC],
         blocked,
       );
@@ -89,7 +81,7 @@ void main() {
     });
 
     test('block does not affect other users', () {
-      final result = filterBlocked(
+      final result = filterBlockedComments(
         [commentA, commentB, commentC],
         {'user-b'},
       );

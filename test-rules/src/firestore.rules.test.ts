@@ -724,3 +724,100 @@ describe("suggestions", () => {
     await assertFails(getDoc(doc(db, "suggestions/s1")));
   });
 });
+
+// ================================================================
+// REPORTS
+// ================================================================
+
+describe("reports", () => {
+  const validReport = {
+    reporterUid: "alice",
+    commentId: "c1",
+    commentPath: "restaurants/hou-1/comments/c1",
+    restaurantId: "hou-1",
+    cityId: "houston",
+    reason: "spam",
+    createdAt: serverTimestamp(),
+  };
+
+  test("authenticated user can create own report", async () => {
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      addDoc(collection(db, "reports"), validReport)
+    );
+  });
+
+  test("DENIED: create report as another user", async () => {
+    const db = freeUser("bob").firestore();
+    await assertFails(
+      addDoc(collection(db, "reports"), validReport)
+    );
+  });
+
+  test("DENIED: create report with invalid reason", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      addDoc(collection(db, "reports"), {
+        ...validReport,
+        reason: "made-up-reason",
+      })
+    );
+  });
+
+  test("user can read own report", async () => {
+    await seedAsAdmin("reports/r1", {
+      reporterUid: "alice",
+      commentId: "c1",
+      commentPath: "restaurants/hou-1/comments/c1",
+      restaurantId: "hou-1",
+      reason: "spam",
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(getDoc(doc(db, "reports/r1")));
+  });
+
+  test("DENIED: read another user's report", async () => {
+    await seedAsAdmin("reports/r1", {
+      reporterUid: "alice",
+      commentId: "c1",
+      commentPath: "restaurants/hou-1/comments/c1",
+      restaurantId: "hou-1",
+      reason: "spam",
+    });
+    const db = freeUser("bob").firestore();
+    await assertFails(getDoc(doc(db, "reports/r1")));
+  });
+
+  test("DENIED: update a report", async () => {
+    await seedAsAdmin("reports/r1", {
+      reporterUid: "alice",
+      commentId: "c1",
+      commentPath: "restaurants/hou-1/comments/c1",
+      restaurantId: "hou-1",
+      reason: "spam",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      updateDoc(doc(db, "reports/r1"), { reason: "harassment" })
+    );
+  });
+
+  test("DENIED: delete a report", async () => {
+    await seedAsAdmin("reports/r1", {
+      reporterUid: "alice",
+      commentId: "c1",
+      commentPath: "restaurants/hou-1/comments/c1",
+      restaurantId: "hou-1",
+      reason: "spam",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(deleteDoc(doc(db, "reports/r1")));
+  });
+
+  test("DENIED: unauthenticated user cannot create report", async () => {
+    const db = unauthenticated().firestore();
+    await assertFails(
+      addDoc(collection(db, "reports"), validReport)
+    );
+  });
+});

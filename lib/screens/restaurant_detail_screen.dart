@@ -3,15 +3,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:vouch/core/utils/block_filter.dart';
+import 'package:vouch/models/comment.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/providers/report_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
+import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/screens/sign_in_screen.dart';
 import 'package:vouch/screens/upgrade_screen.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/share_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 import 'package:vouch/widgets/comment_tile.dart';
+import 'package:vouch/widgets/report_comment_sheet.dart';
 import 'package:vouch/widgets/insider_notes.dart';
 import 'package:vouch/widgets/location_card.dart';
 import 'package:vouch/widgets/paywall_gate.dart';
@@ -35,6 +40,33 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   final _commentController = TextEditingController();
   String? _replyingToId;
   String? _replyingToUserName;
+  Set<String> _blockedUserIds = {};
+
+  UserRepository get _userRepo {
+    try {
+      return context.read<UserRepository>();
+    } on ProviderNotFoundException catch (_) {
+      return UserRepository();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadBlockedUsers());
+  }
+
+  Future<void> _loadBlockedUsers() async {
+    final auth = context.read<AuthService>();
+    final uid = auth.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final ids = await _userRepo.getBlockedIds(uid);
+      if (mounted) setState(() => _blockedUserIds = ids.toSet());
+    } on Exception catch (_) {
+      // Best effort; empty blocklist is safe default.
+    }
+  }
 
   @override
   void dispose() {
@@ -63,7 +95,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       );
     }
 
-    final comments = appState.commentsForRestaurant(widget.restaurantId);
+    final currentUid = auth.currentUser?.uid;
+    final allComments = appState.commentsForRestaurant(widget.restaurantId);
+    final comments = filterBlockedComments(allComments, _blockedUserIds);
     final hasVoted = appState.hasVoted(widget.restaurantId);
     final isSaved = savedProvider.isSaved(widget.restaurantId);
 
@@ -358,12 +392,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     )
                   else
                     ...comments.map((comment) {
-                      final replies = appState.repliesForComment(comment.id);
+                      final replies = filterBlockedComments(
+                        appState.repliesForComment(comment.id),
+                        _blockedUserIds,
+                      );
+                      final isOwn = currentUid == comment.userId;
                       return CommentTile(
                         comment: comment,
                         replies: replies,
+                        isOwnComment: isOwn,
                         onReply: (parentId) =>
                             _startReply(parentId, comment.userName),
+                        onReport: () => _reportComment(comment),
+                        onBlock: () => _blockUser(comment.userId),
                       );
                     }),
                   const SizedBox(height: AppTheme.spacingXl),
@@ -403,6 +444,67 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
     _commentController.clear();
     _cancelReply();
+  }
+
+  Future<void> _reportComment(Comment comment) async {
+    final reason = await ReportCommentSheet.show(context);
+    if (reason == null || !mounted) return;
+
+    final reportProvider = context.read<ReportProvider>();
+    final restaurant = context.read<AppState>().restaurantById(
+      widget.restaurantId,
+    );
+    try {
+      await reportProvider.submitReport(
+        commentId: comment.id,
+        commentPath:
+            'restaurants/${widget.restaurantId}/comments/${comment.id}',
+        restaurantId: widget.restaurantId,
+        cityId: restaurant?.cityId ?? '',
+        reason: reason,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Report submitted. Thank you.'),
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _blockUser(String blockedUid) async {
+    final auth = context.read<AuthService>();
+    final uid = auth.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      await _userRepo.addBlock(uid, blockedUid);
+      if (mounted) {
+        setState(() => _blockedUserIds = {..._blockedUserIds, blockedUid});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User blocked.')),
+        );
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showUpgrade(BuildContext context) {
