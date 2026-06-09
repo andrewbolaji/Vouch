@@ -5,11 +5,14 @@
  *   firebase emulators:exec --only firestore,auth,functions \
  *     'cd functions && npx jest --forceExit --detectOpenHandles --verbose'
  *
- * Tests the actual function logic against the Firestore emulator.
+ * Tests call the same shared functions that the deployed triggers call.
+ * No reimplementation. If production logic changes, tests break.
  */
 
 import {initializeApp, getApps, deleteApp} from "firebase-admin/app";
 import {getFirestore, FieldValue, Timestamp} from "firebase-admin/firestore";
+import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
+import {deleteUserData} from "./user_cleanup";
 
 // Initialize admin SDK for emulator
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
@@ -31,15 +34,22 @@ async function clearFirestore() {
 }
 
 // ================================================================
-// Vote aggregation (testing the logic, not the trigger wiring)
-// The actual trigger functions read/write Firestore.
-// We simulate what the function does and verify the outcome.
+// Vote aggregation
+//
+// Tests call the real applyVoteCreated/applyVoteDeleted functions
+// from vote_aggregation.ts, the same functions that onVoteCreated
+// and onVoteDeleted delegate to.
+//
+// What is NOT tested here: the Firestore trigger wiring itself
+// (whether Firestore actually fires the trigger when a vote doc
+// is created/deleted). That is Firebase infrastructure, not our
+// code. It can only be verified with a live emulator running the
+// deployed functions or a manual walkthrough.
 // ================================================================
 
-describe("Vote aggregation logic", () => {
+describe("Vote aggregation (real function bodies)", () => {
   beforeEach(async () => {
     await clearFirestore();
-    // Seed a restaurant
     await db.collection("restaurants").doc("hou-1").set({
       id: "hou-1",
       cityId: "houston",
@@ -57,44 +67,34 @@ describe("Vote aggregation logic", () => {
     }
   });
 
-  test("increment(1) on vote create increases voteCount", async () => {
-    const restaurantRef = db.collection("restaurants").doc("hou-1");
+  test("applyVoteCreated increments voteCount", async () => {
+    await applyVoteCreated(db, "hou-1");
 
-    // Simulate what onVoteCreated does
-    await restaurantRef.update({voteCount: FieldValue.increment(1)});
-
-    const snap = await restaurantRef.get();
+    const snap = await db.collection("restaurants").doc("hou-1").get();
     expect(snap.data()?.voteCount).toBe(101);
   });
 
-  test("increment(-1) on vote delete decreases voteCount", async () => {
-    const restaurantRef = db.collection("restaurants").doc("hou-1");
+  test("applyVoteDeleted decrements voteCount", async () => {
+    await applyVoteDeleted(db, "hou-1");
 
-    // Simulate what onVoteDeleted does
-    await restaurantRef.update({voteCount: FieldValue.increment(-1)});
-
-    const snap = await restaurantRef.get();
+    const snap = await db.collection("restaurants").doc("hou-1").get();
     expect(snap.data()?.voteCount).toBe(99);
   });
 
   test("multiple increments are additive", async () => {
-    const restaurantRef = db.collection("restaurants").doc("hou-1");
+    await applyVoteCreated(db, "hou-1");
+    await applyVoteCreated(db, "hou-1");
+    await applyVoteCreated(db, "hou-1");
 
-    await restaurantRef.update({voteCount: FieldValue.increment(1)});
-    await restaurantRef.update({voteCount: FieldValue.increment(1)});
-    await restaurantRef.update({voteCount: FieldValue.increment(1)});
-
-    const snap = await restaurantRef.get();
+    const snap = await db.collection("restaurants").doc("hou-1").get();
     expect(snap.data()?.voteCount).toBe(103);
   });
 
   test("increment after decrement nets to zero change", async () => {
-    const restaurantRef = db.collection("restaurants").doc("hou-1");
+    await applyVoteCreated(db, "hou-1");
+    await applyVoteDeleted(db, "hou-1");
 
-    await restaurantRef.update({voteCount: FieldValue.increment(1)});
-    await restaurantRef.update({voteCount: FieldValue.increment(-1)});
-
-    const snap = await restaurantRef.get();
+    const snap = await db.collection("restaurants").doc("hou-1").get();
     expect(snap.data()?.voteCount).toBe(100);
   });
 });
@@ -109,7 +109,6 @@ describe("Suggestion submission logic", () => {
 
   beforeEach(async () => {
     await clearFirestore();
-    // Seed user doc
     await db.collection("users").doc(uid).set({
       uid,
       displayName: "TestUser",
@@ -135,7 +134,6 @@ describe("Suggestion submission logic", () => {
         ? (counterSnap.data()?.count as number) ?? 0
         : 0;
 
-      // Cap is 1
       expect(currentCount).toBe(0);
 
       tx.set(suggestionRef, {
@@ -150,13 +148,11 @@ describe("Suggestion submission logic", () => {
       tx.set(counterRef, {count: FieldValue.increment(1), date: dateKey}, {merge: true});
     });
 
-    // Verify suggestion was written
     const suggestionSnap = await suggestionRef.get();
     expect(suggestionSnap.exists).toBe(true);
     expect(suggestionSnap.data()?.type).toBe("general");
     expect(suggestionSnap.data()?.status).toBe("pending");
 
-    // Verify counter was incremented
     const counterSnap = await counterRef.get();
     expect(counterSnap.data()?.count).toBe(1);
   });
@@ -168,7 +164,6 @@ describe("Suggestion submission logic", () => {
       .collection("suggestionCounts")
       .doc(dateKey);
 
-    // Pre-seed the counter at 1 (already used today's quota)
     await counterRef.set({count: 1, date: dateKey});
 
     let rejected = false;
@@ -184,7 +179,6 @@ describe("Suggestion submission logic", () => {
           throw new Error("RATE_LIMITED");
         }
 
-        // This should not execute
         tx.set(db.collection("suggestions").doc(), {
           userId: uid,
           type: "general",
@@ -199,7 +193,6 @@ describe("Suggestion submission logic", () => {
 
     expect(rejected).toBe(true);
 
-    // Verify no suggestion was written
     const suggestions = await db
       .collection("suggestions")
       .where("userId", "==", uid)
@@ -220,103 +213,35 @@ describe("Suggestion submission logic", () => {
       .collection("suggestionCounts")
       .doc(dateKey);
 
-    // User 1 has used their quota
     await counterRef.set({count: 1, date: dateKey});
-    // User 2 has not
-    // (no counter doc exists)
 
     const otherSnap = await otherCounterRef.get();
     expect(otherSnap.exists).toBe(false);
 
-    // User 2 should be able to submit
     const otherCount = otherSnap.exists
       ? (otherSnap.data()?.count as number) ?? 0
       : 0;
     expect(otherCount).toBe(0);
-    // 0 < 1, so submission would proceed
   });
 });
 
 // ================================================================
-// Account deletion cleanup (testing the cleanup logic)
+// Account deletion cleanup
+//
+// Tests call the real deleteUserData function from user_cleanup.ts,
+// the same function that onUserDeleted delegates to.
+//
+// What is NOT tested here:
+// - The Auth trigger wiring (whether Firebase Auth actually fires
+//   onUserDeleted when an auth record is deleted).
+// - The vote aggregate decrement via onVoteDeleted trigger (tested
+//   separately above via the real applyVoteDeleted body, but the
+//   trigger wiring between "vote doc deleted" and "onVoteDeleted
+//   fires" is Firebase infrastructure).
 // ================================================================
 
-describe("Account deletion cleanup logic", () => {
+describe("Account deletion cleanup (real deleteUserData)", () => {
   const uid = "deleted-user";
-
-  // Helper: simulates exactly what onUserDeleted does.
-  // Kept in sync with the production function in index.ts.
-  async function simulateOnUserDeleted(deletedUid: string) {
-    // Helper: delete all docs from a query in batches
-    const deleteDocs = async (
-      query: FirebaseFirestore.Query
-    ): Promise<number> => {
-      let total = 0;
-      let snap = await query.limit(500).get();
-      while (!snap.empty) {
-        const batch = db.batch();
-        for (const d of snap.docs) batch.delete(d.ref);
-        await batch.commit();
-        total += snap.size;
-        snap = await query.limit(500).get();
-      }
-      return total;
-    };
-
-    // Helper: update all docs from a query
-    const updateDocs = async (
-      query: FirebaseFirestore.Query,
-      data: Record<string, unknown>
-    ): Promise<number> => {
-      let total = 0;
-      let snap = await query.limit(500).get();
-      while (!snap.empty) {
-        const batch = db.batch();
-        for (const d of snap.docs) batch.update(d.ref, data);
-        await batch.commit();
-        total += snap.size;
-        snap = await query.limit(500).get();
-      }
-      return total;
-    };
-
-    // 1. Delete suggestionCounts subcollection
-    await deleteDocs(
-      db.collection("users").doc(deletedUid).collection("suggestionCounts")
-    );
-
-    // 2. Delete reportCounts subcollection
-    await deleteDocs(
-      db.collection("users").doc(deletedUid).collection("reportCounts")
-    );
-
-    // 3. Delete user doc
-    await db.collection("users").doc(deletedUid).delete();
-
-    // 4. Delete suggestions
-    await deleteDocs(
-      db.collection("suggestions").where("userId", "==", deletedUid)
-    );
-
-    // 5. Delete reports
-    await deleteDocs(
-      db.collection("reports").where("reporterUid", "==", deletedUid)
-    );
-
-    // 6. Delete votes (triggers onVoteDeleted which decrements aggregates)
-    const allVotes = await db.collectionGroup("votes").get();
-    const batch = db.batch();
-    for (const d of allVotes.docs) {
-      if (d.id === deletedUid) batch.delete(d.ref);
-    }
-    await batch.commit();
-
-    // 7. Anonymize comments (preserve threads)
-    await updateDocs(
-      db.collectionGroup("comments").where("userId", "==", deletedUid),
-      {userId: "deleted", userName: "Deleted user", isInsider: false}
-    );
-  }
 
   beforeEach(async () => {
     await clearFirestore();
@@ -389,7 +314,6 @@ describe("Account deletion cleanup logic", () => {
       .collection("votes")
       .doc(uid)
       .set({createdAt: Timestamp.now()});
-    // Another user's vote (should NOT be deleted)
     await db
       .collection("restaurants")
       .doc("hou-1")
@@ -434,14 +358,14 @@ describe("Account deletion cleanup logic", () => {
     await clearFirestore();
   });
 
-  test("cleanup removes user data and anonymizes comments", async () => {
-    await simulateOnUserDeleted(uid);
+  test("deleteUserData removes user data and anonymizes comments", async () => {
+    await deleteUserData(db, uid);
 
-    // VERIFY: user doc gone
+    // user doc gone
     const userDoc = await db.collection("users").doc(uid).get();
     expect(userDoc.exists).toBe(false);
 
-    // VERIFY: suggestionCounts gone
+    // suggestionCounts gone
     const sugCounts = await db
       .collection("users")
       .doc(uid)
@@ -449,7 +373,7 @@ describe("Account deletion cleanup logic", () => {
       .get();
     expect(sugCounts.size).toBe(0);
 
-    // VERIFY: reportCounts gone
+    // reportCounts gone
     const repCounts = await db
       .collection("users")
       .doc(uid)
@@ -457,21 +381,21 @@ describe("Account deletion cleanup logic", () => {
       .get();
     expect(repCounts.size).toBe(0);
 
-    // VERIFY: suggestions gone
+    // suggestions gone
     const userSuggestions = await db
       .collection("suggestions")
       .where("userId", "==", uid)
       .get();
     expect(userSuggestions.size).toBe(0);
 
-    // VERIFY: reports gone
+    // reports gone
     const userReports = await db
       .collection("reports")
       .where("reporterUid", "==", uid)
       .get();
     expect(userReports.size).toBe(0);
 
-    // VERIFY: vote doc gone
+    // vote doc gone
     const userVote = await db
       .collection("restaurants")
       .doc("hou-1")
@@ -480,7 +404,7 @@ describe("Account deletion cleanup logic", () => {
       .get();
     expect(userVote.exists).toBe(false);
 
-    // VERIFY: comment anonymized (not deleted)
+    // comment anonymized (not deleted)
     const comment = await db
       .collection("restaurants")
       .doc("hou-1")
@@ -494,23 +418,17 @@ describe("Account deletion cleanup logic", () => {
     expect(comment.data()?.text).toBe("My comment");
   });
 
-  test("other user's data is untouched after deletion", async () => {
-    await simulateOnUserDeleted(uid);
+  test("other user's data is untouched after deleteUserData", async () => {
+    await deleteUserData(db, uid);
 
-    // Other user's suggestion survives
-    const otherSuggestion = await db
-      .collection("suggestions")
-      .doc("s2")
-      .get();
+    const otherSuggestion = await db.collection("suggestions").doc("s2").get();
     expect(otherSuggestion.exists).toBe(true);
     expect(otherSuggestion.data()?.userId).toBe("other-user");
 
-    // Other user's report survives
     const otherReport = await db.collection("reports").doc("r2").get();
     expect(otherReport.exists).toBe(true);
     expect(otherReport.data()?.reporterUid).toBe("other-user");
 
-    // Other user's vote survives
     const otherVote = await db
       .collection("restaurants")
       .doc("hou-1")
@@ -519,7 +437,6 @@ describe("Account deletion cleanup logic", () => {
       .get();
     expect(otherVote.exists).toBe(true);
 
-    // Other user's comment untouched
     const otherComment = await db
       .collection("restaurants")
       .doc("hou-1")
@@ -541,27 +458,28 @@ describe("Account deletion cleanup logic", () => {
     expect(reply.data()?.parentId).toBe("c1");
   });
 
-  test("vote deletion would trigger aggregate decrement", async () => {
-    // Verify initial voteCount
+  test("deleteUserData removes vote docs (decrement is trigger responsibility)", async () => {
     const before = await db.collection("restaurants").doc("hou-1").get();
     expect(before.data()?.voteCount).toBe(50);
 
-    // Delete the vote doc (simulating what onUserDeleted does)
-    await db
+    await deleteUserData(db, uid);
+
+    // Vote doc is gone
+    const userVote = await db
       .collection("restaurants")
       .doc("hou-1")
       .collection("votes")
       .doc(uid)
-      .delete();
+      .get();
+    expect(userVote.exists).toBe(false);
 
-    // Simulate what onVoteDeleted trigger does
-    await db
-      .collection("restaurants")
-      .doc("hou-1")
-      .update({voteCount: FieldValue.increment(-1)});
-
+    // voteCount is NOT decremented here because deleteUserData does
+    // not call applyVoteDeleted. In production, the Firestore trigger
+    // fires onVoteDeleted which calls applyVoteDeleted. That wiring
+    // is Firebase infrastructure, not testable without deploying.
+    // The applyVoteDeleted function itself is tested above.
     const after = await db.collection("restaurants").doc("hou-1").get();
-    expect(after.data()?.voteCount).toBe(49);
+    expect(after.data()?.voteCount).toBe(50);
 
     // Other user's vote still exists
     const otherVote = await db

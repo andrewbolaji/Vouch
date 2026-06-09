@@ -15,6 +15,8 @@ import * as functions from "firebase-functions";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
+import {deleteUserData} from "./user_cleanup";
 
 initializeApp();
 const db = getFirestore();
@@ -24,26 +26,20 @@ setGlobalOptions({maxInstances: 10, region: "us-central1"});
 // ---------------------------------------------------------------------------
 // 1. onVoteCreated / onVoteDeleted
 //    Firestore trigger on /restaurants/{restaurantId}/votes/{userId}
-//    Uses O(1) incremental counters instead of re-counting.
+//    Delegates to shared applyVoteCreated/applyVoteDeleted functions.
 // ---------------------------------------------------------------------------
 
 export const onVoteCreated = onDocumentCreated(
   "restaurants/{restaurantId}/votes/{userId}",
   async (event) => {
-    const restaurantId = event.params.restaurantId;
-    const restaurantRef = db.collection("restaurants").doc(restaurantId);
-    await restaurantRef.update({voteCount: FieldValue.increment(1)});
-    logger.info(`Vote added for restaurant ${restaurantId}`);
+    await applyVoteCreated(db, event.params.restaurantId);
   }
 );
 
 export const onVoteDeleted = onDocumentDeleted(
   "restaurants/{restaurantId}/votes/{userId}",
   async (event) => {
-    const restaurantId = event.params.restaurantId;
-    const restaurantRef = db.collection("restaurants").doc(restaurantId);
-    await restaurantRef.update({voteCount: FieldValue.increment(-1)});
-    logger.info(`Vote removed for restaurant ${restaurantId}`);
+    await applyVoteDeleted(db, event.params.restaurantId);
   }
 );
 
@@ -127,7 +123,7 @@ export const submitSuggestion = onCall(async (request) => {
 // ---------------------------------------------------------------------------
 // 3. onUserDeleted
 //    Firebase Auth trigger (onDelete).
-//    Cleans up all Firestore data belonging to the deleted user.
+//    Delegates to shared deleteUserData function for Firestore cleanup.
 //    Comments are anonymized (not deleted) to preserve reply threads.
 //    Votes are deleted, letting onVoteDeleted decrement aggregates.
 // ---------------------------------------------------------------------------
@@ -137,123 +133,7 @@ export const onUserDeleted = functions
   .region("us-central1")
   .auth.user()
   .onDelete(async (user) => {
-    const uid = user.uid;
-    logger.info(`Cleaning up data for deleted user ${uid}`);
-
-    // Helper: delete all docs from a query in batches of 500
-    const deleteDocs = async (
-      query: FirebaseFirestore.Query
-    ): Promise<number> => {
-      let totalDeleted = 0;
-      let snapshot = await query.limit(500).get();
-
-      while (!snapshot.empty) {
-        const batch = db.batch();
-        for (const doc of snapshot.docs) {
-          batch.delete(doc.ref);
-        }
-        await batch.commit();
-        totalDeleted += snapshot.size;
-        snapshot = await query.limit(500).get();
-      }
-
-      return totalDeleted;
-    };
-
-    // Helper: update all docs from a query in batches of 500
-    const updateDocs = async (
-      query: FirebaseFirestore.Query,
-      data: Record<string, unknown>
-    ): Promise<number> => {
-      let totalUpdated = 0;
-      let snapshot = await query.limit(500).get();
-
-      while (!snapshot.empty) {
-        const batch = db.batch();
-        for (const doc of snapshot.docs) {
-          batch.update(doc.ref, data);
-        }
-        await batch.commit();
-        totalUpdated += snapshot.size;
-        snapshot = await query.limit(500).get();
-      }
-
-      return totalUpdated;
-    };
-
-    // Delete /users/{uid}/suggestionCounts/* subcollection
-    const sugCountsDeleted = await deleteDocs(
-      db.collection("users").doc(uid).collection("suggestionCounts")
-    );
-    logger.info(
-      `Deleted ${sugCountsDeleted} suggestionCounts docs for user ${uid}`
-    );
-
-    // Delete /users/{uid}/reportCounts/* subcollection
-    const repCountsDeleted = await deleteDocs(
-      db.collection("users").doc(uid).collection("reportCounts")
-    );
-    logger.info(
-      `Deleted ${repCountsDeleted} reportCounts docs for user ${uid}`
-    );
-
-    // Delete /users/{uid} document
-    await db.collection("users").doc(uid).delete();
-    logger.info(`Deleted /users/${uid} document`);
-
-    // Delete all suggestions where userId == uid
-    const suggestionsDeleted = await deleteDocs(
-      db.collection("suggestions").where("userId", "==", uid)
-    );
-    logger.info(
-      `Deleted ${suggestionsDeleted} suggestions for user ${uid}`
-    );
-
-    // Delete all reports where reporterUid == uid
-    const reportsDeleted = await deleteDocs(
-      db.collection("reports").where("reporterUid", "==", uid)
-    );
-    logger.info(
-      `Deleted ${reportsDeleted} reports for user ${uid}`
-    );
-
-    // Delete all votes across all restaurants where doc ID == uid
-    // Votes are stored at /restaurants/{restaurantId}/votes/{userId}
-    // Use collectionGroup query to find all vote docs with matching ID.
-    const votesSnapshot = await db.collectionGroup("votes").get();
-    let votesDeleted = 0;
-    const voteBatches: FirebaseFirestore.WriteBatch[] = [db.batch()];
-    let opsInCurrentBatch = 0;
-
-    for (const doc of votesSnapshot.docs) {
-      if (doc.id === uid) {
-        if (opsInCurrentBatch >= 500) {
-          voteBatches.push(db.batch());
-          opsInCurrentBatch = 0;
-        }
-        voteBatches[voteBatches.length - 1].delete(doc.ref);
-        opsInCurrentBatch++;
-        votesDeleted++;
-      }
-    }
-
-    for (const batch of voteBatches) {
-      if (votesDeleted > 0) {
-        await batch.commit();
-      }
-    }
-    logger.info(`Deleted ${votesDeleted} votes for user ${uid}`);
-
-    // Anonymize all comments (preserve threads, remove personal data)
-    const commentsAnonymized = await updateDocs(
-      db.collectionGroup("comments").where("userId", "==", uid),
-      {userId: "deleted", userName: "Deleted user", isInsider: false}
-    );
-    logger.info(
-      `Anonymized ${commentsAnonymized} comments for user ${uid}`
-    );
-
-    logger.info(`Cleanup complete for user ${uid}`);
+    await deleteUserData(db, user.uid);
   });
 
 // ---------------------------------------------------------------------------
