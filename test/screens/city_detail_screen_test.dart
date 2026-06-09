@@ -71,7 +71,7 @@ void main() {
         );
 
         expect(
-          find.text('Turkey Leg Hut'),
+          find.text('The Puddery'),
           findsOneWidget,
         );
       },

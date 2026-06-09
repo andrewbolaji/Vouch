@@ -68,7 +68,7 @@ void main() {
         expect(find.text('Houston, TX'), findsOneWidget);
         // Houston's #1 restaurant visible
         expect(
-          find.text('Turkey Leg Hut'),
+          find.text('The Puddery'),
           findsOneWidget,
         );
       },

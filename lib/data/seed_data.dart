@@ -50,307 +50,204 @@ class SeedData {
     Restaurant(
       id: 'hou-1',
       cityId: 'houston',
-      name: 'Turkey Leg Hut',
-      cuisine: 'Soul Food',
-      imageUrl:
-          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
+      name: 'The Puddery',
+      cuisine: 'Dessert Bar',
+      imageUrl: 'placeholder://restaurant',
       description:
-          'Massive stuffed turkey legs that put Houston on'
-          ' the food map. Lines around the block every'
-          ' weekend.',
+          'Warm bread pudding in every flavor you did not'
+          ' know you needed. The line is the proof.',
       rank: 1,
       voteCount: 2847,
       locations: [
         RestaurantLocation(
-          name: 'Third Ward',
-          address: '4830 Almeda Rd, Houston, TX 77004',
+          name: 'Sugar Land',
+          address: '2643 Town Center Blvd, Sugar Land, TX 77479',
         ),
       ],
       insiderTip:
-          'Go on a weekday to skip the 2-hour weekend'
-          ' wait.',
+          'Go on a weeknight. Weekend lines wrap the'
+          ' building.',
       whatToOrder:
-          'The Loaded Turkey Leg with dirty rice'
-          ' stuffing.',
-      vibeTags: [
-        'Worth the Wait',
-        'Big Portions',
-        'Loud and Fun',
-      ],
+          'Banana pudding bread pudding. Trust this.',
+      vibeTags: ['Sweet Tooth', 'Worth the Wait', 'Date Night'],
     ),
     Restaurant(
       id: 'hou-2',
       cityId: 'houston',
-      name: 'Pappas Bros. Steakhouse',
-      cuisine: 'Steakhouse',
-      imageUrl:
-          'https://images.unsplash.com/photo-1558030006-450675393462?w=800',
+      name: 'Cool Runnings',
+      cuisine: 'Jamaican',
+      imageUrl: 'placeholder://restaurant',
       description:
-          'Old-school Texas steakhouse done right. White'
-          ' tablecloths, perfect cuts, serious wine list.',
+          'Jerk chicken and oxtail that make you forget'
+          ' you are in Texas. Island vibes, Houston heat.',
       rank: 2,
-      voteCount: 2103,
-      priceLevel: 4,
+      voteCount: 2534,
       locations: [
         RestaurantLocation(
-          name: 'Galleria',
-          address:
-              '5839 Westheimer Rd, Houston, TX 77057',
-        ),
-        RestaurantLocation(
-          name: 'Downtown',
-          address:
-              '1200 McKinney St, Houston, TX 77010',
+          name: 'Southwest Houston',
+          address: '7610 Bissonnet St, Houston, TX 77074',
         ),
       ],
-      insiderTip:
-          'Ask for the off-menu bone-in filet.',
-      whatToOrder:
-          'Bone-in ribeye, creamed spinach,'
-          ' au gratin potatoes.',
-      vibeTags: [
-        'Date Night',
-        'Special Occasion',
-        'Classic',
-      ],
+      vibeTags: ['Flavor Bomb', 'Casual', 'Hidden Gem'],
     ),
     Restaurant(
       id: 'hou-3',
       cityId: 'houston',
-      name: "Killen's BBQ",
+      name: 'Corkscrew BBQ',
       cuisine: 'BBQ',
-      imageUrl:
-          'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=800',
+      imageUrl: 'placeholder://restaurant',
       description:
-          'Pitmaster Ronnie Killen serves beef ribs that'
-          ' changed Houston BBQ forever.',
+          'Pitmaster Will Buckman cooks over all-wood fires.'
+          ' Get there early or eat somewhere else.',
       rank: 3,
-      voteCount: 1987,
+      voteCount: 2298,
       locations: [
         RestaurantLocation(
-          name: 'Pearland',
-          address:
-              '3613 E Broadway St, Pearland, TX 77581',
+          name: 'Spring',
+          address: '26608 Keith St, Spring, TX 77373',
         ),
       ],
-      insiderTip:
-          'Arrive by 10:30 AM or the beef ribs sell'
-          ' out.',
-      whatToOrder: 'Beef rib. Just the beef rib.',
-      vibeTags: [
-        'Worth the Drive',
-        'Cash Friendly',
-        'No Frills',
-      ],
+      vibeTags: ['Worth the Drive', 'No Frills', 'Cash Friendly'],
     ),
     Restaurant(
       id: 'hou-4',
       cityId: 'houston',
-      name: 'Underbelly Hospitality',
-      cuisine: 'Modern American',
-      imageUrl:
-          'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800',
+      name: "Dona Leti's",
+      cuisine: 'Mexican',
+      imageUrl: 'placeholder://restaurant',
       description:
-          "Chris Shepherd's love letter to Houston's"
-          ' immigrant food communities.',
+          'Family recipes from Monterrey served out of a'
+          ' tiny spot that punches way above its size.',
       rank: 4,
-      voteCount: 1654,
-      priceLevel: 3,
+      voteCount: 2087,
+      priceLevel: 1,
       locations: [
         RestaurantLocation(
-          name: 'Montrose',
-          address:
-              '1100 Westheimer Rd, Houston, TX 77006',
+          name: 'Northside',
+          address: '611 N Durham Dr, Houston, TX 77007',
         ),
       ],
-      insiderTip:
-          'The menu changes constantly. Trust the chef.',
-      whatToOrder:
-          'Korean braised goat with creamy dumplings.',
-      vibeTags: [
-        'Chef-Driven',
-        'Adventurous',
-        'Date Night',
-      ],
+      vibeTags: ['Cash Friendly', 'No Frills', 'Flavor Bomb'],
     ),
     Restaurant(
       id: 'hou-5',
       cityId: 'houston',
-      name: 'Crawfish & Noodles',
-      cuisine: 'Viet-Cajun',
-      imageUrl:
-          'https://images.unsplash.com/photo-1559847844-5315695dadae?w=800',
+      name: 'Hidden Omakase',
+      cuisine: 'Japanese',
+      imageUrl: 'placeholder://restaurant',
       description:
-          'The restaurant that invented Viet-Cajun'
-          ' crawfish. A Houston original.',
+          'A speakeasy sushi counter you have to know about.'
+          ' Eight seats, one chef, zero compromises.',
       rank: 5,
-      voteCount: 1432,
+      voteCount: 1876,
+      priceLevel: 4,
       locations: [
         RestaurantLocation(
-          name: 'Bellaire',
-          address:
-              '11360 Bellaire Blvd, Houston, TX 77072',
+          name: 'EaDo',
+          address: 'Houston, TX',
         ),
       ],
-      insiderTip:
-          'Crawfish season peaks March through May.',
-      whatToOrder:
-          'Garlic butter crawfish with a side of pho.',
-      vibeTags: [
-        'Only in Houston',
-        'Casual',
-        'Group Friendly',
-      ],
+      vibeTags: ['Special Occasion', 'Omakase', 'Hidden Gem'],
     ),
     Restaurant(
       id: 'hou-6',
       cityId: 'houston',
-      name: 'Himalaya',
-      cuisine: 'Pakistani-Indian',
-      imageUrl:
-          'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800',
+      name: 'Le Jardinier',
+      cuisine: 'French',
+      imageUrl: 'placeholder://restaurant',
       description:
-          "Chef Kaiser Lashkari's Pakistani-Indian gem."
-          ' Featured on every food show that matters.',
+          'Vegetable-forward French fine dining in the'
+          ' Museum District. Light, precise, beautiful.',
       rank: 6,
-      voteCount: 1298,
+      voteCount: 1654,
+      priceLevel: 4,
       locations: [
         RestaurantLocation(
-          name: 'Hillcroft',
-          address:
-              '6652 Southwest Fwy, Houston, TX 77074',
+          name: 'Museum District',
+          address: '1110 Main St, Houston, TX 77002',
         ),
       ],
-      insiderTip:
-          'The fried chicken is secretly the best item.',
-      whatToOrder:
-          'Biryani and the fried chicken.'
-          ' Yes, fried chicken.',
-      vibeTags: [
-        'Hidden Gem',
-        'Cash Friendly',
-        'Flavor Bomb',
-      ],
+      vibeTags: ['Date Night', 'Chef-Driven', 'Clean Vibes'],
     ),
     Restaurant(
       id: 'hou-7',
       cityId: 'houston',
-      name: 'Xochi',
-      cuisine: 'Oaxacan Mexican',
-      imageUrl:
-          'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=800',
+      name: 'Lost and Found',
+      cuisine: 'Cocktail Bar + Small Plates',
+      imageUrl: 'placeholder://restaurant',
       description:
-          'Elevated Oaxacan cuisine in the heart of'
-          ' downtown. Mole flights and mezcal.',
+          'Craft cocktails in a moody Montrose bar.'
+          ' The food menu is short and every item lands.',
       rank: 7,
-      voteCount: 1156,
+      voteCount: 1432,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
-          name: 'Downtown',
-          address:
-              '1777 Walker St, Houston, TX 77010',
+          name: 'Montrose',
+          address: '2606 Dunlavy St, Houston, TX 77006',
         ),
       ],
-      insiderTip:
-          'Order the mole flight to try all seven'
-          ' moles.',
-      whatToOrder: 'Mole flight and duck carnitas.',
-      vibeTags: [
-        'Date Night',
-        'Chef-Driven',
-        'Adventurous',
-      ],
+      vibeTags: ['Good Drinks', 'Date Night', 'Cozy'],
     ),
     Restaurant(
       id: 'hou-8',
       cityId: 'houston',
-      name: 'The Breakfast Klub',
-      cuisine: 'Breakfast/Soul Food',
-      imageUrl:
-          'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800',
+      name: 'Mensho',
+      cuisine: 'Ramen',
+      imageUrl: 'placeholder://restaurant',
       description:
-          'Wings and waffles so good they named a street'
-          ' after the owner.',
+          'Tokyo-born ramen shop with a tori paitan broth'
+          ' that locals queue for on weeknights.',
       rank: 8,
-      voteCount: 1087,
-      priceLevel: 1,
+      voteCount: 1298,
       locations: [
         RestaurantLocation(
           name: 'Midtown',
-          address:
-              '3711 Travis St, Houston, TX 77002',
+          address: '3014 Milam St, Houston, TX 77006',
         ),
       ],
-      insiderTip:
-          'The line moves faster than it looks.',
-      whatToOrder:
-          'Wings and waffles with a side of grits.',
-      vibeTags: [
-        'Worth the Wait',
-        'Breakfast Spot',
-        'Iconic',
-      ],
+      vibeTags: ['Quick Bite', 'Cozy', 'Neighborhood Favorite'],
     ),
     Restaurant(
       id: 'hou-9',
       cityId: 'houston',
-      name: 'Uchi Houston',
-      cuisine: 'Japanese',
-      imageUrl:
-          'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800',
+      name: 'Taste Bar + Kitchen',
+      cuisine: 'New American',
+      imageUrl: 'placeholder://restaurant',
       description:
-          "Tyson Cole's Houston outpost. Creative"
-          ' Japanese that respects tradition.',
+          'Small plates and big flavors in a space'
+          ' that feels like a dinner party you got lucky'
+          ' enough to attend.',
       rank: 9,
-      voteCount: 998,
-      priceLevel: 4,
+      voteCount: 1156,
+      priceLevel: 3,
       locations: [
         RestaurantLocation(
-          name: 'Montrose',
-          address:
-              '904 Westheimer Rd, Houston, TX 77006',
+          name: 'Midtown',
+          address: '3015 Bagby St, Houston, TX 77006',
         ),
       ],
-      insiderTip:
-          'Sit at the bar and let the chef decide.',
-      whatToOrder:
-          'Hama chili, maguro sashimi, P-38.',
-      vibeTags: [
-        'Special Occasion',
-        'Date Night',
-        'Omakase',
-      ],
+      vibeTags: ['Trendy', 'Group Friendly', 'Chef-Driven'],
     ),
     Restaurant(
       id: 'hou-10',
       cityId: 'houston',
-      name: 'Coltivare',
-      cuisine: 'Italian',
-      imageUrl:
-          'https://images.unsplash.com/photo-1498579150354-977475b7ea0b?w=800',
+      name: 'Tatemo',
+      cuisine: 'Japanese Izakaya',
+      imageUrl: 'placeholder://restaurant',
       description:
-          'Farm-to-table Italian in the Heights.'
-          ' Garden out back, pizza perfection inside.',
+          'A Michelin-recognized izakaya tucked into Rice'
+          ' Village. Sake list alone is worth the visit.',
       rank: 10,
-      voteCount: 876,
+      voteCount: 1087,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
-          name: 'Heights',
-          address:
-              '3320 White Oak Dr, Houston, TX 77007',
+          name: 'Rice Village',
+          address: '2438 Rice Blvd, Houston, TX 77005',
         ),
       ],
-      insiderTip:
-          'Tuesday is pizza night. Do not miss it.',
-      whatToOrder:
-          'Wood-fired pizza and the burrata.',
-      vibeTags: [
-        'Farm-to-Table',
-        'Cozy',
-        'Neighborhood Favorite',
-      ],
+      vibeTags: ['Hidden Gem', 'Date Night', 'Chef-Driven'],
     ),
 
     // NYC
