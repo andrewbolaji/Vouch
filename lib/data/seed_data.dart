@@ -94,6 +94,12 @@ class SeedData {
               '8270 W Bellfort Ave, Houston, TX 77071',
         ),
       ],
+      insiderTip:
+          'They do not take phone orders. Order ahead'
+          ' on DoorDash or come in.',
+      whatToOrder:
+          'Brown stew chicken, oxtail, and ackee and'
+          ' saltfish.',
       vibeTags: ['Flavor Bomb', 'Casual', 'Hidden Gem'],
     ),
     Restaurant(
@@ -115,6 +121,12 @@ class SeedData {
               '5517 Broadway St, Ste M, Pearland, TX 77581',
         ),
       ],
+      insiderTip:
+          'Weekend lines wrap the building. Go early or'
+          ' on a weeknight.',
+      whatToOrder:
+          'Banana pudding (any flavor) and the Oreo'
+          ' Croffle.',
       vibeTags: ['Sweet Tooth', 'Worth the Wait', 'Date Night'],
     ),
     Restaurant(
@@ -136,6 +148,12 @@ class SeedData {
           address: '160 W Gray St, Houston, TX 77019',
         ),
       ],
+      insiderTip:
+          'The patio with the downtown skyline view is'
+          ' the spot.',
+      whatToOrder:
+          'Craft cocktails and shareable plates on the'
+          ' patio.',
       vibeTags: ['Good Drinks', 'Lively', 'Patio Views'],
     ),
     Restaurant(
@@ -159,6 +177,12 @@ class SeedData {
               ' 5500 Main St, Ste 122, Houston, TX 77004',
         ),
       ],
+      insiderTip:
+          'Pair lunch with the museum. Patio seats'
+          ' overlook the sculpture garden.',
+      whatToOrder:
+          'The seasonal tasting menu; the burrata and'
+          ' Ora King salmon are standouts.',
       vibeTags: ['Date Night', 'Chef-Driven', 'Clean Vibes'],
     ),
     Restaurant(
@@ -180,6 +204,12 @@ class SeedData {
               '10425 S Post Oak Rd, Houston, TX 77053',
         ),
       ],
+      insiderTip:
+          'Portions are huge. Come hungry or plan to'
+          ' share.',
+      whatToOrder:
+          'Quesabirria tacos with consome, and a'
+          ' strawberry horchata.',
       vibeTags: ['Big Portions', 'Family-Owned', 'Flavor Bomb'],
     ),
     Restaurant(
@@ -203,6 +233,12 @@ class SeedData {
               ' Houston, TX 77056',
         ),
       ],
+      insiderTip:
+          'Reservations are Resy-only and go fast.'
+          ' BYOB with a \$20 corkage.',
+      whatToOrder:
+          'The omakase. The uni and the wagyu larb hand'
+          ' roll are standouts.',
       vibeTags: ['Special Occasion', 'Omakase', 'Hidden Gem'],
     ),
     Restaurant(
@@ -224,6 +260,13 @@ class SeedData {
           address: '4740 Dacoma St, Houston, TX 77092',
         ),
       ],
+      insiderTip:
+          'Tasting-menu only, around 13 seats, Thursday'
+          ' to Saturday. Reservations release a few weeks'
+          ' out and vanish fast.',
+      whatToOrder:
+          'The multi-course masa tasting menu'
+          ' (tasting-menu only). BYOB.',
       vibeTags: ['Hidden Gem', 'Date Night', 'Chef-Driven'],
     ),
     Restaurant(
@@ -244,6 +287,12 @@ class SeedData {
           address: '26608 Keith St, Spring, TX 77373',
         ),
       ],
+      insiderTip:
+          'Arrive by 10 AM on weekends or the brisket'
+          ' is gone.',
+      whatToOrder:
+          'Brisket, beef ribs, and the garlic sausage'
+          ' links.',
       vibeTags: ['Worth the Drive', 'No Frills', 'Cash Friendly'],
     ),
     Restaurant(
@@ -265,6 +314,12 @@ class SeedData {
           address: '3015 Bagby St, Houston, TX 77006',
         ),
       ],
+      insiderTip:
+          'Live music, comedy, and karaoke through the'
+          ' week. Reserve, it gets busy.',
+      whatToOrder:
+          'Chicken and waffles (try the chicken-fried'
+          ' lobster version) and a craft cocktail.',
       vibeTags: ['Lively', 'Group Friendly', 'Comfort Food'],
     ),
 

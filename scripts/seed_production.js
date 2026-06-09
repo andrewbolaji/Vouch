@@ -4,13 +4,20 @@
  * Vouch seed script: writes seed data to Firestore.
  *
  * Usage:
- *   node scripts/seed_production.js --confirm
+ *   node scripts/seed_production.js              # dry run
+ *   node scripts/seed_production.js --confirm    # write new docs only
+ *   node scripts/seed_production.js --force --confirm  # overwrite all docs
  *
  * Requires:
  *   - GOOGLE_APPLICATION_CREDENTIALS env var pointing to a service account key
  *   - OR run after `firebase login` with project access
  *
  * Idempotent: skips docs that already have a createdAt field.
+ * --force: overwrites every doc regardless of createdAt. Preserves original
+ *   createdAt when the doc already has one, always sets updatedAt to now.
+ *   PRE-LAUNCH TOOL ONLY: once real users exist, --force would overwrite
+ *   live voteCount and rank data.
+ *
  * Prints write-count vs skip-count before the --confirm prompt.
  *
  * NEVER call this from client code. One-time admin operation.
@@ -126,15 +133,16 @@ const insiderNotes = {
 
 // ---- Main ----
 
-async function dryRun() {
+async function dryRun(force) {
   let writeCount = 0;
+  let overwriteCount = 0;
   let skipCount = 0;
 
   // Check cities
   for (const city of cities) {
     const doc = await db.collection("cities").doc(city.id).get();
     if (doc.exists && doc.data().createdAt) {
-      skipCount++;
+      if (force) { overwriteCount++; } else { skipCount++; }
     } else {
       writeCount++;
     }
@@ -144,7 +152,7 @@ async function dryRun() {
   for (const r of restaurants) {
     const doc = await db.collection("restaurants").doc(r.id).get();
     if (doc.exists && doc.data().createdAt) {
-      skipCount++;
+      if (force) { overwriteCount++; } else { skipCount++; }
     } else {
       writeCount++;
     }
@@ -159,42 +167,46 @@ async function dryRun() {
       .doc("notes")
       .get();
     if (doc.exists) {
-      skipCount++;
+      if (force) { overwriteCount++; } else { skipCount++; }
     } else {
       writeCount++;
     }
   }
 
-  return { writeCount, skipCount };
+  return { writeCount, overwriteCount, skipCount };
 }
 
-async function seed() {
+async function seed(force) {
   const now = Timestamp.now();
 
   // Seed cities
   for (const city of cities) {
     const ref = db.collection("cities").doc(city.id);
     const doc = await ref.get();
-    if (doc.exists && doc.data().createdAt) {
+    const exists = doc.exists && doc.data().createdAt;
+    if (exists && !force) {
       console.log(`  SKIP city: ${city.id} (already exists)`);
       continue;
     }
-    await ref.set({ ...city, createdAt: now, updatedAt: now });
-    console.log(`  WRITE city: ${city.id}`);
+    const createdAt = exists ? doc.data().createdAt : now;
+    await ref.set({ ...city, createdAt, updatedAt: now });
+    console.log(`  ${exists ? "OVERWRITE" : "WRITE"} city: ${city.id}`);
   }
 
   // Seed restaurants (without insider fields on the doc)
   for (const r of restaurants) {
     const ref = db.collection("restaurants").doc(r.id);
     const doc = await ref.get();
-    if (doc.exists && doc.data().createdAt) {
+    const exists = doc.exists && doc.data().createdAt;
+    if (exists && !force) {
       console.log(`  SKIP restaurant: ${r.id} (already exists)`);
       continue;
     }
+    const createdAt = exists ? doc.data().createdAt : now;
     // Do NOT write insiderTip/whatToOrder to the restaurant doc.
     // Those live in the insiderNotes subcollection.
-    await ref.set({ ...r, createdAt: now, updatedAt: now });
-    console.log(`  WRITE restaurant: ${r.id}`);
+    await ref.set({ ...r, createdAt, updatedAt: now });
+    console.log(`  ${exists ? "OVERWRITE" : "WRITE"} restaurant: ${r.id}`);
   }
 
   // Seed insider notes (subcollection)
@@ -205,45 +217,50 @@ async function seed() {
       .collection("insiderNotes")
       .doc("notes");
     const doc = await ref.get();
-    if (doc.exists) {
+    if (doc.exists && !force) {
       console.log(`  SKIP insiderNotes: ${restaurantId} (already exists)`);
       continue;
     }
     await ref.set(notes);
-    console.log(`  WRITE insiderNotes: ${restaurantId}`);
+    console.log(`  ${doc.exists ? "OVERWRITE" : "WRITE"} insiderNotes: ${restaurantId}`);
   }
 }
 
 async function main() {
   const args = process.argv.slice(2);
+  const force = args.includes("--force");
+  const confirm = args.includes("--confirm");
   const projectId = admin.app().options.projectId || "(unknown)";
 
   console.log(`\nVouch seed script`);
-  console.log(`Target project: ${projectId}\n`);
+  console.log(`Target project: ${projectId}`);
+  if (force) console.log(`Mode: --force (overwrite all docs)`);
+  console.log("");
 
   // Dry run first
   console.log("Scanning existing data...");
-  const { writeCount, skipCount } = await dryRun();
+  const { writeCount, overwriteCount, skipCount } = await dryRun(force);
 
-  console.log(`\n  Documents to write: ${writeCount}`);
-  console.log(`  Documents to skip:  ${skipCount}`);
-  console.log(`  Total:              ${writeCount + skipCount}\n`);
+  console.log(`\n  Documents to write:     ${writeCount}`);
+  console.log(`  Documents to overwrite: ${overwriteCount}`);
+  console.log(`  Documents to skip:      ${skipCount}`);
+  console.log(`  Total:                  ${writeCount + overwriteCount + skipCount}\n`);
 
-  if (writeCount === 0) {
+  if (writeCount + overwriteCount === 0) {
     console.log("Nothing to seed. All documents already exist.");
     process.exit(0);
   }
 
-  if (!args.includes("--confirm")) {
+  if (!confirm) {
     console.log(
       "This is a dry run. To execute, run with --confirm:\n" +
-      "  node scripts/seed_production.js --confirm\n"
+      `  node scripts/seed_production.js${force ? " --force" : ""} --confirm\n`
     );
     process.exit(0);
   }
 
   console.log("Seeding...\n");
-  await seed();
+  await seed(force);
   console.log("\nDone.");
   process.exit(0);
 }
