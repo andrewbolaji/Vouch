@@ -17,6 +17,7 @@ import 'package:vouch/widgets/location_card.dart';
 import 'package:vouch/widgets/paywall_gate.dart';
 import 'package:vouch/widgets/rating_pill.dart';
 import 'package:vouch/widgets/save_button.dart';
+import 'package:vouch/widgets/restaurant_detail_hero.dart';
 import 'package:vouch/widgets/restaurant_image.dart';
 import 'package:vouch/widgets/vote_button.dart';
 
@@ -77,9 +78,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             backgroundColor: AppTheme.background,
             foregroundColor: AppTheme.textPrimary,
             flexibleSpace: FlexibleSpaceBar(
-              background: RestaurantImage(
-                restaurant: restaurant,
-                iconSize: 60,
+              background: RestaurantDetailHero(
+                images: RestaurantImage.resolveImageSources(restaurant),
               ),
             ),
             actions: [
