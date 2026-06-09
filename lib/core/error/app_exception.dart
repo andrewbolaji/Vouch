@@ -28,6 +28,7 @@ enum AuthErrorKind {
   emailAlreadyInUse,
   weakPassword,
   tooManyRequests,
+  requiresRecentLogin,
   accountDeletionFailed,
   unknown,
 }
@@ -69,10 +70,15 @@ class AuthException extends AppException {
         'Wait a few minutes and try again.',
   );
 
+  static const requiresRecentLogin = AuthException(
+    kind: AuthErrorKind.requiresRecentLogin,
+    message: 'For security, please sign in again to confirm deletion.',
+  );
+
   static const accountDeletionFailed = AuthException(
     kind: AuthErrorKind.accountDeletionFailed,
     message: 'Could not delete your account right now. '
-        'Please sign out, sign back in, and try again.',
+        'Please try again later.',
   );
 
   static const unknown = AuthException(

@@ -24,9 +24,12 @@ class MockUserInfo extends Mock implements fb.UserInfo {}
 
 class FakeAuthProvider extends Fake implements fb.AuthProvider {}
 
+class FakeAuthCredential extends Fake implements fb.AuthCredential {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeAuthProvider());
+    registerFallbackValue(FakeAuthCredential());
   });
 
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
@@ -303,24 +306,28 @@ void main() {
       expect(service.isLoading, isFalse);
     });
 
-    test('deleteAccount calls Firebase delete', () async {
+    test('deleteAccount calls Firebase delete and returns uid', () async {
       final service = createService();
       final mockUser = MockFirebaseUser();
 
       when(() => mockAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.uid).thenReturn('uid-to-delete');
       when(() => mockUser.delete()).thenAnswer((_) async {});
 
-      await service.deleteAccount();
+      final uid = await service.deleteAccount();
 
+      expect(uid, 'uid-to-delete');
       verify(() => mockUser.delete()).called(1);
       verify(() => mockStorage.clearAll()).called(1);
     });
 
-    test('deleteAccount requiring recent login throws AuthException', () async {
+    test('deleteAccount with requires-recent-login throws requiresRecentLogin',
+        () async {
       final service = createService();
       final mockUser = MockFirebaseUser();
 
       when(() => mockAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.uid).thenReturn('uid-1');
       when(() => mockUser.delete()).thenThrow(
         fb.FirebaseAuthException(
           code: 'requires-recent-login',
@@ -334,10 +341,31 @@ void main() {
           isA<AuthException>().having(
             (e) => e.kind,
             'kind',
-            AuthErrorKind.accountDeletionFailed,
+            AuthErrorKind.requiresRecentLogin,
           ),
         ),
       );
+    });
+
+    test('reauthenticateWithPassword then deleteAccount succeeds', () async {
+      final service = createService();
+      final mockUser = MockFirebaseUser();
+      final mockCred = MockUserCredential();
+
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.uid).thenReturn('uid-reauth');
+      when(() => mockUser.email).thenReturn('a@b.com');
+      when(
+        () => mockUser.reauthenticateWithCredential(any()),
+      ).thenAnswer((_) async => mockCred);
+      when(() => mockUser.delete()).thenAnswer((_) async {});
+
+      await service.reauthenticateWithPassword('mypassword');
+      final uid = await service.deleteAccount();
+
+      expect(uid, 'uid-reauth');
+      verify(() => mockUser.reauthenticateWithCredential(any())).called(1);
+      verify(() => mockUser.delete()).called(1);
     });
 
     test('authStateChanges updates currentUser', () async {

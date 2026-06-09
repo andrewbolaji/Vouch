@@ -244,6 +244,80 @@ describe("Suggestion submission logic", () => {
 describe("Account deletion cleanup logic", () => {
   const uid = "deleted-user";
 
+  // Helper: simulates exactly what onUserDeleted does.
+  // Kept in sync with the production function in index.ts.
+  async function simulateOnUserDeleted(deletedUid: string) {
+    // Helper: delete all docs from a query in batches
+    const deleteDocs = async (
+      query: FirebaseFirestore.Query
+    ): Promise<number> => {
+      let total = 0;
+      let snap = await query.limit(500).get();
+      while (!snap.empty) {
+        const batch = db.batch();
+        for (const d of snap.docs) batch.delete(d.ref);
+        await batch.commit();
+        total += snap.size;
+        snap = await query.limit(500).get();
+      }
+      return total;
+    };
+
+    // Helper: update all docs from a query
+    const updateDocs = async (
+      query: FirebaseFirestore.Query,
+      data: Record<string, unknown>
+    ): Promise<number> => {
+      let total = 0;
+      let snap = await query.limit(500).get();
+      while (!snap.empty) {
+        const batch = db.batch();
+        for (const d of snap.docs) batch.update(d.ref, data);
+        await batch.commit();
+        total += snap.size;
+        snap = await query.limit(500).get();
+      }
+      return total;
+    };
+
+    // 1. Delete suggestionCounts subcollection
+    await deleteDocs(
+      db.collection("users").doc(deletedUid).collection("suggestionCounts")
+    );
+
+    // 2. Delete reportCounts subcollection
+    await deleteDocs(
+      db.collection("users").doc(deletedUid).collection("reportCounts")
+    );
+
+    // 3. Delete user doc
+    await db.collection("users").doc(deletedUid).delete();
+
+    // 4. Delete suggestions
+    await deleteDocs(
+      db.collection("suggestions").where("userId", "==", deletedUid)
+    );
+
+    // 5. Delete reports
+    await deleteDocs(
+      db.collection("reports").where("reporterUid", "==", deletedUid)
+    );
+
+    // 6. Delete votes (triggers onVoteDeleted which decrements aggregates)
+    const allVotes = await db.collectionGroup("votes").get();
+    const batch = db.batch();
+    for (const d of allVotes.docs) {
+      if (d.id === deletedUid) batch.delete(d.ref);
+    }
+    await batch.commit();
+
+    // 7. Anonymize comments (preserve threads)
+    await updateDocs(
+      db.collectionGroup("comments").where("userId", "==", deletedUid),
+      {userId: "deleted", userName: "Deleted user", isInsider: false}
+    );
+  }
+
   beforeEach(async () => {
     await clearFirestore();
 
@@ -262,6 +336,14 @@ describe("Account deletion cleanup logic", () => {
       .doc("2026-05-26")
       .set({count: 1, date: "2026-05-26"});
 
+    // Seed report counts
+    await db
+      .collection("users")
+      .doc(uid)
+      .collection("reportCounts")
+      .doc("2026-06-09")
+      .set({count: 2, date: "2026-06-09"});
+
     // Seed suggestions
     await db.collection("suggestions").doc("s1").set({
       userId: uid,
@@ -276,6 +358,24 @@ describe("Account deletion cleanup logic", () => {
       type: "general",
       text: "Other suggestion",
       status: "pending",
+    });
+
+    // Seed reports
+    await db.collection("reports").doc("r1").set({
+      reporterUid: uid,
+      commentId: "c99",
+      commentPath: "restaurants/hou-1/comments/c99",
+      restaurantId: "hou-1",
+      reason: "spam",
+    });
+
+    // Seed a report from another user (should NOT be deleted)
+    await db.collection("reports").doc("r2").set({
+      reporterUid: "other-user",
+      commentId: "c99",
+      commentPath: "restaurants/hou-1/comments/c99",
+      restaurantId: "hou-1",
+      reason: "harassment",
     });
 
     // Seed votes
@@ -297,92 +397,81 @@ describe("Account deletion cleanup logic", () => {
       .doc("other-user")
       .set({createdAt: Timestamp.now()});
 
-    // Seed comments
+    // Seed comments (with isInsider to verify anonymization clears it)
     await db
       .collection("restaurants")
       .doc("hou-1")
       .collection("comments")
       .doc("c1")
-      .set({userId: uid, text: "My comment"});
-    // Another user's comment (should NOT be deleted)
+      .set({
+        userId: uid,
+        userName: "DeleteMe",
+        text: "My comment",
+        isInsider: true,
+      });
+    // A reply to the deleted user's comment from another user
+    await db
+      .collection("restaurants")
+      .doc("hou-1")
+      .collection("comments")
+      .doc("c3")
+      .set({
+        userId: "other-user",
+        userName: "OtherUser",
+        text: "Reply to deleted user",
+        parentId: "c1",
+      });
+    // Another user's comment (should NOT be touched)
     await db
       .collection("restaurants")
       .doc("hou-1")
       .collection("comments")
       .doc("c2")
-      .set({userId: "other-user", text: "Other comment"});
+      .set({userId: "other-user", userName: "OtherUser", text: "Other comment"});
   });
 
   afterAll(async () => {
     await clearFirestore();
   });
 
-  test("cleanup removes only the deleted user's data", async () => {
-    // Simulate what onUserDeleted does
-    // 1. Delete suggestionCounts subcollection
-    const countsSnap = await db
-      .collection("users")
-      .doc(uid)
-      .collection("suggestionCounts")
-      .get();
-    const batch1 = db.batch();
-    for (const d of countsSnap.docs) {
-      batch1.delete(d.ref);
-    }
-    await batch1.commit();
+  test("cleanup removes user data and anonymizes comments", async () => {
+    await simulateOnUserDeleted(uid);
 
-    // 2. Delete user doc
-    await db.collection("users").doc(uid).delete();
-
-    // 3. Delete suggestions by userId
-    const suggestionsSnap = await db
-      .collection("suggestions")
-      .where("userId", "==", uid)
-      .get();
-    const batch2 = db.batch();
-    for (const d of suggestionsSnap.docs) {
-      batch2.delete(d.ref);
-    }
-    await batch2.commit();
-
-    // 4. Delete votes with doc ID matching uid
-    const allVotes = await db.collectionGroup("votes").get();
-    const batch3 = db.batch();
-    for (const d of allVotes.docs) {
-      if (d.id === uid) {
-        batch3.delete(d.ref);
-      }
-    }
-    await batch3.commit();
-
-    // 5. Delete comments with userId matching
-    const userComments = await db
-      .collectionGroup("comments")
-      .where("userId", "==", uid)
-      .get();
-    const batch4 = db.batch();
-    for (const d of userComments.docs) {
-      batch4.delete(d.ref);
-    }
-    await batch4.commit();
-
-    // VERIFY: deleted user's data is gone
+    // VERIFY: user doc gone
     const userDoc = await db.collection("users").doc(uid).get();
     expect(userDoc.exists).toBe(false);
 
-    const userCounts = await db
+    // VERIFY: suggestionCounts gone
+    const sugCounts = await db
       .collection("users")
       .doc(uid)
       .collection("suggestionCounts")
       .get();
-    expect(userCounts.size).toBe(0);
+    expect(sugCounts.size).toBe(0);
 
+    // VERIFY: reportCounts gone
+    const repCounts = await db
+      .collection("users")
+      .doc(uid)
+      .collection("reportCounts")
+      .get();
+    expect(repCounts.size).toBe(0);
+
+    // VERIFY: suggestions gone
     const userSuggestions = await db
       .collection("suggestions")
       .where("userId", "==", uid)
       .get();
     expect(userSuggestions.size).toBe(0);
 
+    // VERIFY: reports gone
+    const userReports = await db
+      .collection("reports")
+      .where("reporterUid", "==", uid)
+      .get();
+    expect(userReports.size).toBe(0);
+
+    // VERIFY: vote doc gone
     const userVote = await db
       .collection("restaurants")
       .doc("hou-1")
@@ -391,15 +480,24 @@ describe("Account deletion cleanup logic", () => {
       .get();
     expect(userVote.exists).toBe(false);
 
-    const userComment = await db
+    // VERIFY: comment anonymized (not deleted)
+    const comment = await db
       .collection("restaurants")
       .doc("hou-1")
       .collection("comments")
       .doc("c1")
       .get();
-    expect(userComment.exists).toBe(false);
+    expect(comment.exists).toBe(true);
+    expect(comment.data()?.userId).toBe("deleted");
+    expect(comment.data()?.userName).toBe("Deleted user");
+    expect(comment.data()?.isInsider).toBe(false);
+    expect(comment.data()?.text).toBe("My comment");
+  });
 
-    // VERIFY: other user's data is untouched
+  test("other user's data is untouched after deletion", async () => {
+    await simulateOnUserDeleted(uid);
+
+    // Other user's suggestion survives
     const otherSuggestion = await db
       .collection("suggestions")
       .doc("s2")
@@ -407,6 +505,12 @@ describe("Account deletion cleanup logic", () => {
     expect(otherSuggestion.exists).toBe(true);
     expect(otherSuggestion.data()?.userId).toBe("other-user");
 
+    // Other user's report survives
+    const otherReport = await db.collection("reports").doc("r2").get();
+    expect(otherReport.exists).toBe(true);
+    expect(otherReport.data()?.reporterUid).toBe("other-user");
+
+    // Other user's vote survives
     const otherVote = await db
       .collection("restaurants")
       .doc("hou-1")
@@ -415,6 +519,7 @@ describe("Account deletion cleanup logic", () => {
       .get();
     expect(otherVote.exists).toBe(true);
 
+    // Other user's comment untouched
     const otherComment = await db
       .collection("restaurants")
       .doc("hou-1")
@@ -423,5 +528,48 @@ describe("Account deletion cleanup logic", () => {
       .get();
     expect(otherComment.exists).toBe(true);
     expect(otherComment.data()?.userId).toBe("other-user");
+
+    // Reply to deleted user's comment is untouched
+    const reply = await db
+      .collection("restaurants")
+      .doc("hou-1")
+      .collection("comments")
+      .doc("c3")
+      .get();
+    expect(reply.exists).toBe(true);
+    expect(reply.data()?.userId).toBe("other-user");
+    expect(reply.data()?.parentId).toBe("c1");
+  });
+
+  test("vote deletion would trigger aggregate decrement", async () => {
+    // Verify initial voteCount
+    const before = await db.collection("restaurants").doc("hou-1").get();
+    expect(before.data()?.voteCount).toBe(50);
+
+    // Delete the vote doc (simulating what onUserDeleted does)
+    await db
+      .collection("restaurants")
+      .doc("hou-1")
+      .collection("votes")
+      .doc(uid)
+      .delete();
+
+    // Simulate what onVoteDeleted trigger does
+    await db
+      .collection("restaurants")
+      .doc("hou-1")
+      .update({voteCount: FieldValue.increment(-1)});
+
+    const after = await db.collection("restaurants").doc("hou-1").get();
+    expect(after.data()?.voteCount).toBe(49);
+
+    // Other user's vote still exists
+    const otherVote = await db
+      .collection("restaurants")
+      .doc("hou-1")
+      .collection("votes")
+      .doc("other-user")
+      .get();
+    expect(otherVote.exists).toBe(true);
   });
 });

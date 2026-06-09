@@ -285,16 +285,31 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Delete the current user's account.
-  /// Throws [AuthException] on failure (often requires recent sign-in).
-  Future<void> deleteAccount() async {
+  ///
+  /// Returns the deleted user's UID so the caller can clean up
+  /// uid-scoped local data (SharedPreferences keys, etc.) after
+  /// the auth record is gone and [currentUser] is null.
+  ///
+  /// Throws [AuthException.requiresRecentLogin] if Firebase demands
+  /// a fresh sign-in. The caller should re-auth and retry once.
+  /// Throws [AuthException.accountDeletionFailed] on other failures.
+  Future<String> deleteAccount() async {
+    final uid = _firebaseAuth!.currentUser?.uid;
+    if (uid == null) {
+      throw AuthException.accountDeletionFailed;
+    }
+
     _setLoading(true);
     try {
-      await _firebaseAuth!.currentUser!
+      await _firebaseAuth.currentUser!
           .delete()
           .timeout(_authTimeout, onTimeout: _onTimeout);
       await _clearPersistedData();
-    } on fb.FirebaseAuthException catch (_) {
+    } on fb.FirebaseAuthException catch (e) {
       _setLoading(false);
+      if (e.code == 'requires-recent-login') {
+        throw AuthException.requiresRecentLogin;
+      }
       throw AuthException.accountDeletionFailed;
     } on TimeoutException {
       _setLoading(false);
@@ -304,7 +319,59 @@ class AuthService extends ChangeNotifier {
       throw AuthException.accountDeletionFailed;
     }
     _setLoading(false);
+    return uid;
   }
+
+  /// Re-authenticate the current email/password user.
+  ///
+  /// Call before retrying [deleteAccount] when it throws
+  /// [AuthException.requiresRecentLogin].
+  Future<void> reauthenticateWithPassword(String password) async {
+    final user = _firebaseAuth!.currentUser;
+    if (user == null || user.email == null) {
+      throw AuthException.accountDeletionFailed;
+    }
+    try {
+      final credential = fb.EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user
+          .reauthenticateWithCredential(credential)
+          .timeout(_authTimeout, onTimeout: _onTimeout);
+    } on fb.FirebaseAuthException catch (e) {
+      throw _mapAuthException(e);
+    } on TimeoutException {
+      throw const NetworkException();
+    }
+  }
+
+  /// Re-authenticate the current user via their OAuth provider
+  /// (Google or Apple). Returns the provider ID used, or throws.
+  Future<void> reauthenticateWithProvider() async {
+    final user = _firebaseAuth!.currentUser;
+    if (user == null) throw AuthException.accountDeletionFailed;
+
+    final isGoogle =
+        user.providerData.any((p) => p.providerId == 'google.com');
+    final isApple =
+        user.providerData.any((p) => p.providerId == 'apple.com');
+
+    try {
+      if (isGoogle) {
+        await user.reauthenticateWithProvider(fb.GoogleAuthProvider());
+      } else if (isApple) {
+        await user.reauthenticateWithProvider(fb.AppleAuthProvider());
+      } else {
+        throw AuthException.accountDeletionFailed;
+      }
+    } on fb.FirebaseAuthException catch (e) {
+      throw _mapAuthException(e);
+    }
+  }
+
+  /// The sign-in method of the current user, or null.
+  AuthMethod? get currentAuthMethod => _currentUser?.method;
 
   /// Send a password reset email.
   Future<void> sendPasswordResetEmail(String email) async {

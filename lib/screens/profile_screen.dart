@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vouch/config/brand_config.dart';
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/providers/app_state.dart';
@@ -170,7 +171,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         title: Text('Delete account?', style: AppTheme.headlineLarge),
         content: Text(
-          'This will permanently delete your account. '
+          'This will permanently delete your account and all your data. '
           'This cannot be undone.',
           style: AppTheme.bodyMedium,
         ),
@@ -187,27 +188,7 @@ class ProfileScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(dialogContext).pop();
-              final auth = context.read<AuthService>();
-              try {
-                await auth.deleteAccount();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Account deleted.'),
-                      backgroundColor: AppTheme.accent,
-                    ),
-                  );
-                }
-              } on AppException catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.message),
-                      backgroundColor: AppTheme.error,
-                    ),
-                  );
-                }
-              }
+              await _executeAccountDeletion(context);
             },
             child: Text(
               'Delete',
@@ -219,6 +200,242 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
     ));
+  }
+
+  /// Attempts deletion. On requires-recent-login, prompts re-auth
+  /// and retries exactly once.
+  static Future<void> _executeAccountDeletion(BuildContext context) async {
+    final auth = context.read<AuthService>();
+    try {
+      final uid = await auth.deleteAccount();
+      await _clearLocalUserData(uid);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Account deleted.'),
+            backgroundColor: AppTheme.accent,
+          ),
+        );
+      }
+    } on AuthException catch (e) {
+      if (e.kind == AuthErrorKind.requiresRecentLogin && context.mounted) {
+        await _showReauthDialog(context);
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    } on AppException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Shows a re-auth dialog, then retries deletion exactly once.
+  static Future<void> _showReauthDialog(BuildContext context) async {
+    final auth = context.read<AuthService>();
+    final method = auth.currentAuthMethod;
+
+    if (method == AuthMethod.email) {
+      await _showPasswordReauthDialog(context);
+    } else if (method == AuthMethod.google || method == AuthMethod.apple) {
+      await _showProviderReauthDialog(context, method!);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Please sign out, sign back in, and try again.',
+            ),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  static Future<void> _showPasswordReauthDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        title: Text(
+          'Confirm your password',
+          style: AppTheme.headlineLarge,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'For security, enter your password to delete your account.',
+              style: AppTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: 'Password',
+                hintStyle: AppTheme.bodyMedium,
+                filled: true,
+                fillColor: AppTheme.surfaceVariant,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Cancel',
+              style: AppTheme.buttonText.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              'Confirm and delete',
+              style: AppTheme.buttonText.copyWith(
+                color: AppTheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final password = controller.text;
+
+    final auth = context.read<AuthService>();
+    try {
+      await auth.reauthenticateWithPassword(password);
+      final uid = await auth.deleteAccount();
+      await _clearLocalUserData(uid);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Account deleted.'),
+            backgroundColor: AppTheme.accent,
+          ),
+        );
+      }
+    } on AppException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  static Future<void> _showProviderReauthDialog(
+    BuildContext context,
+    AuthMethod method,
+  ) async {
+    final providerName = method == AuthMethod.google ? 'Google' : 'Apple';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        title: Text(
+          'Sign in again to delete',
+          style: AppTheme.headlineLarge,
+        ),
+        content: Text(
+          'For security, sign in with $providerName again '
+          'to confirm account deletion.',
+          style: AppTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Cancel',
+              style: AppTheme.buttonText.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              'Sign in with $providerName',
+              style: AppTheme.buttonText.copyWith(
+                color: AppTheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final auth = context.read<AuthService>();
+    try {
+      await auth.reauthenticateWithProvider();
+      final uid = await auth.deleteAccount();
+      await _clearLocalUserData(uid);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Account deleted.'),
+            backgroundColor: AppTheme.accent,
+          ),
+        );
+      }
+    } on AppException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Clears uid-scoped SharedPreferences keys after account deletion.
+  static Future<void> _clearLocalUserData(String uid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('saved_restaurant_ids_$uid');
+      await prefs.remove('suggestion_remaining_$uid');
+      await prefs.remove('voted_restaurant_ids');
+      await prefs.remove('notifications_ranking_alerts');
+      await prefs.remove('notifications_new_cities');
+      await prefs.remove('notifications_weekly_digest');
+    } on Exception catch (_) {
+      // Best effort; failing to clear local prefs is not fatal.
+    }
   }
 
   static void _showAboutDialog(BuildContext context) {
