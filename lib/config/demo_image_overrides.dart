@@ -129,8 +129,8 @@ const Map<String, DemoImagePaths> kDemoImageOverrides = {
   "top sushi": DemoImagePaths("assets/demo/Top Sushi.png"),
   // No-primary pairs (first secondary used as primary)
   "hidden omakase": DemoImagePaths(
-    "assets/demo/Hidden Omakase inside.png",
     "assets/demo/Hidden Omakase uni.png",
+    "assets/demo/Hidden Omakase inside.png",
   ),
   "march": DemoImagePaths(
     "assets/demo/March 1.png",

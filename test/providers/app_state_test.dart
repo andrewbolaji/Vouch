@@ -52,7 +52,7 @@ void main() {
 
       final result = state.restaurantById('hou-1');
       expect(result, isNotNull);
-      expect(result!.name, 'The Puddery');
+      expect(result!.name, 'Mensho');
     });
 
     test('restaurantById returns null for invalid id', () async {

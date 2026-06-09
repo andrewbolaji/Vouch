@@ -84,11 +84,11 @@ void main() {
         await tester.pumpAndSettle(seedLoadDuration);
 
         expect(
-          find.text('The Puddery'),
+          find.text('Mensho'),
           findsOneWidget,
         );
 
-        await tester.tap(find.text('The Puddery'));
+        await tester.tap(find.text('Mensho'));
         await tester.pumpAndSettle(seedLoadDuration);
 
         expect(
@@ -120,7 +120,7 @@ void main() {
         await tester.pumpAndSettle(seedLoadDuration);
 
         expect(
-          find.text('The Puddery'),
+          find.text('Mensho'),
           findsOneWidget,
         );
         expect(

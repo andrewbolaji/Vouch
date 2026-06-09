@@ -26,7 +26,7 @@ void main() {
 
         // Top 5 active by default — rank 1 visible
         expect(
-          find.text('The Puddery'),
+          find.text('Mensho'),
           findsOneWidget,
         );
 
@@ -132,7 +132,7 @@ void main() {
         );
         await tester.pumpAndSettle(seedLoadDuration);
 
-        await tester.tap(find.text('The Puddery'));
+        await tester.tap(find.text('Mensho'));
         await tester.pumpAndSettle(seedLoadDuration);
 
         expect(

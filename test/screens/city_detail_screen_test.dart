@@ -71,7 +71,7 @@ void main() {
         );
 
         expect(
-          find.text('The Puddery'),
+          find.text('Mensho'),
           findsOneWidget,
         );
       },

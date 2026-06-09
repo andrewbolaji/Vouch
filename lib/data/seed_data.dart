@@ -50,26 +50,30 @@ class SeedData {
     Restaurant(
       id: 'hou-1',
       cityId: 'houston',
-      name: 'The Puddery',
-      cuisine: 'Dessert Bar',
+      name: 'Mensho',
+      cuisine: 'Ramen',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Warm bread pudding in every flavor you did not'
-          ' know you needed. The line is the proof.',
+          'Tokyo ramen master Tomoharu Shono\'s Houston'
+          ' shop. Michelin-recognized, known for a'
+          ' wagyu-meets-Texas-BBQ bowl.',
       rank: 1,
       voteCount: 2847,
       locations: [
         RestaurantLocation(
-          name: 'Sugar Land',
-          address: '2643 Town Center Blvd, Sugar Land, TX 77479',
+          name: 'Chinatown',
+          address:
+              '9889 Bellaire Blvd, Ste C308, Houston, TX 77036',
         ),
       ],
       insiderTip:
-          'Go on a weeknight. Weekend lines wrap the'
-          ' building.',
+          'No reservations and lines form.'
+          ' Go off-peak, around 4 PM.',
       whatToOrder:
-          'Banana pudding bread pudding. Trust this.',
-      vibeTags: ['Sweet Tooth', 'Worth the Wait', 'Date Night'],
+          'The Wagyu Texas BBQ Tantanmen (smoked A5'
+          ' beef). Matcha Duck Ramen for something'
+          ' different.',
+      vibeTags: ['Quick Bite', 'Cozy', 'Neighborhood Favorite'],
     ),
     Restaurant(
       id: 'hou-2',
@@ -78,14 +82,16 @@ class SeedData {
       cuisine: 'Jamaican',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Jerk chicken and oxtail that make you forget'
-          ' you are in Texas. Island vibes, Houston heat.',
+          'Authentic Jamaican and Caribbean cooking from'
+          ' a Jamaica-native chef. The brown stew chicken'
+          ' and oxtail are the move.',
       rank: 2,
       voteCount: 2534,
       locations: [
         RestaurantLocation(
           name: 'Southwest Houston',
-          address: '7610 Bissonnet St, Houston, TX 77074',
+          address:
+              '8270 W Bellfort Ave, Houston, TX 77071',
         ),
       ],
       vibeTags: ['Flavor Bomb', 'Casual', 'Hidden Gem'],
@@ -93,14 +99,145 @@ class SeedData {
     Restaurant(
       id: 'hou-3',
       cityId: 'houston',
+      name: 'The Puddery',
+      cuisine: 'Dessert',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'Banana pudding in 30-plus flavors, served in a'
+          ' cup, plus the famous Oreo Croffle. The spot'
+          ' Keith Lee called the best dessert of his life.',
+      rank: 3,
+      voteCount: 2298,
+      locations: [
+        RestaurantLocation(
+          name: 'Pearland',
+          address:
+              '5517 Broadway St, Ste M, Pearland, TX 77581',
+        ),
+      ],
+      vibeTags: ['Sweet Tooth', 'Worth the Wait', 'Date Night'],
+    ),
+    Restaurant(
+      id: 'hou-4',
+      cityId: 'houston',
+      name: 'Lost and Found',
+      cuisine: 'Cocktail Bar + Kitchen',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'A lively Midtown bar with colorful craft'
+          ' cocktails, a downtown-view patio, and a famous'
+          ' Travis Scott mural.',
+      rank: 4,
+      voteCount: 2087,
+      priceLevel: 3,
+      locations: [
+        RestaurantLocation(
+          name: 'Midtown',
+          address: '160 W Gray St, Houston, TX 77019',
+        ),
+      ],
+      vibeTags: ['Good Drinks', 'Lively', 'Patio Views'],
+    ),
+    Restaurant(
+      id: 'hou-5',
+      cityId: 'houston',
+      name: 'Le Jardinier',
+      cuisine: 'French',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'Vegetable-forward modern French inside the'
+          ' MFAH. Michelin-starred, from chef Alain'
+          ' Verzeroli.',
+      rank: 5,
+      voteCount: 1876,
+      priceLevel: 4,
+      locations: [
+        RestaurantLocation(
+          name: 'Museum District',
+          address:
+              'Museum of Fine Arts (Kinder Building),'
+              ' 5500 Main St, Ste 122, Houston, TX 77004',
+        ),
+      ],
+      vibeTags: ['Date Night', 'Chef-Driven', 'Clean Vibes'],
+    ),
+    Restaurant(
+      id: 'hou-6',
+      cityId: 'houston',
+      name: "Dona Leti's",
+      cuisine: 'Mexican',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'H-Mex done big. Family-owned, named for the'
+          " owners' late mother, famous for quesabirria"
+          ' tacos and massive portions.',
+      rank: 6,
+      voteCount: 1654,
+      locations: [
+        RestaurantLocation(
+          name: 'Southwest Houston',
+          address:
+              '10425 S Post Oak Rd, Houston, TX 77053',
+        ),
+      ],
+      vibeTags: ['Big Portions', 'Family-Owned', 'Flavor Bomb'],
+    ),
+    Restaurant(
+      id: 'hou-7',
+      cityId: 'houston',
+      name: 'Hidden Omakase',
+      cuisine: 'Japanese',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'A hidden, dark 18-seat sushi counter sealed off'
+          ' from the strip mall outside. Chef-led omakase,'
+          ' BYOB.',
+      rank: 7,
+      voteCount: 1432,
+      priceLevel: 4,
+      locations: [
+        RestaurantLocation(
+          name: 'Galleria / Uptown',
+          address:
+              '5353 W Alabama St, Ste 102,'
+              ' Houston, TX 77056',
+        ),
+      ],
+      vibeTags: ['Special Occasion', 'Omakase', 'Hidden Gem'],
+    ),
+    Restaurant(
+      id: 'hou-8',
+      cityId: 'houston',
+      name: 'Tatemo',
+      cuisine: 'Modern Mexican (Masa Tasting Menu)',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          "Houston's Michelin-starred Mexican tasting-menu"
+          ' spot, built entirely around heirloom corn and'
+          ' house-nixtamalized masa. Chef Emmanuel Chavez.',
+      rank: 8,
+      voteCount: 1298,
+      priceLevel: 4,
+      locations: [
+        RestaurantLocation(
+          name: 'Spring Branch',
+          address: '4740 Dacoma St, Houston, TX 77092',
+        ),
+      ],
+      vibeTags: ['Hidden Gem', 'Date Night', 'Chef-Driven'],
+    ),
+    Restaurant(
+      id: 'hou-9',
+      cityId: 'houston',
       name: 'Corkscrew BBQ',
       cuisine: 'BBQ',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Pitmaster Will Buckman cooks over all-wood fires.'
-          ' Get there early or eat somewhere else.',
-      rank: 3,
-      voteCount: 2298,
+          'Pitmaster Will Buckman cooks over all-wood'
+          ' fires. Michelin-starred in 2024. Get there'
+          ' early or eat somewhere else.',
+      rank: 9,
+      voteCount: 1156,
       locations: [
         RestaurantLocation(
           name: 'Spring',
@@ -110,116 +247,17 @@ class SeedData {
       vibeTags: ['Worth the Drive', 'No Frills', 'Cash Friendly'],
     ),
     Restaurant(
-      id: 'hou-4',
-      cityId: 'houston',
-      name: "Dona Leti's",
-      cuisine: 'Mexican',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Family recipes from Monterrey served out of a'
-          ' tiny spot that punches way above its size.',
-      rank: 4,
-      voteCount: 2087,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Northside',
-          address: '611 N Durham Dr, Houston, TX 77007',
-        ),
-      ],
-      vibeTags: ['Cash Friendly', 'No Frills', 'Flavor Bomb'],
-    ),
-    Restaurant(
-      id: 'hou-5',
-      cityId: 'houston',
-      name: 'Hidden Omakase',
-      cuisine: 'Japanese',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'A speakeasy sushi counter you have to know about.'
-          ' Eight seats, one chef, zero compromises.',
-      rank: 5,
-      voteCount: 1876,
-      priceLevel: 4,
-      locations: [
-        RestaurantLocation(
-          name: 'EaDo',
-          address: 'Houston, TX',
-        ),
-      ],
-      vibeTags: ['Special Occasion', 'Omakase', 'Hidden Gem'],
-    ),
-    Restaurant(
-      id: 'hou-6',
-      cityId: 'houston',
-      name: 'Le Jardinier',
-      cuisine: 'French',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Vegetable-forward French fine dining in the'
-          ' Museum District. Light, precise, beautiful.',
-      rank: 6,
-      voteCount: 1654,
-      priceLevel: 4,
-      locations: [
-        RestaurantLocation(
-          name: 'Museum District',
-          address: '1110 Main St, Houston, TX 77002',
-        ),
-      ],
-      vibeTags: ['Date Night', 'Chef-Driven', 'Clean Vibes'],
-    ),
-    Restaurant(
-      id: 'hou-7',
-      cityId: 'houston',
-      name: 'Lost and Found',
-      cuisine: 'Cocktail Bar + Small Plates',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Craft cocktails in a moody Montrose bar.'
-          ' The food menu is short and every item lands.',
-      rank: 7,
-      voteCount: 1432,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'Montrose',
-          address: '2606 Dunlavy St, Houston, TX 77006',
-        ),
-      ],
-      vibeTags: ['Good Drinks', 'Date Night', 'Cozy'],
-    ),
-    Restaurant(
-      id: 'hou-8',
-      cityId: 'houston',
-      name: 'Mensho',
-      cuisine: 'Ramen',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Tokyo-born ramen shop with a tori paitan broth'
-          ' that locals queue for on weeknights.',
-      rank: 8,
-      voteCount: 1298,
-      locations: [
-        RestaurantLocation(
-          name: 'Midtown',
-          address: '3014 Milam St, Houston, TX 77006',
-        ),
-      ],
-      vibeTags: ['Quick Bite', 'Cozy', 'Neighborhood Favorite'],
-    ),
-    Restaurant(
-      id: 'hou-9',
+      id: 'hou-10',
       cityId: 'houston',
       name: 'Taste Bar + Kitchen',
-      cuisine: 'New American',
+      cuisine: 'Southern Comfort + Cocktails',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Small plates and big flavors in a space'
-          ' that feels like a dinner party you got lucky'
-          ' enough to attend.',
-      rank: 9,
-      voteCount: 1156,
+          'Globally-spun Southern comfort from chef Don'
+          ' Bowie. An over-the-top chicken-and-waffles'
+          ' menu, craft cocktails, and live entertainment.',
+      rank: 10,
+      voteCount: 1087,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -227,27 +265,7 @@ class SeedData {
           address: '3015 Bagby St, Houston, TX 77006',
         ),
       ],
-      vibeTags: ['Trendy', 'Group Friendly', 'Chef-Driven'],
-    ),
-    Restaurant(
-      id: 'hou-10',
-      cityId: 'houston',
-      name: 'Tatemo',
-      cuisine: 'Japanese Izakaya',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'A Michelin-recognized izakaya tucked into Rice'
-          ' Village. Sake list alone is worth the visit.',
-      rank: 10,
-      voteCount: 1087,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'Rice Village',
-          address: '2438 Rice Blvd, Houston, TX 77005',
-        ),
-      ],
-      vibeTags: ['Hidden Gem', 'Date Night', 'Chef-Driven'],
+      vibeTags: ['Lively', 'Group Friendly', 'Comfort Food'],
     ),
 
     // NYC

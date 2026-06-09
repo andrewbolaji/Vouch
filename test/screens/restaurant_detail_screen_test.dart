@@ -61,7 +61,7 @@ void main() {
         const Duration(milliseconds: 700),
       );
 
-      expect(find.text('The Puddery'), findsOneWidget);
+      expect(find.text('Mensho'), findsOneWidget);
     });
 
     testWidgets('has comment input', (tester) async {
