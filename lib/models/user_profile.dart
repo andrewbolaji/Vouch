@@ -15,6 +15,7 @@ abstract class UserProfile with _$UserProfile {
     String? photoUrl,
     @Default('free') String membershipTier,
     @Default([]) List<String> savedRestaurantIds,
+    @Default([]) List<String> blockedUserIds,
   }) = _UserProfile;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) =>

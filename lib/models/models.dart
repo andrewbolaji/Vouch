@@ -2,6 +2,7 @@ export 'city.dart';
 export 'comment.dart';
 export 'insider_notes.dart';
 export 'membership.dart';
+export 'report.dart';
 export 'restaurant.dart';
 export 'suggestion.dart';
 export 'timestamp_converter.dart';

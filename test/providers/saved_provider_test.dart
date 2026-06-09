@@ -70,6 +70,15 @@ class FakeUserRepository implements UserRepository {
   Future<void> createUser(UserProfile profile) => throw UnimplementedError();
   @override
   Future<void> updateLastActive(String uid) => throw UnimplementedError();
+  @override
+  Future<void> addBlock(String blockerUid, String blockedUid) =>
+      throw UnimplementedError();
+  @override
+  Future<void> removeBlock(String blockerUid, String blockedUid) =>
+      throw UnimplementedError();
+  @override
+  Future<List<String>> getBlockedIds(String uid) =>
+      throw UnimplementedError();
 }
 
 // -- Helpers --

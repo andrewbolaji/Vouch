@@ -10,10 +10,16 @@ class CommentTile extends StatelessWidget {
     required this.comment, super.key,
     this.replies = const [],
     this.onReply,
+    this.onReport,
+    this.onBlock,
+    this.isOwnComment = false,
   });
   final Comment comment;
   final List<Comment> replies;
   final ValueChanged<String>? onReply;
+  final VoidCallback? onReport;
+  final VoidCallback? onBlock;
+  final bool isOwnComment;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +48,36 @@ class CommentTile extends StatelessWidget {
               ],
               const Spacer(),
               Text(timeAgo(comment.createdAt), style: AppTheme.bodySmall),
+              if (!isOwnComment && (onReport != null || onBlock != null))
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    iconSize: 18,
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: AppTheme.textTertiary,
+                      size: 18,
+                    ),
+                    onSelected: (value) {
+                      if (value == 'report') onReport?.call();
+                      if (value == 'block') onBlock?.call();
+                    },
+                    itemBuilder: (context) => [
+                      if (onReport != null)
+                        const PopupMenuItem(
+                          value: 'report',
+                          child: Text('Report comment'),
+                        ),
+                      if (onBlock != null)
+                        const PopupMenuItem(
+                          value: 'block',
+                          child: Text('Block this user'),
+                        ),
+                    ],
+                  ),
+                ),
             ],
           ),
           Padding(

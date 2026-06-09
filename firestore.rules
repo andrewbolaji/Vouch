@@ -120,6 +120,41 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow write: if false;
       }
+
+      // ---------------------------------------------------
+      // reportCounts subcollection
+      //
+      // Client increments after each report submission.
+      // Rate-limited to kDailyReportCap (5) per day.
+      // ---------------------------------------------------
+      match /reportCounts/{dateKey} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid);
+        allow update: if isOwner(uid);
+      }
+    }
+
+    // -------------------------------------------------------
+    // reports - user can create own, read only own, never list all
+    //
+    // Reports queue for manual admin review in the Firebase console.
+    // No client can read the full collection or other users' reports.
+    // -------------------------------------------------------
+    match /reports/{reportId} {
+      allow read: if isAuthenticated()
+        && resource.data.reporterUid == request.auth.uid;
+
+      allow create: if isAuthenticated()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.commentId is string
+        && request.resource.data.commentPath is string
+        && request.resource.data.restaurantId is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason in ['spam', 'harassment', 'inappropriate', 'other']
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if false;
     }
 
     // -------------------------------------------------------

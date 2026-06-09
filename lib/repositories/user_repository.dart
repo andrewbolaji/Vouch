@@ -62,6 +62,41 @@ class UserRepository {
     }
   }
 
+  /// Adds a user ID to the blocker's blockedUserIds list.
+  Future<void> addBlock(String blockerUid, String blockedUid) async {
+    try {
+      await _usersRef.doc(blockerUid).update({
+        'blockedUserIds': FieldValue.arrayUnion([blockedUid]),
+      });
+    } on FirebaseException catch (e) {
+      throw mapFirestoreException(e);
+    }
+  }
+
+  /// Removes a user ID from the blocker's blockedUserIds list.
+  Future<void> removeBlock(String blockerUid, String blockedUid) async {
+    try {
+      await _usersRef.doc(blockerUid).update({
+        'blockedUserIds': FieldValue.arrayRemove([blockedUid]),
+      });
+    } on FirebaseException catch (e) {
+      throw mapFirestoreException(e);
+    }
+  }
+
+  /// Returns the list of blocked user IDs for the given user.
+  Future<List<String>> getBlockedIds(String uid) async {
+    try {
+      final doc = await _usersRef.doc(uid).get();
+      if (!doc.exists) return [];
+      final data = doc.data()!;
+      final raw = data['blockedUserIds'] as List<dynamic>? ?? [];
+      return raw.cast<String>();
+    } on FirebaseException catch (e) {
+      throw mapFirestoreException(e);
+    }
+  }
+
   /// Returns the list of saved restaurant IDs for the given user.
   Future<List<String>> getSavedIds(String uid) async {
     try {

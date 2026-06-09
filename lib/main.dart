@@ -6,7 +6,9 @@ import 'package:vouch/firebase_options.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
+import 'package:vouch/providers/report_provider.dart';
 import 'package:vouch/providers/suggestion_provider.dart';
+import 'package:vouch/repositories/report_repository.dart';
 import 'package:vouch/repositories/suggestion_repository.dart';
 import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/screens/splash_screen.dart';
@@ -42,6 +44,12 @@ class VouchApp extends StatelessWidget {
           create: (_) => SuggestionProvider(
             authService: authService,
             suggestionRepository: SuggestionRepository(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReportProvider(
+            authService: authService,
+            reportRepository: ReportRepository(),
           ),
         ),
       ],
