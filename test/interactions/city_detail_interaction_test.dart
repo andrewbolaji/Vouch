@@ -62,9 +62,10 @@ void main() {
         );
         // Should NOT see real restaurant names
         // behind the paywall (security: content
-        // withheld from tree)
-        expect(find.text('Himalaya'), findsNothing);
-        expect(find.text('Xochi'), findsNothing);
+        // withheld from tree). These are rank 6-7
+        // in the current seed (Dona Leti's, Hidden Omakase).
+        expect(find.text("Dona Leti's"), findsNothing);
+        expect(find.text('Hidden Omakase'), findsNothing);
       },
     );
 

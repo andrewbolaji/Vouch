@@ -262,11 +262,11 @@ void main() {
           findsOneWidget,
         );
 
+        // "Tantanmen" appears only in Mensho's whatToOrder.
+        // If this is findsNothing, the secret content is correctly
+        // withheld from the widget tree when the user is not entitled.
         expect(
-          find.text(
-            'Go on a weekday to skip the '
-            '2-hour weekend wait.',
-          ),
+          find.textContaining('Tantanmen'),
           findsNothing,
         );
 
@@ -306,9 +306,11 @@ void main() {
           findsOneWidget,
         );
 
+        // The same canary string that was withheld when locked
+        // must now be visible when the user is entitled.
         expect(
-          find.text('Insider Notes'),
-          findsOneWidget,
+          find.textContaining('Tantanmen'),
+          findsWidgets,
         );
       },
     );

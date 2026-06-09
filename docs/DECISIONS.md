@@ -69,6 +69,7 @@ Architectural and product decisions with reasoning. Future-you reads this file a
 | 2026-06-08 | openingHours stored but not surfaced | Stale hours are worse than no hours. Stored for the v2 refresh job. |
 | 2026-06-08 | No rank-from-votes process exists yet | Vote Cloud Functions increment/decrement voteCount but nothing computes rank from voteCount. Top 10 stays empty until the rank computation Cloud Function ships (next Block). |
 | 2026-06-08 | Demo image override layer (display-time only, never touches Firestore) | PRE-LAUNCH CHECKLIST: kUseDemoImageOverrides must be set to false or the file deleted before any public store build. Removal: delete lib/config/demo_image_overrides.dart, assets/demo/, and the pubspec assets entry. |
+| 2026-06-09 | When seed or demo data changes, grep tests for hardcoded data values, not just names (standing rule) | A findsNothing assertion against a string you deleted passes for the wrong reason. Caught: "2-hour weekend wait" (Turkey Leg Hut's old tip) was still asserted as findsNothing after the restaurant was replaced, making the security test vacuous. Also caught: Himalaya and Xochi (old rank 6-7) in a paywall test, both absent from seed, so the paywall assertion could never fail. Fix: canary strings must exist in the current seed data so findsNothing proves the gate held, not that the string was garbage-collected. |
 
 ---
 
