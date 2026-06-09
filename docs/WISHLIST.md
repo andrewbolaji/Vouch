@@ -2,6 +2,10 @@
 
 Every "good idea but not now" with reasoning and a tier. Items 6+ months old with no customer pull get deleted.
 
+## Governing rule
+
+A restaurant can enhance its listing, never buy its rank. Rankings stay fully local-vote-driven and uninfluenceable by restaurants or by us. Everything monetizable lives outside the ranking. Free food is fine, free rank is not.
+
 ---
 
 ## v1.1 (committed for build)
@@ -72,7 +76,45 @@ Every "good idea but not now" with reasoning and a tier. Items 6+ months old wit
 
 ---
 
+### User-uploaded restaurant photos
+**The idea:** Let signed-in users upload photos at a restaurant. Firebase Storage, upload UI, image resizing, terms-of-use license clause, and a report/takedown flow (shared with comment moderation). Users own their photos; the terms grant a display license.
+
+**Why v1.1:** Produces zero photos with zero users, so it cannot supply launch photos (the permission campaign does that). Build the foundation now (photo data model, storage path, terms language, report/takedown) so the upload UI is a drop-in; ship user-facing upload right after launch once there is a base to generate content.
+
+**Trigger:** First real users are active AND the permission-campaign launch photo set is in.
+
+---
+
+### Restaurant photo gallery (multiple photos per place)
+**The idea:** Detail page shows more than one photo in a swipeable hero carousel with page dots; the card uses the primary photo. Food leads, interior and others follow. Handles one photo (no carousel) or many.
+
+**Why v1.1:** Pairs with user photo upload (also v1.1). Once there is more than one image per place, a single-image hero wastes good content. Standard, bounded pattern. Also lets the food-plus-interior shots gathered for the demo be used for real.
+
+**Trigger:** Photo upload ships, or 2+ approved photos exist for a meaningful number of places.
+
+---
+
 ## v2 candidates (pin, don't build)
+
+### Owner-claimed listing with the dish to order
+**The idea:** A verified owner can claim their spot, confirm details, and pick the one signature dish they would put their name on. Shown next to what locals actually vote for, so the owner's pick and the crowd's pick sit side by side. When they disagree (owner says brisket, locals say boudin), that tension is the brand.
+
+**Why pin, not build:** Needs owner verification, a claim flow, and a moderation surface. Worth it only once there is restaurant interest to engage. Owners never touch rank.
+
+**Trigger:** Owners start asking to claim or correct their listing, or you enter a city with engaged owners to activate.
+
+---
+
+### Earned "Top 10 on Vouch" badge + window decal
+**The idea:** A place that earns a Top 10 spot purely from local votes gets a digital badge (shareable, screenshottable) and, for qualifying places, a physical window cling. Earned, never bought. Doubles as guerrilla marketing: every sticker says "locals voted us," not "we advertise here."
+
+**Why pin, not build:** Depends on the ranking engine existing and on rankings being stable enough to define a fair tenure rule.
+
+**Open question to settle first:** How volatile is the Top 10, and how long must a place hold a spot to earn the badge? Likely answer: rank on a rolling window with a stable cadence, award for holding Top 10 across N consecutive periods, not one snapshot. This should inform the ranking engine design (windowing and smoothing), so raise it when that Block is planned.
+
+**Trigger:** Ranking engine shipped and a tenure rule defined.
+
+---
 
 ### Restaurant lifecycle management
 **The idea:** Vote decay (weighting recent votes higher) + Google Places API weekly verification for operational status and address changes (not user-reported corrections, those add moderation surface we are avoiding for v1). Closed restaurants stay listed but flagged as closed (do not scrub, keeps food memory of cities).
@@ -148,15 +190,6 @@ Every "good idea but not now" with reasoning and a tier. Items 6+ months old wit
 
 ## v3+ candidates (further out)
 
-### User-uploaded restaurant photos
-**The idea:** Photos subcollection with Firebase Storage references and moderation status.
-
-**Why v3+:** Requires content moderation pipeline (manual or automated). Unsplash URLs work for v1. User photos add liability without moderation.
-
-**Trigger to promote:** When community engagement is strong enough to self-moderate, or when a moderation service is integrated.
-
----
-
 ### AI query layer
 **The idea:** Natural language queries against restaurant and vote data ("best Thai in Houston this month").
 
@@ -168,7 +201,18 @@ Every "good idea but not now" with reasoning and a tier. Items 6+ months old wit
 
 ## Business tier candidates
 
-(None yet. Add pricing, packaging, and business model items here as they come up.)
+### Rank-independent restaurant deals
+**The idea:** A restaurant offers a small perk to Vouch users (a freebie, a happy hour, "show this screen"), in a separate, clearly labeled surface, available to any place regardless of rank. Drives foot traffic, gives users a reason to keep and upgrade, and is a potential B2B revenue line.
+
+**Why pin, not build:** Andrew wants more discussion before committing. The hard part is the firewall: it works only if it is obviously walled off from rank and not pay-to-play, or it becomes the exact thing Vouch replaces.
+
+**Trigger:** Enough users in a city that foot-traffic offers attract restaurants, plus an agreed labeling and firewall design.
+
+---
+
+## Go-to-market notes (not features)
+
+**Founder and partner photographer program:** On entering a new city, shoot the top spots for seed content and build relationships before launch. The restaurant gets free pro food photos, Vouch gets authentic content. Belongs in the launch playbook, not the feature wishlist. Captured here so it is not lost.
 
 ---
 
