@@ -73,14 +73,14 @@ void main() {
       final before = state.restaurantById('hou-1')!.voteCount;
       expect(state.hasVoted('hou-1'), isFalse);
 
-      state.toggleVote('hou-1');
+      state.toggleVote('hou-1', userId: 'test-user');
       expect(state.hasVoted('hou-1'), isTrue);
       expect(
         state.restaurantById('hou-1')!.voteCount,
         before + 1,
       );
 
-      state.toggleVote('hou-1');
+      state.toggleVote('hou-1', userId: 'test-user');
       expect(state.hasVoted('hou-1'), isFalse);
       expect(
         state.restaurantById('hou-1')!.voteCount,
@@ -95,7 +95,7 @@ void main() {
       );
 
       // Should not throw
-      state.toggleVote('nonexistent');
+      state.toggleVote('nonexistent', userId: 'test-user');
       expect(state.hasVoted('nonexistent'), isFalse);
     });
 

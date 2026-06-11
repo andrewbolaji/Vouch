@@ -13,6 +13,12 @@ import {initializeApp, getApps, deleteApp} from "firebase-admin/app";
 import {getFirestore, FieldValue, Timestamp} from "firebase-admin/firestore";
 import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
 import {deleteUserData} from "./user_cleanup";
+import {
+  computeScore,
+  assignRanks,
+  DEFAULT_HALF_LIFE_DAYS,
+} from "./rank_engine";
+import {recomputeAllRanks} from "./rank_recompute";
 
 // Initialize admin SDK for emulator
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
@@ -489,5 +495,294 @@ describe("Account deletion cleanup (real deleteUserData)", () => {
       .doc("other-user")
       .get();
     expect(otherVote.exists).toBe(true);
+  });
+});
+
+// ================================================================
+// Rank engine: pure score math
+//
+// These test the pure functions in rank_engine.ts directly.
+// No Firestore involved.
+// ================================================================
+
+describe("Rank engine (pure score math)", () => {
+  const now = new Date("2026-06-11T12:00:00Z");
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  function daysAgo(d: number): Date {
+    return new Date(now.getTime() - d * msPerDay);
+  }
+
+  test("single vote from today scores its full weight", () => {
+    const score = computeScore(
+      [{createdAt: now, weight: 1}],
+      now
+    );
+    expect(score).toBeCloseTo(1.0, 5);
+  });
+
+  test("vote from halfLifeDays ago scores 0.5", () => {
+    const score = computeScore(
+      [{createdAt: daysAgo(DEFAULT_HALF_LIFE_DAYS), weight: 1}],
+      now
+    );
+    expect(score).toBeCloseTo(0.5, 2);
+  });
+
+  test("vote from 2x halfLifeDays ago scores 0.25", () => {
+    const score = computeScore(
+      [{createdAt: daysAgo(DEFAULT_HALF_LIFE_DAYS * 2), weight: 1}],
+      now
+    );
+    expect(score).toBeCloseTo(0.25, 2);
+  });
+
+  test("weight=2 doubles the score at the same age", () => {
+    const s1 = computeScore(
+      [{createdAt: daysAgo(30), weight: 1}],
+      now
+    );
+    const s2 = computeScore(
+      [{createdAt: daysAgo(30), weight: 2}],
+      now
+    );
+    expect(s2).toBeCloseTo(s1 * 2, 5);
+  });
+
+  test("zero votes returns 0", () => {
+    expect(computeScore([], now)).toBe(0);
+  });
+
+  test("multiple votes are additive", () => {
+    const s1 = computeScore([{createdAt: now, weight: 1}], now);
+    const s2 = computeScore([{createdAt: daysAgo(45), weight: 1}], now);
+    const combined = computeScore(
+      [{createdAt: now, weight: 1}, {createdAt: daysAgo(45), weight: 1}],
+      now
+    );
+    expect(combined).toBeCloseTo(s1 + s2, 5);
+  });
+
+  test("assignRanks returns ranks 1..N sorted by score descending", () => {
+    const ranked = assignRanks([
+      {id: "a", score: 10, voteCount: 100, name: "A"},
+      {id: "b", score: 30, voteCount: 200, name: "B"},
+      {id: "c", score: 20, voteCount: 150, name: "C"},
+    ]);
+    expect(ranked).toEqual([
+      {id: "b", rank: 1, score: 30},
+      {id: "c", rank: 2, score: 20},
+      {id: "a", rank: 3, score: 10},
+    ]);
+  });
+
+  test("assignRanks tie-breaking: equal score, higher voteCount wins", () => {
+    const ranked = assignRanks([
+      {id: "a", score: 10, voteCount: 50, name: "A"},
+      {id: "b", score: 10, voteCount: 100, name: "B"},
+    ]);
+    expect(ranked[0].id).toBe("b");
+    expect(ranked[1].id).toBe("a");
+  });
+
+  test("assignRanks tie-breaking: equal score and voteCount, alphabetical by name", () => {
+    const ranked = assignRanks([
+      {id: "z", score: 10, voteCount: 50, name: "Zebra"},
+      {id: "a", score: 10, voteCount: 50, name: "Alpha"},
+    ]);
+    expect(ranked[0].id).toBe("a");
+    expect(ranked[1].id).toBe("z");
+  });
+});
+
+// ================================================================
+// Rank invariants
+//
+// Structural guarantees that must hold for any input.
+// ================================================================
+
+describe("Rank invariants", () => {
+  test("no duplicate ranks", () => {
+    const input = Array.from({length: 10}, (_, i) => ({
+      id: `r${i}`,
+      score: Math.random() * 100,
+      voteCount: Math.floor(Math.random() * 1000),
+      name: `Restaurant ${i}`,
+    }));
+    const ranked = assignRanks(input);
+    const ranks = ranked.map((r) => r.rank);
+    expect(new Set(ranks).size).toBe(ranks.length);
+  });
+
+  test("ranks are contiguous 1 to N", () => {
+    const input = Array.from({length: 7}, (_, i) => ({
+      id: `r${i}`,
+      score: (7 - i) * 10,
+      voteCount: 100,
+      name: `R${i}`,
+    }));
+    const ranked = assignRanks(input);
+    const ranks = ranked.map((r) => r.rank).sort((a, b) => a - b);
+    expect(ranks).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  test("higher score always gets a better (lower) rank", () => {
+    const input = [
+      {id: "high", score: 50, voteCount: 100, name: "High"},
+      {id: "low", score: 10, voteCount: 100, name: "Low"},
+      {id: "mid", score: 30, voteCount: 100, name: "Mid"},
+    ];
+    const ranked = assignRanks(input);
+    const byId = Object.fromEntries(ranked.map((r) => [r.id, r]));
+    expect(byId["high"].rank).toBeLessThan(byId["mid"].rank);
+    expect(byId["mid"].rank).toBeLessThan(byId["low"].rank);
+  });
+});
+
+// ================================================================
+// Rank recompute integration (real function bodies)
+//
+// Tests call the real recomputeAllRanks orchestrator, which calls
+// the real computeScore and assignRanks. No reimplementation.
+// ================================================================
+
+describe("Rank recompute integration (real recomputeAllRanks)", () => {
+  const now = new Date("2026-06-11T12:00:00Z");
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  beforeEach(async () => {
+    await clearFirestore();
+
+    // Seed a city
+    await db.collection("cities").doc("test-city").set({
+      id: "test-city",
+      name: "Test City",
+      state: "TX",
+    });
+
+    // Seed 3 restaurants with different vote patterns
+    // Restaurant A: 3 recent votes (should rank #1)
+    await db.collection("restaurants").doc("rest-a").set({
+      id: "rest-a",
+      cityId: "test-city",
+      name: "Restaurant A",
+      rank: 3,
+      voteCount: 3,
+    });
+    for (let i = 0; i < 3; i++) {
+      await db
+        .collection("restaurants")
+        .doc("rest-a")
+        .collection("votes")
+        .doc(`user-a${i}`)
+        .set({
+          createdAt: Timestamp.fromDate(
+            new Date(now.getTime() - i * msPerDay)
+          ),
+          weight: 1,
+        });
+    }
+
+    // Restaurant B: 2 recent votes (should rank #2)
+    await db.collection("restaurants").doc("rest-b").set({
+      id: "rest-b",
+      cityId: "test-city",
+      name: "Restaurant B",
+      rank: 1,
+      voteCount: 2,
+    });
+    for (let i = 0; i < 2; i++) {
+      await db
+        .collection("restaurants")
+        .doc("rest-b")
+        .collection("votes")
+        .doc(`user-b${i}`)
+        .set({
+          createdAt: Timestamp.fromDate(
+            new Date(now.getTime() - i * msPerDay)
+          ),
+          weight: 1,
+        });
+    }
+
+    // Restaurant C: 5 old votes (should rank #3 despite more total votes)
+    await db.collection("restaurants").doc("rest-c").set({
+      id: "rest-c",
+      cityId: "test-city",
+      name: "Restaurant C",
+      rank: 2,
+      voteCount: 5,
+    });
+    for (let i = 0; i < 5; i++) {
+      await db
+        .collection("restaurants")
+        .doc("rest-c")
+        .collection("votes")
+        .doc(`user-c${i}`)
+        .set({
+          createdAt: Timestamp.fromDate(
+            new Date(now.getTime() - (80 + i * 10) * msPerDay)
+          ),
+          weight: 1,
+        });
+    }
+  });
+
+  afterAll(async () => {
+    await clearFirestore();
+  });
+
+  test("recomputeAllRanks assigns correct ranks based on decay", async () => {
+    await recomputeAllRanks(db, now);
+
+    const a = await db.collection("restaurants").doc("rest-a").get();
+    const b = await db.collection("restaurants").doc("rest-b").get();
+    const c = await db.collection("restaurants").doc("rest-c").get();
+
+    // A has most recent votes, should be #1
+    expect(a.data()?.rank).toBe(1);
+    // B has fewer but still recent, #2
+    expect(b.data()?.rank).toBe(2);
+    // C has more total votes but they are old, #3
+    expect(c.data()?.rank).toBe(3);
+
+    // rankScore should be written and positive
+    expect(a.data()?.rankScore).toBeGreaterThan(0);
+    expect(b.data()?.rankScore).toBeGreaterThan(0);
+    expect(c.data()?.rankScore).toBeGreaterThan(0);
+
+    // Scores should be in descending order matching ranks
+    expect(a.data()?.rankScore).toBeGreaterThan(b.data()?.rankScore);
+    expect(b.data()?.rankScore).toBeGreaterThan(c.data()?.rankScore);
+  });
+
+  test("recomputeAllRanks produces contiguous ranks", async () => {
+    await recomputeAllRanks(db, now);
+
+    const snap = await db
+      .collection("restaurants")
+      .where("cityId", "==", "test-city")
+      .get();
+    const ranks = snap.docs
+      .map((d) => d.data().rank as number)
+      .sort((a, b) => a - b);
+    expect(ranks).toEqual([1, 2, 3]);
+  });
+
+  test("restaurant with zero votes gets last rank", async () => {
+    // Add a restaurant with no votes
+    await db.collection("restaurants").doc("rest-empty").set({
+      id: "rest-empty",
+      cityId: "test-city",
+      name: "Empty Restaurant",
+      rank: 1,
+      voteCount: 0,
+    });
+
+    await recomputeAllRanks(db, now);
+
+    const empty = await db.collection("restaurants").doc("rest-empty").get();
+    expect(empty.data()?.rank).toBe(4);
+    expect(empty.data()?.rankScore).toBe(0);
   });
 });

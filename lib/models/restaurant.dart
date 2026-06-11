@@ -42,6 +42,7 @@ abstract class Restaurant with _$Restaurant {
     @Default(false) bool isMobileVenue,
     @Default([]) List<String> openingHours,
     @Default(0) int displayOrder,
+    @Default(0) double rankScore,
   }) = _Restaurant;
 
   const Restaurant._();

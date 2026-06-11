@@ -50,6 +50,7 @@ _Restaurant _$RestaurantFromJson(Map<String, dynamic> json) => _Restaurant(
           .toList() ??
       const [],
   displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
+  rankScore: (json['rankScore'] as num?)?.toDouble() ?? 0,
 );
 
 Map<String, dynamic> _$RestaurantToJson(_Restaurant instance) =>
@@ -71,4 +72,5 @@ Map<String, dynamic> _$RestaurantToJson(_Restaurant instance) =>
       'isMobileVenue': instance.isMobileVenue,
       'openingHours': instance.openingHours,
       'displayOrder': instance.displayOrder,
+      'rankScore': instance.rankScore,
     };

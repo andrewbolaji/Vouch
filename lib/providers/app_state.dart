@@ -104,7 +104,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleVote(String restaurantId) {
+  /// Toggles a vote for the given restaurant.
+  ///
+  /// [userId] must be the signed-in user's UID. The caller is
+  /// responsible for gating on sign-in state before calling this.
+  void toggleVote(String restaurantId, {required String userId}) {
     final index = _restaurants.indexWhere(
       (r) => r.id == restaurantId,
     );
@@ -117,7 +121,7 @@ class AppState extends ChangeNotifier {
         voteCount: restaurant.voteCount - 1,
       );
       if (_useFirebase && _voteRepo != null) {
-        unawaited(_voteRepo.unvote(restaurantId, 'anonymous'));
+        unawaited(_voteRepo.unvote(restaurantId, userId));
       }
     } else {
       _votedRestaurantIds.add(restaurantId);
@@ -126,7 +130,7 @@ class AppState extends ChangeNotifier {
       );
       unawaited(HapticFeedback.lightImpact());
       if (_useFirebase && _voteRepo != null) {
-        unawaited(_voteRepo.vote(restaurantId, 'anonymous'));
+        unawaited(_voteRepo.vote(restaurantId, userId));
       }
     }
     notifyListeners();

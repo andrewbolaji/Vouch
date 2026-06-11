@@ -65,7 +65,8 @@ service cloud.firestore {
       // ---------------------------------------------------
       match /votes/{userId} {
         allow read: if isAuthenticated();
-        allow create: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.weight == 1;
         allow update: if false;
         allow delete: if isOwner(userId);
       }

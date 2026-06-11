@@ -36,6 +36,7 @@ class VoteRepository {
     try {
       await _voteDoc(restaurantId, userId).set({
         'createdAt': FieldValue.serverTimestamp(),
+        'weight': 1,
       });
     } on FirebaseException catch (e) {
       throw mapFirestoreException(e);

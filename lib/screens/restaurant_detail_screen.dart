@@ -201,7 +201,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         voteCount: restaurant.voteCount,
                         hasVoted: hasVoted,
                         onTap: () {
-                          appState.toggleVote(widget.restaurantId);
+                          final uid = auth.currentUser?.uid;
+                          if (uid == null) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const SignInScreen(),
+                              ),
+                            );
+                            return;
+                          }
+                          appState.toggleVote(
+                            widget.restaurantId,
+                            userId: uid,
+                          );
                           context.read<AnalyticsService>().logVoteCast(
                             restaurantId: widget.restaurantId,
                             cityId: restaurant.cityId,

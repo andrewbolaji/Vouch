@@ -22,8 +22,8 @@ void main() {
         await tester.pumpAndSettle(seedLoadDuration);
 
         // At least first 2 cities visible
-        expect(find.text('Houston, TX'), findsOneWidget);
-        expect(find.text('New York, NY'), findsOneWidget);
+        expect(find.text('Houston'), findsOneWidget);
+        expect(find.text('New York'), findsOneWidget);
 
         // Type to filter
         await tester.enterText(
@@ -32,8 +32,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Houston, TX'), findsOneWidget);
-        expect(find.text('New York, NY'), findsNothing);
+        // "Houston" appears in both the search field and the card
+        expect(find.text('Houston'), findsNWidgets(2));
+        expect(find.text('New York'), findsNothing);
 
         // Clear restores all
         await tester.enterText(
@@ -42,8 +43,8 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Houston, TX'), findsOneWidget);
-        expect(find.text('New York, NY'), findsOneWidget);
+        expect(find.text('Houston'), findsOneWidget);
+        expect(find.text('New York'), findsOneWidget);
       },
     );
 
@@ -56,7 +57,7 @@ void main() {
         await tester.pumpAndSettle(seedLoadDuration);
 
         // Tap Houston city card
-        await tester.tap(find.text('Houston, TX'));
+        await tester.tap(find.text('Houston'));
         await tester.pumpAndSettle(seedLoadDuration);
 
         // Should navigate to CityDetailScreen
@@ -64,7 +65,7 @@ void main() {
           find.byType(CityDetailScreen),
           findsOneWidget,
         );
-        // City name in app bar
+        // City name in body header
         expect(find.text('Houston, TX'), findsOneWidget);
         // Houston's #1 restaurant visible
         expect(

@@ -11,12 +11,14 @@ import {
   onDocumentDeleted,
 } from "firebase-functions/v2/firestore";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as functions from "firebase-functions";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
 import {deleteUserData} from "./user_cleanup";
+import {recomputeAllRanks} from "./rank_recompute";
 
 initializeApp();
 const db = getFirestore();
@@ -137,7 +139,21 @@ export const onUserDeleted = functions
   });
 
 // ---------------------------------------------------------------------------
-// 4. Custom claim setter (deferred)
+// 4. recomputeRanks (scheduled daily at 06:00 UTC)
+//    Reads vote subcollections, computes time-decayed scores,
+//    assigns contiguous ranks 1..N per city.
+// ---------------------------------------------------------------------------
+
+export const recomputeRanks = onSchedule(
+  {schedule: "0 6 * * *", timeZone: "UTC"},
+  async () => {
+    await recomputeAllRanks(db);
+    logger.info("Daily rank recomputation complete");
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 5. Custom claim setter (deferred)
 // ---------------------------------------------------------------------------
 
 // TODO(vouch): Add setMembershipClaim Cloud Function.
