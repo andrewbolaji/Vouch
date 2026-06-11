@@ -88,9 +88,9 @@ If you have not saved anything yet, you will see "No saved restaurants yet" with
 
 ### Voting
 
-On any restaurant detail page, tap the vote button (the upward arrow with the vote count) to cast your vote. The button changes color to show your vote is counted, and the number updates.
+On any restaurant detail page, tap the vote button (the upward arrow with the vote count) to cast your vote. You must be signed in to vote. If you are not signed in, tapping the vote button opens the sign-in screen.
 
-Tap it again to remove your vote. You get one vote per restaurant.
+The button changes color to show your vote is counted, and the number updates right away. Tap it again to remove your vote. You get one vote per restaurant.
 
 ### Commenting
 
@@ -101,6 +101,47 @@ To reply to someone, tap the reply option on their comment. A banner appears sho
 Comments have a 500-character limit. If no one has commented yet, you will see "No comments yet. Be the first."
 
 If you are a City Insider member, your comments show an insider badge.
+
+---
+
+## How rankings work
+
+<!-- TODO: screenshot of a city ranking list showing rank badges -->
+
+### The short version
+
+Every restaurant's rank comes from local votes. The list updates once a day. Recent votes count more than old ones, so the rankings reflect where locals are eating now, not where they were eating a year ago.
+
+### What happens when you vote
+
+When you tap the vote button, two things happen at different speeds:
+
+1. **The vote count updates right away.** You see the number go up (or down if you remove your vote) the moment you tap.
+2. **The rank position settles in the next daily update.** Rankings are recalculated every morning at 6 AM UTC. Your vote is included in that next run. So if you vote at 2 PM, the rank will reflect your vote by the following morning.
+
+### Why recent votes count more
+
+Vouch uses a system called time decay. A vote cast today has its full weight. A vote from three months ago counts for about half. A vote from six months ago counts for about a quarter. This keeps the list alive: a restaurant that stops earning new votes gradually drifts down, and a restaurant that locals are excited about right now can climb.
+
+The half-life is 90 days. That means every 90 days, a vote's influence is cut in half.
+
+### New cities and starting order
+
+When a new city launches, it starts with a curated order based on local research. Behind the scenes, that starting order is backed by a set of initial votes that give the ranking engine something to work with on day one. Those starter votes fade naturally over the following months as real votes come in. After a few months, the list is shaped almost entirely by the community.
+
+The large vote number shown next to each restaurant is a display figure that counts every vote ever cast. The ranking engine looks at the individual vote records and their ages, not this total, when it decides the order.
+
+### Limits and things to know
+
+- **Ranks change at most once a day.** The list does not jump around in real time. Everyone sees the same stable order all day, and it updates overnight.
+- **One vote per person per restaurant.** You cannot vote twice for the same place. This is enforced by your account, not your device, so switching phones does not give you extra votes.
+- **Verified-visit weighting is not live yet.** A future update will let City Insider members who verify they visited a restaurant have their vote count for more. For now, every vote counts equally.
+
+### Where rankings show up
+
+- **The Top 5 list** on the city screen (visible to all users).
+- **The Top 10 list** on the city screen (Locals Pass and City Insider members).
+- **The rank badge** on each restaurant's detail page, showing its position in the city.
 
 ---
 
@@ -214,4 +255,4 @@ On the home screen and city ranking pages, pull down to refresh the data.
 
 ---
 
-*Last updated: Block 2 (Google Sign-In fix, UI polish, documentation). Updated every Block.*
+*Last updated: Ranking Engine Block (ranking from votes, vote sign-in requirement). Updated every Block.*
