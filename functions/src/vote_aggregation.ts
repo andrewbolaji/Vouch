@@ -9,7 +9,11 @@
 import {FieldValue} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 
-/** Increments the restaurant's voteCount by 1. */
+/**
+ * Increments the restaurant's voteCount by 1.
+ * @param {FirebaseFirestore.Firestore} db Firestore instance.
+ * @param {string} restaurantId The restaurant doc ID.
+ */
 export async function applyVoteCreated(
   db: FirebaseFirestore.Firestore,
   restaurantId: string
@@ -19,7 +23,11 @@ export async function applyVoteCreated(
   logger.info(`Vote added for restaurant ${restaurantId}`);
 }
 
-/** Decrements the restaurant's voteCount by 1. */
+/**
+ * Decrements the restaurant's voteCount by 1.
+ * @param {FirebaseFirestore.Firestore} db Firestore instance.
+ * @param {string} restaurantId The restaurant doc ID.
+ */
 export async function applyVoteDeleted(
   db: FirebaseFirestore.Firestore,
   restaurantId: string

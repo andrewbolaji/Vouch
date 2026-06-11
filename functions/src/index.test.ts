@@ -29,6 +29,7 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 
+/** Clears all Firestore data between tests. */
 async function clearFirestore() {
   const collections = await db.listCollections();
   for (const col of collections) {
@@ -136,9 +137,9 @@ describe("Suggestion submission logic", () => {
 
     await db.runTransaction(async (tx) => {
       const counterSnap = await tx.get(counterRef);
-      const currentCount = counterSnap.exists
-        ? (counterSnap.data()?.count as number) ?? 0
-        : 0;
+      const currentCount = counterSnap.exists ?
+        ((counterSnap.data()?.count as number) ?? 0) :
+        0;
 
       expect(currentCount).toBe(0);
 
@@ -151,7 +152,11 @@ describe("Suggestion submission logic", () => {
         status: "pending",
       });
 
-      tx.set(counterRef, {count: FieldValue.increment(1), date: dateKey}, {merge: true});
+      tx.set(
+        counterRef,
+        {count: FieldValue.increment(1), date: dateKey},
+        {merge: true},
+      );
     });
 
     const suggestionSnap = await suggestionRef.get();
@@ -177,9 +182,9 @@ describe("Suggestion submission logic", () => {
     try {
       await db.runTransaction(async (tx) => {
         const counterSnap = await tx.get(counterRef);
-        const currentCount = counterSnap.exists
-          ? (counterSnap.data()?.count as number) ?? 0
-          : 0;
+        const currentCount = counterSnap.exists ?
+          ((counterSnap.data()?.count as number) ?? 0) :
+          0;
 
         if (currentCount >= 1) {
           throw new Error("RATE_LIMITED");
@@ -224,9 +229,9 @@ describe("Suggestion submission logic", () => {
     const otherSnap = await otherCounterRef.get();
     expect(otherSnap.exists).toBe(false);
 
-    const otherCount = otherSnap.exists
-      ? (otherSnap.data()?.count as number) ?? 0
-      : 0;
+    const otherCount = otherSnap.exists ?
+      ((otherSnap.data()?.count as number) ?? 0) :
+      0;
     expect(otherCount).toBe(0);
   });
 });
@@ -357,7 +362,11 @@ describe("Account deletion cleanup (real deleteUserData)", () => {
       .doc("hou-1")
       .collection("comments")
       .doc("c2")
-      .set({userId: "other-user", userName: "OtherUser", text: "Other comment"});
+      .set({
+        userId: "other-user",
+        userName: "OtherUser",
+        text: "Other comment",
+      });
   });
 
   afterAll(async () => {
@@ -464,6 +473,7 @@ describe("Account deletion cleanup (real deleteUserData)", () => {
     expect(reply.data()?.parentId).toBe("c1");
   });
 
+  // eslint-disable-next-line max-len
   test("deleteUserData removes vote docs (decrement is trigger responsibility)", async () => {
     const before = await db.collection("restaurants").doc("hou-1").get();
     expect(before.data()?.voteCount).toBe(50);
@@ -509,6 +519,10 @@ describe("Rank engine (pure score math)", () => {
   const now = new Date("2026-06-11T12:00:00Z");
   const msPerDay = 24 * 60 * 60 * 1000;
 
+  /**
+   * @param {number} d Days before now.
+   * @return {Date} The past date.
+   */
   function daysAgo(d: number): Date {
     return new Date(now.getTime() - d * msPerDay);
   }
@@ -598,6 +612,7 @@ describe("Rank engine (pure score math)", () => {
     expect(ranked[1].id).toBe("a");
   });
 
+  // eslint-disable-next-line max-len
   test("assignRanks tie-breaking: equal score and voteCount, alphabetical by name", () => {
     const ranked = assignRanks([
       {id: "z", score: 10, voteCount: 50, name: "Zebra"},

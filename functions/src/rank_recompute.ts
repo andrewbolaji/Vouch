@@ -19,12 +19,9 @@ import type {VoteRecord, ScoredRestaurant} from "./rank_engine.js";
 /**
  * Recomputes ranks for all restaurants across all cities.
  *
- * For each city:
- *   1. Read all restaurants where cityId == city.
- *   2. For each restaurant, read all vote docs.
- *   3. Compute time-decayed score.
- *   4. Assign contiguous ranks 1..N.
- *   5. Batch-write rank and rankScore to each restaurant doc.
+ * @param {FirebaseFirestore.Firestore} db Firestore instance.
+ * @param {Date} now Reference time for decay.
+ * @param {number} halfLifeDays Decay half-life in days.
  */
 export async function recomputeAllRanks(
   db: FirebaseFirestore.Firestore,

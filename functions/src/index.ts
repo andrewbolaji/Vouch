@@ -88,9 +88,9 @@ export const submitSuggestion = onCall(async (request) => {
 
   await db.runTransaction(async (tx) => {
     const counterSnap = await tx.get(counterRef);
-    const currentCount = counterSnap.exists
-      ? (counterSnap.data()?.count as number) ?? 0
-      : 0;
+    const currentCount = counterSnap.exists ?
+      ((counterSnap.data()?.count as number) ?? 0) :
+      0;
 
     if (currentCount >= 1) {
       throw new HttpsError(
@@ -156,5 +156,6 @@ export const recomputeRanks = onSchedule(
 
 // TODO(vouch): Add setMembershipClaim Cloud Function.
 // Triggered by RevenueCat webhook when a purchase is verified.
-// Sets custom claim { membershipTier: 'localsPass' | 'cityInsider' } on the user's auth token.
+// Sets custom claim { membershipTier: 'localsPass' |
+// 'cityInsider' } on the user's auth token.
 // Deferred to the RevenueCat integration block.

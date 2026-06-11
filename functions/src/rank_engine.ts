@@ -27,17 +27,23 @@ export interface RankedRestaurant {
   score: number;
 }
 
-/** Default half-life in days. A vote loses half its value after this many days. */
+/** Default half-life in days. A vote loses half its
+ * value after this many days. */
 export const DEFAULT_HALF_LIFE_DAYS = 90;
 
 /**
  * Computes the time-decayed score for a set of votes.
  *
- * score = sum of: vote.weight * 2^(-daysSinceVote / halfLifeDays)
+ * score = sum of: vote.weight *
+ *   2^(-daysSinceVote / halfLifeDays)
  *
  * A vote from today contributes its full weight.
- * A vote from halfLifeDays ago contributes half its weight.
- * A vote from 2 * halfLifeDays ago contributes a quarter, etc.
+ * A vote from halfLifeDays ago contributes half.
+ *
+ * @param {VoteRecord[]} votes The vote records.
+ * @param {Date} now The reference time.
+ * @param {number} halfLifeDays Decay half-life in days.
+ * @return {number} The computed score.
  */
 export function computeScore(
   votes: VoteRecord[],
@@ -61,10 +67,12 @@ export function computeScore(
 }
 
 /**
- * Assigns contiguous ranks 1..N to restaurants sorted by score descending.
+ * Assigns contiguous ranks 1..N sorted by score desc.
  *
- * Tie-breaking: higher voteCount wins, then alphabetical by name.
- * No two restaurants share the same rank.
+ * Tie-breaking: higher voteCount wins, then name.
+ *
+ * @param {ScoredRestaurant[]} restaurants Input list.
+ * @return {RankedRestaurant[]} Ranked output.
  */
 export function assignRanks(
   restaurants: ScoredRestaurant[]

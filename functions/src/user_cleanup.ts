@@ -9,16 +9,14 @@
 import * as logger from "firebase-functions/logger";
 
 /**
- * Deletes or anonymizes all Firestore data belonging to a user.
+ * Deletes or anonymizes all Firestore data for a user.
  *
- * - Deletes: suggestionCounts, reportCounts, user doc, suggestions,
- *   reports, and vote docs.
- * - Anonymizes: comments (userId -> "deleted", userName -> "Deleted user",
- *   isInsider -> false) to preserve reply threads.
+ * Deletes: suggestionCounts, reportCounts, user doc,
+ * suggestions, reports, and vote docs.
+ * Anonymizes: comments to preserve reply threads.
  *
- * Vote doc deletion will fire onVoteDeleted triggers in production,
- * which decrement the restaurant aggregate voteCount. This function
- * does not handle the aggregate decrement itself.
+ * @param {FirebaseFirestore.Firestore} db Firestore instance.
+ * @param {string} uid The user's UID.
  */
 export async function deleteUserData(
   db: FirebaseFirestore.Firestore,
