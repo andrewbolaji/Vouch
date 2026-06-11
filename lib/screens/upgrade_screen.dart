@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/models/models.dart';
 import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
 class UpgradeScreen extends StatelessWidget {
@@ -144,6 +145,9 @@ class UpgradeScreen extends StatelessWidget {
                         onPressed: isCurrentTier
                             ? null
                             : () async {
+                                context.read<AnalyticsService>().logUpgradeTap(
+                                  tier: tier.tier.name,
+                                );
                                 await membership.purchaseTier(tier.tier);
                                 if (context.mounted) {
                                   Navigator.of(context).pop();

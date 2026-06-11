@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -137,6 +139,13 @@ class ProfileScreen extends StatelessWidget {
               label: 'About',
               onTap: () => _showAboutDialog(context),
             ),
+            if (kDebugMode)
+              _ProfileMenuItem(
+                icon: Icons.bug_report,
+                label: 'Test Crash (debug only)',
+                onTap: () =>
+                    FirebaseCrashlytics.instance.crash(),
+              ),
             if (auth.isSignedIn) ...[
               _ProfileMenuItem(
                 icon: Icons.logout,

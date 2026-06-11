@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/providers/report_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
 import 'package:vouch/providers/suggestion_provider.dart';
 import 'package:vouch/screens/restaurant_detail_screen.dart';
+import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/auth_service.dart';
 
 Widget buildTestApp(Widget child) {
@@ -19,7 +21,11 @@ Widget buildTestApp(Widget child) {
       ChangeNotifierProvider(
         create: (_) => SuggestionProvider(authService: auth),
       ),
+      ChangeNotifierProvider(
+        create: (_) => ReportProvider(authService: auth),
+      ),
       ChangeNotifierProvider.value(value: auth),
+      Provider.value(value: AnalyticsService.test([])),
     ],
     child: MaterialApp(home: child),
   );

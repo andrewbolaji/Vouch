@@ -10,6 +10,7 @@ import 'package:vouch/providers/saved_provider.dart';
 import 'package:vouch/providers/suggestion_provider.dart';
 import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/screens/restaurant_detail_screen.dart';
+import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/auth_service.dart';
 
 /// In-memory fake that records calls without touching Firestore.
@@ -73,6 +74,7 @@ Widget _buildTestApp(
       ),
       ChangeNotifierProvider<ReportProvider>.value(value: reportProvider),
       Provider<UserRepository>.value(value: userRepo),
+      Provider.value(value: AnalyticsService.test([])),
     ],
     child: MaterialApp(home: child),
   );

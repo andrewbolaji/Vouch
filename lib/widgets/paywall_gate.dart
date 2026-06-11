@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
-class PaywallGate extends StatelessWidget {
+class PaywallGate extends StatefulWidget {
 
   const PaywallGate({
     required this.child,
@@ -10,21 +12,41 @@ class PaywallGate extends StatelessWidget {
     required this.onUpgradeTap,
     super.key,
     this.message = 'Upgrade to unlock',
+    this.source = 'unknown',
   });
   final Widget child;
   final bool isLocked;
   final VoidCallback onUpgradeTap;
   final String message;
+  final String source;
+
+  @override
+  State<PaywallGate> createState() => _PaywallGateState();
+}
+
+class _PaywallGateState extends State<PaywallGate> {
+  bool _logged = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isLocked && !_logged) {
+      _logged = true;
+      context.read<AnalyticsService>().logPaywallView(
+        source: widget.source,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!isLocked) return child;
+    if (!widget.isLocked) return widget.child;
 
     return Stack(
       children: [
         ImageFiltered(
           imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: child,
+          child: widget.child,
         ),
         Positioned.fill(
           child: Container(
@@ -42,10 +64,10 @@ class PaywallGate extends StatelessWidget {
                   children: [
                     const Icon(Icons.lock_outline, size: 32),
                     const SizedBox(height: AppTheme.spacingSm),
-                    Text(message, style: AppTheme.labelLarge),
+                    Text(widget.message, style: AppTheme.labelLarge),
                     const SizedBox(height: AppTheme.spacingSm),
                     TextButton(
-                      onPressed: onUpgradeTap,
+                      onPressed: widget.onUpgradeTap,
                       child: Text(
                         'See plans',
                         style: AppTheme.buttonText.copyWith(

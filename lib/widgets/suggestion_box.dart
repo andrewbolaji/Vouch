@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/models/suggestion.dart';
 import 'package:vouch/providers/suggestion_provider.dart';
+import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
 class SuggestionBox extends StatefulWidget {
@@ -139,6 +140,7 @@ class _SuggestionBoxState extends State<SuggestionBox> {
         text: _textController.text.trim(),
       );
       if (!mounted) return;
+      context.read<AnalyticsService>().logSuggestionSubmit(cityId: 'general');
       _textController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

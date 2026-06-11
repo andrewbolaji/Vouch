@@ -95,6 +95,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 else
                   PaywallGate(
                     isLocked: true,
+                    source: 'top10',
                     onUpgradeTap: () {
                       unawaited(
                         HapticFeedback.mediumImpact(),

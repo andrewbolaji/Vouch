@@ -12,6 +12,7 @@ import 'package:vouch/providers/saved_provider.dart';
 import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/screens/sign_in_screen.dart';
 import 'package:vouch/screens/upgrade_screen.dart';
+import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/share_service.dart';
 import 'package:vouch/theme/app_theme.dart';
@@ -120,7 +121,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               IconButton(
                 icon: const Icon(Icons.share_outlined),
                 tooltip: 'Share restaurant',
-                onPressed: () => ShareService.shareRestaurant(restaurant),
+                onPressed: () {
+                  ShareService.shareRestaurant(restaurant);
+                  context.read<AnalyticsService>().logShareRestaurant(
+                    restaurantId: widget.restaurantId,
+                  );
+                },
               ),
             ],
           ),
@@ -194,7 +200,13 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       VoteButton(
                         voteCount: restaurant.voteCount,
                         hasVoted: hasVoted,
-                        onTap: () => appState.toggleVote(widget.restaurantId),
+                        onTap: () {
+                          appState.toggleVote(widget.restaurantId);
+                          context.read<AnalyticsService>().logVoteCast(
+                            restaurantId: widget.restaurantId,
+                            cityId: restaurant.cityId,
+                          );
+                        },
                       ),
                       const Spacer(),
                       if (!auth.isSignedIn)
@@ -223,6 +235,10 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         SaveButton(
                           isSaved: isSaved,
                           onTap: () async {
+                            context.read<AnalyticsService>().logSaveToggle(
+                              restaurantId: widget.restaurantId,
+                              action: isSaved ? 'unsave' : 'save',
+                            );
                             final error = await savedProvider
                                 .toggleSaved(widget.restaurantId);
                             if (error != null && mounted) {
@@ -282,6 +298,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     else
                       PaywallGate(
                         isLocked: true,
+                        source: 'insider_notes',
                         onUpgradeTap: () {
                           unawaited(
                             HapticFeedback.mediumImpact(),
@@ -442,6 +459,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       parentId: _replyingToId,
       isInsider: membership.hasInsiderBadge,
     );
+    context.read<AnalyticsService>().logCommentSubmit(
+      restaurantId: widget.restaurantId,
+    );
     _commentController.clear();
     _cancelReply();
   }
@@ -463,6 +483,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         cityId: restaurant?.cityId ?? '',
         reason: reason,
       );
+      if (mounted) {
+        context.read<AnalyticsService>().logCommentReport(
+          restaurantId: widget.restaurantId,
+        );
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

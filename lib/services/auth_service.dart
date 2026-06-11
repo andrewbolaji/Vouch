@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vouch/core/error/app_exception.dart';
+import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/secure_storage_service.dart';
 
 enum AuthMethod { anonymous, email, google, apple }
@@ -36,8 +38,10 @@ class AuthService extends ChangeNotifier {
   AuthService({
     fb.FirebaseAuth? firebaseAuth,
     SecureStorageService? secureStorage,
+    AnalyticsService? analyticsService,
   })  : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
         _secureStorage = secureStorage ?? SecureStorageService(),
+        _analyticsService = analyticsService,
         _authSub = (firebaseAuth ?? fb.FirebaseAuth.instance)
             .authStateChanges()
             .listen(null) {
@@ -48,12 +52,14 @@ class AuthService extends ChangeNotifier {
   AuthService.mock({AuthUser? initialUser})
       : _firebaseAuth = null,
         _secureStorage = null,
+        _analyticsService = null,
         _authSub = null {
     _currentUser = initialUser;
   }
 
   final fb.FirebaseAuth? _firebaseAuth;
   final SecureStorageService? _secureStorage;
+  final AnalyticsService? _analyticsService;
   final StreamSubscription<fb.User?>? _authSub;
 
   AuthUser? _currentUser;
@@ -87,10 +93,14 @@ class AuthService extends ChangeNotifier {
   void _onAuthStateChanged(fb.User? fbUser) {
     if (fbUser == null) {
       _currentUser = null;
+      _setCrashlyticsUserId('');
+      _analyticsService?.setSignInMethod('anonymous');
     } else {
       _currentUser = _mapFirebaseUser(fbUser);
       unawaited(_cacheDisplayInfo(fbUser));
       unawaited(_persistToken(fbUser));
+      _setCrashlyticsUserId(fbUser.uid);
+      _analyticsService?.setSignInMethod(_currentUser!.method.name);
     }
     notifyListeners();
   }
@@ -162,6 +172,7 @@ class AuthService extends ChangeNotifier {
       await _firebaseAuth!
           .signInWithEmailAndPassword(email: email, password: password)
           .timeout(_authTimeout, onTimeout: _onTimeout);
+      _analyticsService?.logSignIn(method: 'email');
     } on fb.FirebaseAuthException catch (e) {
       _log('email', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
@@ -194,6 +205,7 @@ class AuthService extends ChangeNotifier {
       await credential.user?.updateDisplayName(name);
       // Force a reload so displayName is available immediately
       await credential.user?.reload();
+      _analyticsService?.logSignUp(method: 'email');
     } on fb.FirebaseAuthException catch (e) {
       _log('signup', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
@@ -221,6 +233,7 @@ class AuthService extends ChangeNotifier {
     try {
       final googleProvider = fb.GoogleAuthProvider();
       await _firebaseAuth!.signInWithProvider(googleProvider);
+      _analyticsService?.logSignIn(method: 'google');
     } on fb.FirebaseAuthException catch (e) {
       _log('google', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
@@ -243,6 +256,7 @@ class AuthService extends ChangeNotifier {
     try {
       final appleProvider = fb.AppleAuthProvider();
       await _firebaseAuth!.signInWithProvider(appleProvider);
+      _analyticsService?.logSignIn(method: 'apple');
     } on fb.FirebaseAuthException catch (e) {
       _log('apple', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
@@ -304,6 +318,7 @@ class AuthService extends ChangeNotifier {
       await _firebaseAuth.currentUser!
           .delete()
           .timeout(_authTimeout, onTimeout: _onTimeout);
+      _analyticsService?.logAccountDelete();
       await _clearPersistedData();
     } on fb.FirebaseAuthException catch (e) {
       _setLoading(false);
@@ -393,12 +408,27 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Structured log for auth events. Uses [debugPrint], which throttles
-  /// output but still runs in release builds. Replace with Crashlytics
-  /// or a proper logger before production. The [tag] identifies the auth
-  /// flow (email, google, apple, signup, signout, etc.) for filtering.
+  /// Structured log for auth events. Routes to Crashlytics in production
+  /// and debugPrint in debug mode. No PII in messages (error codes only).
   static void _log(String tag, String message) {
     debugPrint('AuthService [$tag] $message');
+    _crashlyticsLog('AuthService [$tag] $message');
+  }
+
+  static void _crashlyticsLog(String message) {
+    try {
+      unawaited(FirebaseCrashlytics.instance.log(message));
+    } on Exception catch (_) {
+      // Crashlytics unavailable (e.g. in unit tests without Firebase).
+    }
+  }
+
+  static void _setCrashlyticsUserId(String uid) {
+    try {
+      unawaited(FirebaseCrashlytics.instance.setUserIdentifier(uid));
+    } on Exception catch (_) {
+      // Crashlytics unavailable (e.g. in unit tests without Firebase).
+    }
   }
 
   Never _onTimeout() {
