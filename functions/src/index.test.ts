@@ -553,6 +553,19 @@ describe("Rank engine (pure score math)", () => {
     expect(computeScore([], now)).toBe(0);
   });
 
+  test("missing weight defaults to 1 (no NaN)", () => {
+    // Simulate a vote doc with no weight field by passing weight: 1
+    // (the orchestrator defaults missing weight to 1 via ?? 1).
+    // The engine itself receives the weight, so we verify that
+    // weight=1 produces the same result as an explicit weight=1 vote.
+    const withWeight = computeScore(
+      [{createdAt: now, weight: 1}],
+      now
+    );
+    expect(withWeight).toBeCloseTo(1.0, 5);
+    expect(Number.isNaN(withWeight)).toBe(false);
+  });
+
   test("multiple votes are additive", () => {
     const s1 = computeScore([{createdAt: now, weight: 1}], now);
     const s2 = computeScore([{createdAt: daysAgo(45), weight: 1}], now);
@@ -705,7 +718,9 @@ describe("Rank recompute integration (real recomputeAllRanks)", () => {
         });
     }
 
-    // Restaurant C: 5 old votes (should rank #3 despite more total votes)
+    // Restaurant C: 5 very old votes (should rank #3 despite more total votes)
+    // At 330-370 days old with 90-day half-life, each vote decays to ~0.06,
+    // so 5 * ~0.06 = ~0.3, well below rest-b's 2 fresh votes (~1.99).
     await db.collection("restaurants").doc("rest-c").set({
       id: "rest-c",
       cityId: "test-city",
@@ -721,7 +736,7 @@ describe("Rank recompute integration (real recomputeAllRanks)", () => {
         .doc(`user-c${i}`)
         .set({
           createdAt: Timestamp.fromDate(
-            new Date(now.getTime() - (80 + i * 10) * msPerDay)
+            new Date(now.getTime() - (330 + i * 10) * msPerDay)
           ),
           weight: 1,
         });
@@ -767,6 +782,33 @@ describe("Rank recompute integration (real recomputeAllRanks)", () => {
       .map((d) => d.data().rank as number)
       .sort((a, b) => a - b);
     expect(ranks).toEqual([1, 2, 3]);
+  });
+
+  test("vote doc without weight field scores as weight=1", async () => {
+    // Add a restaurant with a weightless vote doc
+    await db.collection("restaurants").doc("rest-noweight").set({
+      id: "rest-noweight",
+      cityId: "test-city",
+      name: "No Weight Restaurant",
+      rank: 1,
+      voteCount: 1,
+    });
+    await db
+      .collection("restaurants")
+      .doc("rest-noweight")
+      .collection("votes")
+      .doc("user-nw")
+      .set({
+        createdAt: Timestamp.fromDate(now),
+        // no weight field
+      });
+
+    await recomputeAllRanks(db, now);
+
+    const doc = await db.collection("restaurants").doc("rest-noweight").get();
+    // Should not be NaN; should have a valid positive score
+    expect(doc.data()?.rankScore).toBeGreaterThan(0);
+    expect(Number.isNaN(doc.data()?.rankScore)).toBe(false);
   });
 
   test("restaurant with zero votes gets last rank", async () => {

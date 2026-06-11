@@ -12,7 +12,7 @@ import {
 } from "firebase-functions/v2/firestore";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import * as functions from "firebase-functions";
+import * as auth from "firebase-functions/v1/auth";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
@@ -130,11 +130,9 @@ export const submitSuggestion = onCall(async (request) => {
 //    Votes are deleted, letting onVoteDeleted decrement aggregates.
 // ---------------------------------------------------------------------------
 
-export const onUserDeleted = functions
-  .runWith({maxInstances: 10})
-  .region("us-central1")
-  .auth.user()
-  .onDelete(async (user) => {
+export const onUserDeleted = auth
+  .user()
+  .onDelete(async (user: auth.UserRecord) => {
     await deleteUserData(db, user.uid);
   });
 

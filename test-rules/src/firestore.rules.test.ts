@@ -245,11 +245,12 @@ describe("votes", () => {
     });
   });
 
-  test("user can create a vote doc with their own UID", async () => {
+  test("user can create a vote doc with their own UID and weight 1", async () => {
     const db = freeUser("alice").firestore();
     await assertSucceeds(
       setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
         createdAt: serverTimestamp(),
+        weight: 1,
       })
     );
   });
@@ -258,6 +259,26 @@ describe("votes", () => {
     const db = freeUser("alice").firestore();
     await assertFails(
       setDoc(doc(db, "restaurants/hou-1/votes/bob"), {
+        createdAt: serverTimestamp(),
+        weight: 1,
+      })
+    );
+  });
+
+  test("user DENIED creating a vote with weight != 1", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        createdAt: serverTimestamp(),
+        weight: 2,
+      })
+    );
+  });
+
+  test("user DENIED creating a vote without weight field", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
         createdAt: serverTimestamp(),
       })
     );
