@@ -38,7 +38,6 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text(city.displayName, style: AppTheme.headlineLarge),
         backgroundColor: AppTheme.background,
         foregroundColor: AppTheme.textPrimary,
         elevation: 0,
@@ -53,7 +52,12 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(city.description, style: AppTheme.bodyLarge),
+              Text(city.displayName, style: AppTheme.displayLarge),
+              const SizedBox(height: AppTheme.spacingXs),
+              Text(
+                city.description,
+                style: AppTheme.bodyMedium,
+              ),
               const SizedBox(height: AppTheme.spacingLg),
               // Toggle
               Row(
