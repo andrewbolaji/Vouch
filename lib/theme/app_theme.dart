@@ -56,6 +56,13 @@ class AppTheme {
   static const double radiusLg = 16;
   static const double radiusXl = 24;
 
+  // Alpha values
+  static const double alphaWatermark = 0.07;
+  static const double alphaAccentSubtle = 0.12;
+
+  // Sizes
+  static const double watermarkFontSize = 80;
+
   // Typography
   static bool get _useSerif =>
       kActiveTheme == AppThemeVariant.editorialDark ||

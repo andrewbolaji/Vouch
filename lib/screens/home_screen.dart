@@ -268,8 +268,10 @@ class _CityCard extends StatelessWidget {
                 child: Text(
                   state,
                   style: AppTheme.displayLarge.copyWith(
-                    fontSize: 80,
-                    color: AppTheme.textPrimary.withValues(alpha: 0.07),
+                    fontSize: AppTheme.watermarkFontSize,
+                    color: AppTheme.textPrimary.withValues(
+                      alpha: AppTheme.alphaWatermark,
+                    ),
                   ),
                 ),
               ),
@@ -308,7 +310,9 @@ class _CityCard extends StatelessWidget {
                         vertical: AppTheme.spacingXs,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.accent.withValues(alpha: 0.12),
+                        color: AppTheme.accent.withValues(
+                          alpha: AppTheme.alphaAccentSubtle,
+                        ),
                         borderRadius:
                             BorderRadius.circular(AppTheme.radiusXl),
                       ),
