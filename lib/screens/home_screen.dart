@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/config/brand_config.dart';
@@ -255,50 +254,85 @@ class _CityCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
+            color: AppTheme.surface,
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             border: Border.all(color: AppTheme.divider),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Expanded(
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) =>
-                      Container(color: AppTheme.surfaceVariant),
-                  errorWidget: (context, url, error) => ColoredBox(
-                    color: AppTheme.surfaceVariant,
-                    child: Icon(
-                      Icons.location_city,
-                      color: AppTheme.textTertiary,
-                      size: 40,
-                    ),
+              // State abbreviation watermark
+              Positioned(
+                right: -AppTheme.spacingSm,
+                bottom: -AppTheme.spacingSm,
+                child: Text(
+                  state,
+                  style: AppTheme.displayLarge.copyWith(
+                    fontSize: 80,
+                    color: AppTheme.textPrimary.withValues(alpha: 0.07),
                   ),
                 ),
               ),
-              Container(
-                color: AppTheme.cardBackground,
-                padding: const EdgeInsets.all(
-                  AppTheme.spacingSm + AppTheme.spacingXxs,
-                ),
+              // Card content
+              Padding(
+                padding: const EdgeInsets.all(AppTheme.spacingMd),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$name, $state',
-                      style: AppTheme.labelLarge,
+                      name,
+                      style: AppTheme.headlineLarge,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppTheme.spacingXxs),
                     Text(
-                      description,
+                      state,
                       style: AppTheme.bodySmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppTheme.spacingSm),
+                    Expanded(
+                      child: Text(
+                        description,
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Top 10 pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacingSm,
+                        vertical: AppTheme.spacingXs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accent.withValues(alpha: 0.12),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.radiusXl),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: AppTheme.spacingXsSm,
+                            height: AppTheme.spacingXsSm,
+                            decoration: BoxDecoration(
+                              color: AppTheme.accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: AppTheme.spacingXs),
+                          Text(
+                            'Top 10',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.accent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

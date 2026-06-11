@@ -52,8 +52,8 @@ void main() {
       );
 
       // Should show city names
-      expect(find.text('Houston, TX'), findsOneWidget);
-      expect(find.text('New York, NY'), findsOneWidget);
+      expect(find.text('Houston'), findsOneWidget);
+      expect(find.text('New York'), findsOneWidget);
     });
 
     testWidgets('has search field', (tester) async {
@@ -81,8 +81,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Houston, TX'), findsOneWidget);
-        expect(find.text('New York, NY'), findsNothing);
+        // "Houston" appears in both the search field and the card
+        expect(find.text('Houston'), findsNWidgets(2));
+        expect(find.text('New York'), findsNothing);
       },
     );
 
