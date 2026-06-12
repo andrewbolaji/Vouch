@@ -12,20 +12,36 @@ class UserRepository {
   CollectionReference<Map<String, dynamic>> get _usersRef =>
       _firestore.collection('users');
 
-  /// Ensures a user doc exists with at least id and displayName.
+  /// Ensures a user doc exists with all required fields.
   /// Uses set-with-merge so it creates the doc if missing and
-  /// does not overwrite existing fields.
+  /// does not overwrite existing list fields on re-sign-in.
   Future<void> ensureUserDoc({
     required String uid,
     required String displayName,
     required String email,
   }) async {
     try {
-      await _usersRef.doc(uid).set({
-        'id': uid,
-        'displayName': displayName,
-        'email': email,
-      }, SetOptions(merge: true));
+      final doc = await _usersRef.doc(uid).get();
+      if (doc.exists) {
+        // Doc exists; update displayName/email but do not
+        // clobber lists, tier, or timestamps.
+        await _usersRef.doc(uid).set({
+          'displayName': displayName,
+          'email': email,
+        }, SetOptions(merge: true));
+      } else {
+        // First sign-in: write a complete initial doc.
+        await _usersRef.doc(uid).set({
+          'id': uid,
+          'displayName': displayName,
+          'email': email,
+          'membershipTier': 'free',
+          'savedRestaurantIds': <String>[],
+          'blockedUserIds': <String>[],
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastActiveAt': FieldValue.serverTimestamp(),
+        });
+      }
     } on FirebaseException catch (e) {
       throw mapFirestoreException(e);
     }

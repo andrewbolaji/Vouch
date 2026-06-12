@@ -691,6 +691,27 @@ describe("users", () => {
     );
   });
 
+  // eslint-disable-next-line max-len
+  test("updateSaved: arrayUnion on savedRestaurantIds with real app doc shape", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      email: "alice@test.com",
+      membershipTier: "free",
+      savedRestaurantIds: [],
+      blockedUserIds: [],
+      createdAt: new Date(),
+      lastActiveAt: new Date(),
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users/alice"), {
+        savedRestaurantIds: ["hou-1"],
+      })
+    );
+  });
+
+  // eslint-disable-next-line max-len
   test("removeBlock: arrayRemove on blockedUserIds with real app doc shape", async () => {
     await seedAsAdmin("users/alice", {
       id: "alice",
