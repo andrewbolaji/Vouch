@@ -59,12 +59,28 @@ class SavedProvider extends ChangeNotifier {
   void _onAuthChanged() {
     final uid = _currentUid;
     if (uid != null) {
-      unawaited(_loadForUser(uid));
+      unawaited(_ensureUserDocAndLoad(uid));
     } else {
       _savedRestaurantIds.clear();
       _loaded = true;
       notifyListeners();
     }
+  }
+
+  Future<void> _ensureUserDocAndLoad(String uid) async {
+    if (_userRepo != null) {
+      try {
+        final user = _authService.currentUser;
+        await _userRepo.ensureUserDoc(
+          uid: uid,
+          displayName: user?.displayName ?? '',
+          email: user?.email ?? '',
+        );
+      } on Exception catch (e) {
+        debugPrint('SavedProvider: ensureUserDoc failed: $e');
+      }
+    }
+    await _loadForUser(uid);
   }
 
   Future<void> _loadForUser(String uid) async {

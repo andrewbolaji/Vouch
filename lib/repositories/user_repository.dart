@@ -12,6 +12,25 @@ class UserRepository {
   CollectionReference<Map<String, dynamic>> get _usersRef =>
       _firestore.collection('users');
 
+  /// Ensures a user doc exists with at least id and displayName.
+  /// Uses set-with-merge so it creates the doc if missing and
+  /// does not overwrite existing fields.
+  Future<void> ensureUserDoc({
+    required String uid,
+    required String displayName,
+    required String email,
+  }) async {
+    try {
+      await _usersRef.doc(uid).set({
+        'id': uid,
+        'displayName': displayName,
+        'email': email,
+      }, SetOptions(merge: true));
+    } on FirebaseException catch (e) {
+      throw mapFirestoreException(e);
+    }
+  }
+
   /// Returns the user profile for the given UID, or null if it does not exist.
   Future<UserProfile?> getUser(String uid) async {
     try {
@@ -63,22 +82,26 @@ class UserRepository {
   }
 
   /// Adds a user ID to the blocker's blockedUserIds list.
+  /// Uses set-with-merge so the write succeeds even if the
+  /// user doc does not exist yet.
   Future<void> addBlock(String blockerUid, String blockedUid) async {
     try {
-      await _usersRef.doc(blockerUid).update({
+      await _usersRef.doc(blockerUid).set({
         'blockedUserIds': FieldValue.arrayUnion([blockedUid]),
-      });
+      }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw mapFirestoreException(e);
     }
   }
 
   /// Removes a user ID from the blocker's blockedUserIds list.
+  /// Uses set-with-merge so the write succeeds even if the
+  /// user doc does not exist yet.
   Future<void> removeBlock(String blockerUid, String blockedUid) async {
     try {
-      await _usersRef.doc(blockerUid).update({
+      await _usersRef.doc(blockerUid).set({
         'blockedUserIds': FieldValue.arrayRemove([blockedUid]),
-      });
+      }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw mapFirestoreException(e);
     }

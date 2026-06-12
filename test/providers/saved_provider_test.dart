@@ -79,6 +79,12 @@ class FakeUserRepository implements UserRepository {
   @override
   Future<List<String>> getBlockedIds(String uid) =>
       throw UnimplementedError();
+  @override
+  Future<void> ensureUserDoc({
+    required String uid,
+    required String displayName,
+    required String email,
+  }) async {}
 }
 
 // -- Helpers --

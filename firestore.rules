@@ -113,9 +113,9 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid);
-      // Cannot change the uid field on update
+      // Cannot change the id field on update
       allow update: if isOwner(uid)
-        && request.resource.data.uid == resource.data.uid;
+        && request.resource.data.id == resource.data.id;
 
       // ---------------------------------------------------
       // suggestionCounts subcollection

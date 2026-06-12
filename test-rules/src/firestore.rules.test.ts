@@ -373,7 +373,7 @@ describe("comments", () => {
     });
     // Seed the user doc so userName validation can look it up
     await seedAsAdmin(`users/${userUid}`, {
-      uid: userUid,
+      id: userUid,
       displayName: "TestUser",
       email: "test@example.com",
       membershipTier: "free",
@@ -446,7 +446,7 @@ describe("comments", () => {
   test("cityInsider can create comment with isInsider=true", async () => {
     const insiderUid = "insider-commenter";
     await seedAsAdmin(`users/${insiderUid}`, {
-      uid: insiderUid,
+      id: insiderUid,
       displayName: "InsiderUser",
       email: "insider@example.com",
       membershipTier: "cityInsider",
@@ -545,7 +545,7 @@ describe("comments", () => {
   test("unverified email user DENIED creating comment", async () => {
     const unvUid = "unverified-commenter";
     await seedAsAdmin(`users/${unvUid}`, {
-      uid: unvUid,
+      id: unvUid,
       displayName: "Unverified",
       email: "unv@test.com",
       membershipTier: "free",
@@ -577,7 +577,7 @@ describe("comments", () => {
 describe("users", () => {
   test("user can read their own doc", async () => {
     await seedAsAdmin("users/alice", {
-      uid: "alice",
+      id: "alice",
       displayName: "Alice",
       email: "alice@test.com",
     });
@@ -587,7 +587,7 @@ describe("users", () => {
 
   test("DENIED: user cannot read another user's doc", async () => {
     await seedAsAdmin("users/bob", {
-      uid: "bob",
+      id: "bob",
       displayName: "Bob",
       email: "bob@test.com",
     });
@@ -599,7 +599,7 @@ describe("users", () => {
     const db = freeUser("alice").firestore();
     await assertSucceeds(
       setDoc(doc(db, "users/alice"), {
-        uid: "alice",
+        id: "alice",
         displayName: "Alice",
         email: "alice@test.com",
       })
@@ -610,16 +610,16 @@ describe("users", () => {
     const db = freeUser("alice").firestore();
     await assertFails(
       setDoc(doc(db, "users/bob"), {
-        uid: "bob",
+        id: "bob",
         displayName: "Bob",
         email: "bob@test.com",
       })
     );
   });
 
-  test("user can update their own doc without changing uid", async () => {
+  test("user can update their own doc without changing id", async () => {
     await seedAsAdmin("users/alice", {
-      uid: "alice",
+      id: "alice",
       displayName: "Alice",
       email: "alice@test.com",
     });
@@ -631,16 +631,16 @@ describe("users", () => {
     );
   });
 
-  test("DENIED: user cannot change uid field on update", async () => {
+  test("DENIED: user cannot change id field on update", async () => {
     await seedAsAdmin("users/alice", {
-      uid: "alice",
+      id: "alice",
       displayName: "Alice",
       email: "alice@test.com",
     });
     const db = freeUser("alice").firestore();
     await assertFails(
       setDoc(doc(db, "users/alice"), {
-        uid: "hacked-uid",
+        id: "hacked-id",
         displayName: "Alice",
         email: "alice@test.com",
       })
@@ -649,7 +649,7 @@ describe("users", () => {
 
   test("DENIED: user cannot update another user's doc", async () => {
     await seedAsAdmin("users/bob", {
-      uid: "bob",
+      id: "bob",
       displayName: "Bob",
       email: "bob@test.com",
     });
@@ -663,11 +663,51 @@ describe("users", () => {
 
   test("unauthenticated user DENIED reading any user doc", async () => {
     await seedAsAdmin("users/alice", {
-      uid: "alice",
+      id: "alice",
       displayName: "Alice",
     });
     const db = unauthenticated().firestore();
     await assertFails(getDoc(doc(db, "users/alice")));
+  });
+
+  // Block tests: seed the user doc with the EXACT fields the app
+  // writes via UserProfile.toJson() (field is "id", not "uid").
+  test("addBlock: arrayUnion on blockedUserIds with real app doc shape", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      email: "alice@test.com",
+      membershipTier: "free",
+      savedRestaurantIds: [],
+      blockedUserIds: [],
+      createdAt: new Date(),
+      lastActiveAt: new Date(),
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users/alice"), {
+        blockedUserIds: ["blocked-user-1"],
+      })
+    );
+  });
+
+  test("removeBlock: arrayRemove on blockedUserIds with real app doc shape", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      email: "alice@test.com",
+      membershipTier: "free",
+      savedRestaurantIds: [],
+      blockedUserIds: ["blocked-user-1"],
+      createdAt: new Date(),
+      lastActiveAt: new Date(),
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users/alice"), {
+        blockedUserIds: [],
+      })
+    );
   });
 });
 

@@ -41,6 +41,12 @@ class _FakeUserRepo implements UserRepository {
   Future<void> removeBlock(String blockerUid, String blockedUid) async {}
   @override
   Future<List<String>> getBlockedIds(String uid) async => [];
+  @override
+  Future<void> ensureUserDoc({
+    required String uid,
+    required String displayName,
+    required String email,
+  }) async {}
 }
 
 void main() {
