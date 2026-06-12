@@ -17,6 +17,7 @@ class AuthUser {
     this.displayName,
     this.photoUrl,
     this.method = AuthMethod.anonymous,
+    this.emailVerified = false,
   });
 
   final String uid;
@@ -24,8 +25,14 @@ class AuthUser {
   final String? displayName;
   final String? photoUrl;
   final AuthMethod method;
+  final bool emailVerified;
 
   bool get isAnonymous => method == AuthMethod.anonymous;
+
+  /// True when this is an email/password user who has not yet
+  /// clicked the verification link.
+  bool get needsEmailVerification =>
+      method == AuthMethod.email && !emailVerified;
 }
 
 /// Timeout for non-interactive Firebase Auth calls (email, backend ops).
@@ -123,6 +130,7 @@ class AuthService extends ChangeNotifier {
       displayName: fbUser.displayName,
       photoUrl: fbUser.photoURL,
       method: method,
+      emailVerified: fbUser.emailVerified,
     );
   }
 
@@ -205,6 +213,7 @@ class AuthService extends ChangeNotifier {
       await credential.user?.updateDisplayName(name);
       // Force a reload so displayName is available immediately
       await credential.user?.reload();
+      await credential.user?.sendEmailVerification();
       _analyticsService?.logSignUp(method: 'email');
     } on fb.FirebaseAuthException catch (e) {
       _log('signup', 'FirebaseAuthException: '
@@ -398,6 +407,50 @@ class AuthService extends ChangeNotifier {
       throw _mapAuthException(e);
     } on TimeoutException {
       throw const NetworkException();
+    }
+  }
+
+  /// Sends a verification email to the current user.
+  Future<void> sendVerificationEmail() async {
+    try {
+      await _firebaseAuth!.currentUser
+          ?.sendEmailVerification()
+          .timeout(_authTimeout, onTimeout: _onTimeout);
+    } on fb.FirebaseAuthException catch (e) {
+      throw _mapAuthException(e);
+    } on TimeoutException {
+      throw const NetworkException();
+    }
+  }
+
+  /// Reloads the current user from Firebase and updates local state.
+  /// Returns true if the user's email is now verified.
+  Future<bool> reloadAndCheckVerified() async {
+    try {
+      await _firebaseAuth!.currentUser
+          ?.reload()
+          .timeout(_authTimeout, onTimeout: _onTimeout);
+      final user = _firebaseAuth.currentUser;
+      if (user != null) {
+        _currentUser = _mapFirebaseUser(user);
+        notifyListeners();
+        return user.emailVerified;
+      }
+      return false;
+    } on fb.FirebaseAuthException catch (e) {
+      throw _mapAuthException(e);
+    } on TimeoutException {
+      throw const NetworkException();
+    }
+  }
+
+  /// Force-refreshes the ID token so Firestore rules see
+  /// updated claims (e.g. email_verified after verification).
+  Future<void> forceTokenRefresh() async {
+    try {
+      await _firebaseAuth!.currentUser?.getIdToken(true);
+    } on Exception catch (e) {
+      _log('token', 'force refresh failed: $e');
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/core/error/app_exception.dart';
+import 'package:vouch/screens/verify_email_screen.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
@@ -58,10 +59,27 @@ class _SignInScreenState extends State<SignInScreen> {
           return;
         }
         await auth.signUpWithEmail(email, password, name);
+        if (mounted) {
+          await Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(
+              builder: (_) => const VerifyEmailScreen(),
+            ),
+          );
+        }
       } else {
         await auth.signInWithEmail(email, password);
+        if (mounted) {
+          if (auth.currentUser?.needsEmailVerification ?? false) {
+            await Navigator.of(context).pushReplacement(
+              MaterialPageRoute<void>(
+                builder: (_) => const VerifyEmailScreen(),
+              ),
+            );
+          } else {
+            Navigator.of(context).pop();
+          }
+        }
       }
-      if (mounted) Navigator.of(context).pop();
     } on AppException catch (e) {
       if (mounted) setState(() => _error = e.message);
     }

@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vouch/config/brand_config.dart';
 import 'package:vouch/screens/home_screen.dart';
 import 'package:vouch/screens/onboarding_screen.dart';
+import 'package:vouch/screens/verify_email_screen.dart';
+import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -55,9 +58,19 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    final destination = hasSeenOnboarding
-        ? const HomeScreen()
-        : const OnboardingScreen();
+    // Gate: unverified email users go to the verify screen.
+    final auth = context.read<AuthService>();
+    final needsVerify =
+        auth.currentUser?.needsEmailVerification ?? false;
+
+    final Widget destination;
+    if (needsVerify) {
+      destination = const VerifyEmailScreen();
+    } else if (hasSeenOnboarding) {
+      destination = const HomeScreen();
+    } else {
+      destination = const OnboardingScreen();
+    }
 
     unawaited(
       Navigator.of(context).pushReplacement(

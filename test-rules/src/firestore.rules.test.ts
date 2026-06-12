@@ -26,22 +26,34 @@ const RULES_PATH = resolve(__dirname, "../../firestore.rules");
 
 let testEnv: RulesTestEnvironment;
 
-// Helpers for creating authenticated contexts with custom claims
+// Helpers for creating authenticated contexts with custom claims.
+// All verified by default (email_verified: true) since votes and
+// comments now require verification.
 function freeUser(uid: string = "free-user") {
   return testEnv.authenticatedContext(uid, {
     membershipTier: "free",
+    email_verified: true,
   });
 }
 
 function localsPassUser(uid: string = "locals-user") {
   return testEnv.authenticatedContext(uid, {
     membershipTier: "localsPass",
+    email_verified: true,
   });
 }
 
 function cityInsiderUser(uid: string = "insider-user") {
   return testEnv.authenticatedContext(uid, {
     membershipTier: "cityInsider",
+    email_verified: true,
+  });
+}
+
+function unverifiedUser(uid: string = "unverified-user") {
+  return testEnv.authenticatedContext(uid, {
+    membershipTier: "free",
+    email_verified: false,
   });
 }
 
@@ -284,6 +296,16 @@ describe("votes", () => {
     );
   });
 
+  test("unverified email user DENIED creating a vote", async () => {
+    const db = unverifiedUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        createdAt: serverTimestamp(),
+        weight: 1,
+      })
+    );
+  });
+
   test("user can delete their own vote", async () => {
     await seedAsAdmin("restaurants/hou-1/votes/alice", {
       createdAt: new Date(),
@@ -516,6 +538,33 @@ describe("comments", () => {
       addDoc(
         collection(db, "restaurants/hou-1/comments"),
         validComment()
+      )
+    );
+  });
+
+  test("unverified email user DENIED creating comment", async () => {
+    const unvUid = "unverified-commenter";
+    await seedAsAdmin(`users/${unvUid}`, {
+      uid: unvUid,
+      displayName: "Unverified",
+      email: "unv@test.com",
+      membershipTier: "free",
+    });
+    const db = testEnv.authenticatedContext(unvUid, {
+      membershipTier: "free",
+      email_verified: false,
+    }).firestore();
+    await assertFails(
+      addDoc(
+        collection(db, "restaurants/hou-1/comments"),
+        {
+          userId: unvUid,
+          userName: "Unverified",
+          text: "Should be blocked",
+          parentId: null,
+          isInsider: false,
+          createdAt: serverTimestamp(),
+        }
       )
     );
   });
@@ -765,6 +814,20 @@ describe("reports", () => {
     const db = freeUser("alice").firestore();
     await assertSucceeds(
       addDoc(collection(db, "reports"), validReport)
+    );
+  });
+
+  test("unverified email user CAN create own report (safety feature)", async () => {
+    const unvUid = "unv-reporter";
+    const db = testEnv.authenticatedContext(unvUid, {
+      membershipTier: "free",
+      email_verified: false,
+    }).firestore();
+    await assertSucceeds(
+      addDoc(collection(db, "reports"), {
+        ...validReport,
+        reporterUid: unvUid,
+      })
     );
   });
 
