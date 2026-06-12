@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/core/error/app_exception.dart';
+import 'package:vouch/screens/home_screen.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
@@ -71,7 +72,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       if (!mounted) return;
       if (verified) {
         await auth.forceTokenRefresh();
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) _navigateIn();
       } else {
         setState(() {
           _message = 'Not verified yet. Check your email and try again.';
@@ -86,10 +87,34 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     }
   }
 
+  /// After verification, return to where the user came from.
+  /// If there is a route below (sign-in pushed from restaurant detail),
+  /// pop back to it. If this is the root (splash cold start), push home.
+  void _navigateIn() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      unawaited(
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+        ),
+      );
+    }
+  }
+
   Future<void> _signOut() async {
     final auth = context.read<AuthService>();
     await auth.signOut();
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      unawaited(
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+        ),
+      );
+    }
   }
 
   @override

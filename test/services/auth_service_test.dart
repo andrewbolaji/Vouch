@@ -377,6 +377,7 @@ void main() {
       when(() => mockUser.email).thenReturn('stream@test.com');
       when(() => mockUser.displayName).thenReturn('Stream User');
       when(() => mockUser.photoURL).thenReturn(null);
+      when(() => mockUser.emailVerified).thenReturn(true);
       when(() => mockEmailProvider.providerId).thenReturn('password');
       when(() => mockUser.providerData).thenReturn([mockEmailProvider]);
       when(() => mockUser.getIdToken()).thenAnswer((_) async => 'tok');
@@ -387,6 +388,7 @@ void main() {
       expect(service.currentUser, isNotNull);
       expect(service.currentUser!.uid, equals('stream-uid'));
       expect(service.currentUser!.method, equals(AuthMethod.email));
+      expect(service.currentUser!.emailVerified, isTrue);
     });
 
     test('authStateChanges with null clears currentUser', () async {
@@ -398,6 +400,7 @@ void main() {
       when(() => mockUser.email).thenReturn('a@b.com');
       when(() => mockUser.displayName).thenReturn('User');
       when(() => mockUser.photoURL).thenReturn(null);
+      when(() => mockUser.emailVerified).thenReturn(false);
       when(() => mockUser.providerData).thenReturn([]);
       when(() => mockUser.getIdToken()).thenAnswer((_) async => 'tok');
       authStateController.add(mockUser);
@@ -446,6 +449,7 @@ void main() {
       when(() => mockUser.email).thenReturn('slow@test.com');
       when(() => mockUser.displayName).thenReturn('Slow User');
       when(() => mockUser.photoURL).thenReturn(null);
+      when(() => mockUser.emailVerified).thenReturn(true);
       when(() => mockUser.providerData).thenReturn([]);
       when(() => mockUser.getIdToken()).thenAnswer((_) async => 'tok');
       when(() => mockCred.user).thenReturn(mockUser);
@@ -475,6 +479,7 @@ void main() {
       when(() => mockUser.displayName).thenReturn('Google User');
       when(() => mockUser.photoURL)
           .thenReturn('https://photo.example.com/avatar.jpg');
+      when(() => mockUser.emailVerified).thenReturn(true);
       when(() => mockGoogleProvider.providerId).thenReturn('google.com');
       when(() => mockUser.providerData).thenReturn([mockGoogleProvider]);
       when(() => mockUser.getIdToken()).thenAnswer((_) async => 'google-token');
