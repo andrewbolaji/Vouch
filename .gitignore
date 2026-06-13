@@ -60,3 +60,14 @@ lib/firebase_options.dart
 **/serviceAccountKey*.json
 **/*credentials*.json
 **/*sa-*.json
+
+# Portable framework/strategy docs (not Vouch project docs)
+/AI_BUILD_FRAMEWORK.md
+/AppMarketingPlaybook.md
+/BEAUTIFICATION_BRIEF.md
+/NEW_PROJECT_SETUP.md
+/TEMPLATES_AND_PROTOCOLS.md
+
+# Root-level generated lock files
+/macos/Podfile.lock
+/package-lock.json
