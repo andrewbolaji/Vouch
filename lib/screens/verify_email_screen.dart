@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/screens/home_screen.dart';
+import 'package:vouch/screens/sign_in_screen.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
@@ -111,7 +112,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     } else {
       unawaited(
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+          MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
         ),
       );
     }
@@ -142,7 +143,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             ),
             const SizedBox(height: AppTheme.spacingLg),
             Text('Check your inbox', style: AppTheme.displayMedium),
-            const SizedBox(height: AppTheme.spacingMd),
+            const SizedBox(height: AppTheme.spacingLg),
             Text(
               'We sent a verification link to $email. '
               'Tap the link in the email, then come back '
@@ -151,7 +152,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 color: AppTheme.textSecondary,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingSm),
+            const SizedBox(height: AppTheme.spacingMd),
             Text(
               'Check your spam folder if you do not see it.',
               style: AppTheme.bodyMedium,
