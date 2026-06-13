@@ -71,6 +71,14 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(auth.displayName, style: AppTheme.headlineMedium),
+                        if (auth.currentUser?.email != null) ...[
+                          const SizedBox(height: AppTheme.spacingXs),
+                          Text(
+                            auth.currentUser!.email!,
+                            style: AppTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                         const SizedBox(height: AppTheme.spacingXs),
                         PremiumBadge(label: membership.tierName),
                       ],

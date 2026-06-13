@@ -21,7 +21,7 @@ class SeedData {
       imageUrl:
           'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800',
       description:
-          'If you can eat here, you can eat anywhere.',
+          'Only the best survive here.',
       restaurantCount: 10,
     ),
     City(

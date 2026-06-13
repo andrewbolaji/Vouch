@@ -9,8 +9,8 @@ import 'package:vouch/providers/suggestion_provider.dart';
 import 'package:vouch/screens/profile_screen.dart';
 import 'package:vouch/services/auth_service.dart';
 
-Widget buildTestApp(Widget child) {
-  final auth = AuthService.mock();
+Widget buildTestApp(Widget child, {AuthService? authOverride}) {
+  final auth = authOverride ?? AuthService.mock();
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => AppState(useFirebase: false)),
@@ -119,6 +119,51 @@ void main() {
         );
 
         expect(find.text('Free'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows email when signed in',
+      (tester) async {
+        final auth = AuthService.mock(
+          initialUser: const AuthUser(
+            uid: 'u1',
+            email: 'test@example.com',
+            displayName: 'Test User',
+            method: AuthMethod.email,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestApp(const ProfileScreen(), authOverride: auth),
+        );
+        await tester.pumpAndSettle(
+          const Duration(milliseconds: 700),
+        );
+
+        expect(find.text('test@example.com'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'omits email line when email is null',
+      (tester) async {
+        final auth = AuthService.mock(
+          initialUser: const AuthUser(
+            uid: 'u2',
+            displayName: 'No Email User',
+            method: AuthMethod.apple,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestApp(const ProfileScreen(), authOverride: auth),
+        );
+        await tester.pumpAndSettle(
+          const Duration(milliseconds: 700),
+        );
+
+        expect(find.text('No Email User'), findsOneWidget);
+        // No email line should be rendered
+        expect(find.textContaining('@'), findsNothing);
       },
     );
   });

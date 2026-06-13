@@ -121,7 +121,7 @@ void main() {
                         childAspectRatio: 0.85,
                         children: [
                           _MockCityCard(name: 'Houston', state: 'TX', desc: 'The most diverse food city in America. No debate.', imgColor: const Color(0xFF8B4513)),
-                          _MockCityCard(name: 'New York', state: 'NY', desc: 'If you can eat here, you can eat anywhere.', imgColor: const Color(0xFF2F4F4F)),
+                          _MockCityCard(name: 'New York', state: 'NY', desc: 'Only the best survive here.', imgColor: const Color(0xFF2F4F4F)),
                           _MockCityCard(name: 'Los Angeles', state: 'CA', desc: 'Tacos, sushi, and everything between.', imgColor: const Color(0xFF4169E1)),
                           _MockCityCard(name: 'Chicago', state: 'IL', desc: 'Deep dish is just the beginning.', imgColor: const Color(0xFF8B0000)),
                         ],
