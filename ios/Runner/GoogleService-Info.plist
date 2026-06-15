@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>400845601317-s4om9b0r6k39g9m1adngr6asoevetnbj.apps.googleusercontent.com</string>
+	<string>400845601317-3u8mrgacb140bnhiqhhjom6vn71hg907.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.400845601317-s4om9b0r6k39g9m1adngr6asoevetnbj</string>
+	<string>com.googleusercontent.apps.400845601317-3u8mrgacb140bnhiqhhjom6vn71hg907</string>
 	<key>API_KEY</key>
 	<string>AIzaSyD2oyo5oX9AM2kLIYIA2z69coQUz2Zsm38</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.vouch.app</string>
+	<string>com.thunderrivertech.vouch</string>
 	<key>PROJECT_ID</key>
 	<string>majorcitymusteats</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:400845601317:ios:fea74b6b900185cba05dcc</string>
+	<string>1:400845601317:ios:eca2a15ede7a0691a05dcc</string>
 </dict>
 </plist>
