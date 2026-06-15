@@ -1,7 +1,7 @@
 name: vouch
 description: "Curated Top 10 restaurant rankings per city, voted on by locals."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.10.8
