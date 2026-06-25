@@ -94,6 +94,17 @@ A restaurant can enhance its listing, never buy its rank. Rankings stay fully lo
 
 ---
 
+### Interactive engagement prompts (content-generation engine)
+**The idea:** After a user views or saves a place, prompt them with light questions: "Have you been here?", "What did you order?", "Your thoughts?" Responses feed directly into insider content for the City Insider tier and surface lesser-known spots that would otherwise stay buried.
+
+**Why v1.1:** Strong candidate because it doubles as a content-generation engine, not just engagement. The City Insider tier needs real insider tips and ordering advice to justify its price. User-generated answers are the scalable source. Without this, insider content stays editorial-only and does not grow with the user base.
+
+**Trigger:** City Insider tier is live and needs content beyond editorial seed data, OR user engagement metrics show users browse but do not interact.
+
+**Effort estimate:** Medium (prompt UI, response storage in Firestore, moderation queue integration, insider content surfacing pipeline).
+
+---
+
 ## v2 candidates (pin, don't build)
 
 ### Owner-claimed listing with the dish to order
