@@ -109,7 +109,23 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.restaurant_menu, color: AppTheme.accent, size: 64),
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.borderColor,
+                      width: AppTheme.borderInkWidth,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.restaurant_menu,
+                    color: AppTheme.onAccent,
+                    size: 44,
+                  ),
+                ),
                 const SizedBox(height: AppTheme.spacingLg),
                 Text(
                   BrandConfig.appName,
@@ -119,8 +135,8 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: AppTheme.spacingSm),
                 Text.rich(
                   TextSpan(
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textPrimary,
+                    style: AppTheme.labelMedium.copyWith(
+                      color: AppTheme.textSecondary,
                     ),
                     children: [
                       const TextSpan(text: 'Where locals '),
