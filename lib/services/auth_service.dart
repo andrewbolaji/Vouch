@@ -213,7 +213,12 @@ class AuthService extends ChangeNotifier {
       await credential.user?.updateDisplayName(name);
       // Force a reload so displayName is available immediately
       await credential.user?.reload();
-      await credential.user?.sendEmailVerification();
+      if (credential.user != null) {
+        await credential.user!.sendEmailVerification();
+        _log('signup', 'verification email sent');
+      } else {
+        _log('signup', 'verification email skipped: user was null');
+      }
       _analyticsService?.logSignUp(method: 'email');
     } on fb.FirebaseAuthException catch (e) {
       _log('signup', 'FirebaseAuthException: '
