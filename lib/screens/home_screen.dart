@@ -61,12 +61,33 @@ class HomeScreen extends StatelessWidget {
                               color: AppTheme.textTertiary,
                             ),
                             filled: true,
-                            fillColor: AppTheme.surfaceVariant,
+                            fillColor: AppTheme.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
-                                AppTheme.radiusMd,
+                                AppTheme.radiusSm,
                               ),
-                              borderSide: BorderSide.none,
+                              borderSide: BorderSide(
+                                color: AppTheme.borderColor,
+                                width: AppTheme.borderInkWidth,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusSm,
+                              ),
+                              borderSide: BorderSide(
+                                color: AppTheme.borderColor,
+                                width: AppTheme.borderInkWidth,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusSm,
+                              ),
+                              borderSide: BorderSide(
+                                color: AppTheme.accent,
+                                width: AppTheme.borderInkWidth,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: AppTheme.spacingMd,
@@ -253,11 +274,7 @@ class _CityCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          decoration: BoxDecoration(
-            color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            border: Border.all(color: AppTheme.divider),
-          ),
+          decoration: AppTheme.cardDecoration,
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
@@ -283,7 +300,7 @@ class _CityCard extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: AppTheme.headlineLarge,
+                      style: AppTheme.displayMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -310,11 +327,13 @@ class _CityCard extends StatelessWidget {
                         vertical: AppTheme.spacingXs,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.accent.withValues(
-                          alpha: AppTheme.alphaAccentSubtle,
-                        ),
+                        color: AppTheme.surface,
                         borderRadius:
-                            BorderRadius.circular(AppTheme.radiusXl),
+                            BorderRadius.circular(AppTheme.radiusSm),
+                        border: Border.all(
+                          color: AppTheme.accent,
+                          width: AppTheme.borderInkWidth,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
