@@ -613,16 +613,19 @@ class _AppBarChip extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 36,
-          height: 36,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: AppTheme.inkScrim.withValues(alpha: 0.45),
+            color: AppTheme.inkScrim.withValues(alpha: 0.55),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: AppTheme.background.withValues(alpha: 0.5),
+            ),
           ),
           child: Icon(
             icon,
             color: AppTheme.background,
-            size: 20,
+            size: 22,
           ),
         ),
       ),
