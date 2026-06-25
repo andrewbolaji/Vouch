@@ -92,7 +92,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(page.icon, color: AppTheme.accent, size: 80),
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.borderColor,
+                              width: AppTheme.borderInkWidth,
+                            ),
+                          ),
+                          child: Icon(
+                            page.icon,
+                            color: AppTheme.accent,
+                            size: 44,
+                          ),
+                        ),
                         const SizedBox(height: AppTheme.spacingXl),
                         Text(
                           page.title,
@@ -131,9 +147,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? AppTheme.accent
-                              : AppTheme.surfaceVariant,
+                              : AppTheme.surface,
                           borderRadius: BorderRadius.circular(
-                            AppTheme.spacingXs,
+                            AppTheme.radiusPill,
+                          ),
+                          border: Border.all(
+                            color: _currentPage == index
+                                ? AppTheme.accent
+                                : AppTheme.borderColor,
+                            width: AppTheme.borderInkWidth,
                           ),
                         ),
                       );
@@ -157,18 +179,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           unawaited(_goToHome());
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accent,
-                        foregroundColor: AppTheme.onAccent,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppTheme.spacingMd,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.radiusSm,
-                          ),
-                        ),
-                      ),
+                      style: AppTheme.accentButtonStyle,
                       child: Text(
                         _currentPage < _pages.length - 1
                             ? 'Next'
