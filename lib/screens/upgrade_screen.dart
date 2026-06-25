@@ -18,8 +18,13 @@ class UpgradeScreen extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppTheme.background,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXl),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.spacingMd),
+        ),
+        border: Border(
+          top: AppTheme.borderInk,
+          left: AppTheme.borderInk,
+          right: AppTheme.borderInk,
         ),
       ),
       child: SingleChildScrollView(
@@ -94,12 +99,15 @@ class UpgradeScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
                 padding: const EdgeInsets.all(AppTheme.spacingMd),
                 decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  color: AppTheme.cardBackground,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                   border: Border.all(
-                    color: isCurrentTier ? AppTheme.accent : AppTheme.divider,
-                    width: isCurrentTier ? 2 : 1,
+                    color: isCurrentTier
+                        ? AppTheme.goldInk
+                        : AppTheme.borderColor,
+                    width: AppTheme.borderInkWidth,
                   ),
+                  boxShadow: isCurrentTier ? AppTheme.shadowHard : null,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +120,7 @@ class UpgradeScreen extends StatelessWidget {
                         Text(
                           '$price$period',
                           style: AppTheme.headlineMedium.copyWith(
-                            color: AppTheme.accent,
+                            color: AppTheme.goldInk,
                           ),
                         ),
                       ],
@@ -127,7 +135,7 @@ class UpgradeScreen extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.check_circle,
-                              color: AppTheme.accent,
+                              color: AppTheme.goldInk,
                               size: 18,
                             ),
                             const SizedBox(width: AppTheme.spacingSm),
@@ -153,20 +161,9 @@ class UpgradeScreen extends StatelessWidget {
                                   Navigator.of(context).pop();
                                 }
                               },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isCurrentTier
-                              ? AppTheme.surfaceVariant
-                              : AppTheme.accent,
-                          foregroundColor: AppTheme.onAccent,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppTheme.spacingMd,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppTheme.radiusSm,
-                            ),
-                          ),
-                        ),
+                        style: isCurrentTier
+                            ? AppTheme.secondaryButtonStyle
+                            : AppTheme.accentButtonStyle,
                         child: Text(
                           isCurrentTier
                               ? 'Current Plan'

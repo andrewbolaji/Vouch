@@ -49,20 +49,24 @@ class ProfileScreen extends StatelessWidget {
             // User info
             Container(
               padding: const EdgeInsets.all(AppTheme.spacingMd),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                border: Border.all(color: AppTheme.divider),
-              ),
+              decoration: AppTheme.cardDecoration,
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppTheme.surfaceVariant,
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceVariant,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.borderColor,
+                        width: AppTheme.borderInkWidth,
+                      ),
+                    ),
                     child: Icon(
                       Icons.person,
                       color: AppTheme.textSecondary,
-                      size: 32,
+                      size: 28,
                     ),
                   ),
                   const SizedBox(width: AppTheme.spacingMd),
