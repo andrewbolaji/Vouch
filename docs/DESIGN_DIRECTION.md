@@ -1,156 +1,129 @@
-# Vouch design direction
+# Vouch design direction: Block Party
 
-## The audience
+Status: chosen and approved (Andrew and Christina), June 2026\. This is the source of truth for the beautification block. Logic is not in scope. Visual only.
 
-25-40 year olds in Houston (expanding nationally) who are food-culture-literate, Yelp-frustrated, and trust personal recommendations over algorithmic ones. They follow local food accounts, read Eater or Bon Appetit, care about the story behind a restaurant. They open Vouch 2-3 times a week to answer "where should I eat tonight" and close it. The UI must respect that: fast, opinionated, confident. Not a social media feed. Not a review platform. A curated editorial list.
+## The vibe
 
-## Visual vibe
+Vouch is the city's own thing, decided by the people who actually eat there. Block Party dresses that up as a screenprinted neighborhood flyer: bold ink on warm paper, hard edges, big poster numerals, and full color food doing the talking inside it. It reads as local, communal, and a little scrappy, which is exactly the anti-Yelp position. The discipline keeps it from getting loud: generous space, the boldness spent in a few places, and a quieter premium register for the paid tier.
 
-**Editorial food magazine, in your pocket, at night.**
+This is a shift from the current dark theme to a light, warm-paper base. That is intentional. A light, print-zine surface with full color food photography feels like a food magazine you want to flip through, and it sets Vouch apart from every dark restaurant app. A dark variant can come later (the light and dark toggle was already deferred to post launch).
 
-Think: the intersection of a Bon Appetit feature, a Linear product surface, and a Stripe dark-mode dashboard. Calm, spacious, type-driven. The photography carries the emotion; the chrome stays quiet. Every screen should feel like opening a well-designed menu at a restaurant you trust.
+## Who it serves
 
-Reference points:
-- **Linear**: Dark surfaces, restrained accent, generous whitespace, strong type hierarchy
-- **Stripe dark docs**: Clean information density, subtle borders, professional confidence
-- **Notion**: Spacing rhythm, content-first, nothing decorative that doesn't earn its place
-- **Bon Appetit / Eater**: Editorial serif headlines, food photography as hero, opinionated voice in type
+Food-culture-literate 25 to 40 year olds, starting in Houston and expanding nationally, who are Yelp-frustrated and trust personal recommendations over algorithmic ones. They follow local food accounts, read Eater or Bon Appetit, and care about the story behind a place. They open Vouch two or three times a week to answer "where should I eat tonight" and then close it. They want the real shortlist, not a directory and not paid placement, and they trust other locals over star averages. The UI must respect that: fast, opinionated, confident, and unmistakably made by the city for the city, never corporate.
 
-The current `instagramDark` theme (pure black, pink accent) reads as generic dark-mode social media. The direction below refines the palette with warm near-black surfaces, vermilion (#FF5436) accent, and DM Serif Display headlines.
+## Refinements baked in (from review)
+
+1. Food photography stays full color. The dish and city photos are the pop of real inside the bold graphic frame. No duotone on real food. This is the single most important rule for keeping the app appetizing.  
+2. Disciplined hand. Hard shadows, banners, and stamps are accents used sparingly, not on every element. Generous spacing throughout. Loud is earned, not constant.  
+3. A quieter premium register. The City Insider tier and verified-local moments use a deep ochre "gold" treatment that reads as elevated within the bold system, so paying for it still feels special.
 
 ## Palette
 
-Warm dark, not cold dark. The background should feel like a candlelit restaurant, not a phone screen.
+Tokens, never hardcoded literals. Names map to role.
 
-| Token | Value | Role |
-|-------|-------|------|
-| `background` | `#0F0D0B` | Near-black with warm undertone. Not pure black. |
-| `surface` | `#1A1714` | Cards, sheets, elevated surfaces. |
-| `surfaceVariant` | `#252118` | Input fills, inactive toggles, shimmer base. |
-| `accent` | `#FF5436` | Vermilion. Actions, rank badges, links. Used surgically. Appetite-forward, editorial. |
-| `accentMuted` | `#CC432B` | Accent at reduced intensity. Borders, inactive accent elements. |
-| `textPrimary` | `#F5F0EB` | Warm white. Headlines, primary body text. |
-| `textSecondary` | `#B8AFA6` | Warm gray. Metadata, supporting text. |
-| `textTertiary` | `#7A7269` | Warm dark gray. Timestamps, tertiary info. |
-| `divider` | `#2E2A27` | Hairline separators. |
-| `error` | `#CF6679` | Error states. Material standard for dark themes. |
-| `cardBackground` | `#1A1714` | Same as surface. |
-| `primaryMuted` | `#3D3530` | Muted accent background for insider notes, badges. |
-| `onAccent` | `#0F0D0B` | Dark text on accent-colored surfaces. |
+| Token | Hex | Role |
+| :---- | :---- | :---- |
+| paper | \#EEE7D8 | Page background, the warm newsprint base |
+| paper-raised | \#F7F2E6 | Cards and raised surfaces |
+| ink | \#1A1714 | Primary text, 2px borders, hard shadows. The screenprint ink |
+| ink-2 | \#5C5142 | Secondary text, meta |
+| ink-3 | \#8B8273 | Tertiary text, captions, placeholders |
+| flame | \#E8502A | Accent: actions, rank chips, vote counts, key highlights |
+| flame-deep | \#C2401C | Pressed and shadowed accent states |
+| gold-ink | \#9A6B1F | Premium and verified-local (City Insider, cosign stamp) |
+| success | \#2E7D46 | Semantic only |
+| warning | \#B07A1C | Semantic only |
+| danger | \#C23A2A | Semantic only |
+| line-soft | rgba(26,23,20,0.14) | Hairline dividers where 2px ink is too heavy |
 
-Rationale: The warm undertones create a food-appropriate atmosphere (think restaurant lighting, warm tones) rather than the clinical feel of pure black. Vermilion (#FF5436) reads warm-on-warm (integrated, appetite-forward, editorial) and scored highest contrast of accent candidates (6.07:1 on background).
+Contrast rules (WCAG AA, non negotiable): ink on paper is very high contrast, use it for all body and small text. flame and gold-ink do not pass AA for small body text on paper, so use them only at 18px or larger, bold, or as fills with paper colored text on top. Body and meta text are never flame.
 
 ## Typography
 
-Two typefaces, clear hierarchy, editorial personality.
+Two families. Anton for the poster moments, Archivo for everything else. The display face is swappable if Anton ever reads too common (alternatives: Archivo Expanded Black, or a more characterful condensed), but Anton is the pick.
 
-| Token | Typeface | Size | Weight | Role |
-|-------|----------|------|--------|------|
-| `displayLarge` | DM Serif Display | 32 | Regular | App title, hero moments |
-| `displayMedium` | DM Serif Display | 24 | Regular | Screen titles, restaurant names on detail |
-| `headlineLarge` | DM Serif Display | 20 | Regular | Section headers, city names |
-| `headlineMedium` | DM Serif Display | 18 | Regular | Subsection headers |
-| `accentItalic` | DM Serif Display | 18 | Italic | Tagline, editorial callouts |
-| `bodyLarge` | Inter | 16 | Regular (400) | Primary body text, descriptions |
-| `bodyMedium` | Inter | 14 | Regular (400) | Secondary body, metadata |
-| `bodySmall` | Inter | 12 | Regular (400) | Timestamps, tertiary info |
-| `labelLarge` | Inter | 14 | Semibold (600) | Buttons, card titles, labels |
-| `labelMedium` | Inter | 12 | Medium (500) | Chips, badge text, small labels |
-| `buttonText` | Inter | 14 | Semibold (600) | Button labels |
-| `rankDisplay` | DM Serif Display | 20 | Regular | Rank badge number (new token) |
+- Display and rank numerals: Anton. City names, the biggest headers, and rank numbers. This is the poster voice. Used big and short.  
+- Headings, restaurant names, UI titles, body, meta: Archivo, weights 400 to 900\. A sturdy grotesque that carries the whole interface so the system stays tight.
 
-The serif/sans pairing (DM Serif Display + Inter) creates immediate editorial personality. Headlines feel like a magazine masthead; body text stays clean and legible. This is already built into the `editorialDark` variant but unused.
+Type scale (mobile, px):
 
-## Spacing scale
+- Display XL (Anton): 40 to 48, city names and hero rank  
+- Display L (Anton): 28 to 34  
+- Rank chip numeral (Anton): 18 to 22  
+- Title H1 (Archivo 800): 26 to 30  
+- Section H2 (Archivo 700): 16 to 18  
+- Restaurant name (Archivo 800): 16 to 18  
+- Body (Archivo 400 or 500): 15 to 16, line height 1.45 to 1.5  
+- Meta and label (Archivo 600): 12.5 to 13.5  
+- Vote and stat (Archivo 800): 13 to 14  
+- Caption (Archivo 500): 11 to 12
 
-Already defined and mostly followed. Codify one addition:
+## Spacing, radii, borders, shadows
 
-| Token | Value |
-|-------|-------|
-| `spacingXxs` | 2 |
-| `spacingXs` | 4 |
-| `spacingSm` | 8 |
-| `spacingMd` | 16 |
-| `spacingLg` | 24 |
-| `spacingXl` | 32 |
-| `spacingXxl` | 48 |
+- Spacing scale (4 based): 2, 4, 8, 12, 16, 20, 24, 32, 40, 48\.  
+- Radii are minimal, the hard edge is a signature: radius-sm 4\. Pill (999) is reserved only for segmented toggles where the rounded shape aids tapping.  
+- Borders: border-ink is 2px solid ink on cards, image frames, and buttons. Hairline is 1px line-soft for dividers inside a card.  
+- Shadows: shadow-hard is a 4px 4px 0 offset in ink, no blur. Used sparingly on primary cards, primary buttons, and rank stickers. No soft or blurred shadows anywhere, they fight the screenprint look. Pressed state shifts the element 2px down and right and collapses the shadow to 2px, so it feels like a sticker pressing down.
 
-Add `spacingXxs: 2` to formalize the half-step used in city card padding and label gaps. Replace all hardcoded `2` values.
+## Signature elements
 
-## Radius scale
-
-No changes. Current scale is clean:
-
-| Token | Value |
-|-------|-------|
-| `radiusSm` | 8 |
-| `radiusMd` | 12 |
-| `radiusLg` | 16 |
-| `radiusXl` | 24 |
+- Big condensed rank numerals (Anton). Honest, because it is a real ranked list. The numbers are the hero device.  
+- The cosign. A deep ochre stamp or "voted by locals" banner marks the number one spot, most-vouched items, and verified-local voices. It ties straight to the name Vouch, to put your reputation on something. It also gives gold-ink a clear job.  
+- Subtle halftone dot texture on the page background, low opacity. The print signature. Background only, never piled onto elements.  
+- Hard 2px ink outlines plus offset shadows. The screenprint and sticker tactility.  
+- Full color food inside the ink frames. The pop of real.
 
 ## Component principles
 
-### Rank badges (signature brand element)
+- Primary button: flame fill, 2px ink border, hard shadow, ink text, Archivo 700 to 800\. Pressed collapses the shadow.  
+- Secondary button: paper-raised fill, 2px ink border, ink text.  
+- Card: paper-raised fill, 2px ink border, radius-sm. Hard shadow on primary cards only, not every card.  
+- Tag and pill: small, flame or ink outline, Archivo 600\.  
+- Input: paper-raised fill, 2px ink border, ink text, ink-3 placeholder. Focus thickens or darkens the border, no glow.  
+- Rank chip: solid flame square, 2px ink border, Anton numeral, ink text. The number one chip may use gold-ink or carry the cosign stamp.  
+- Image frame: full color photo, 2px ink border, radius-sm.  
+- Hero (restaurant detail): full bleed full color photo with a bottom ink scrim gradient (rgba(26,23,20,0) up to about 0.6) so the rank and name stay legible over it.  
+- City Insider and premium: gold-ink treatment, lock, gold-ink call to action with paper text. Elevated and distinct from the flame action color.  
+- Banners and stamps: bold ink or flame, slight rotation, used only for special states (number one, most vouched, verified local), never routinely.  
+- Shell and nav: paper base, ink text and icons, a 2px ink rule or border to separate bars rather than a soft shadow.
 
-The rank badge is Vouch's most distinctive UI element -- the #1-#10 pill that appears on every restaurant card and detail screen. It deserves dedicated treatment:
+## Every state designed
 
-- **Top 3**: Accent background, dark text, serif `rankDisplay` font. These are the "podium" ranks and should feel premium.
-- **4-5 (free tier visible)**: Surface variant background, primary text, serif font. Visible but visually quieter than top 3.
-- **6-10 (paid tier)**: Same as 4-5 styling, but with a subtle accent border to signal "this content is special."
-- **Size**: Two variants -- standard (in list cards, `spacingSm` padding) and large (on detail screen, `spacingMd` padding). Both use the serif `rankDisplay` token.
-- **Shape**: Rounded rectangle with `radiusSm`. Not a circle (too generic), not a square (too rigid).
+- Empty: an invitation in the bold voice, for example "No spots here yet. Be the first to vouch." Never a blank screen.  
+- Loading: paper and ink skeleton blocks. Subtle, no flashy animation.  
+- Error: direct, in the interface voice, with a concrete next step, for example "Couldn't load Houston. Check your connection and try again." No apology, never vague.  
+- Success: a short confirmation in voice.
 
-### City cards
+## Motion
 
-The strongest existing screen element. Enhancements:
-- Warm surface instead of pure black card background
-- Slightly more padding in the text area
-- City name in serif headline for editorial feel
-- Description in `bodySmall` stays as-is (already good)
+Minimal and deliberate. The button and card press shift (sticker pressing down) is the main interaction. Respect reduced motion. Extra animation reads as generated, so do not add it.
 
-### Restaurant cards
+## Imagery
 
-Clean as-is. Enhancements:
-- Add serif font to restaurant name for consistency with detail screen
-- Vote count text stays accent-colored (good existing choice)
-- Rank badge gets the serif treatment described above
+Dish and city photos are full color, inside a 2px ink frame, radius-sm. The restaurant detail hero is a full color photo with the bottom ink scrim. Let the food be the brightest, most saturated thing on the screen against the warm paper and ink graphics.
 
-### Insider notes
+## What this is not
 
-The gradient container is the right instinct. Refine:
-- Use `primaryMuted` to `surfaceVariant` gradient (warm tones)
-- Accent border stays
-- "Insider Notes" header in accent serif italic for editorial personality
+- Not duotone or tinted real food. Food is full color, always.  
+- Not busy. Discipline and space first, loudness in a few earned places.  
+- Not corporate, sterile, or generic dark app.  
+- No mascot, no gamification, no bouncy animation. The personality is print and voice, not cartoon.  
+- No neon and no soft blurred shadows. Those belong to a different direction.
 
-### Buttons
+## Prioritized opportunities audit
 
-- Primary (accent): Accent background, dark text. Rounded rectangle (`radiusSm`).
-- Secondary (outline): Surface variant border, primary text. Same shape.
-- Text buttons: Accent text, no container.
+Fix the system once, then hand tune the few screens that earn it. Build order:
 
-### Empty states
+0. Design system and shared primitives. Tokens (color, type, spacing, radii, borders, shadows), and the restyled Button, Card, Tag, Input, rank chip, image frame, plus the app shell and nav and the empty, loading, and error states. Highest leverage, everything inherits from this.  
+1. City list (the Top 10 screen). The core browse screen and the most used. Hand tune.  
+2. Restaurant detail. The destination: hero, rank and name, tags, votes, the City Insider block, comments. Hand tune.  
+3. Home and city grid. First impression after splash, the city cards. Hand tune.  
+4. Onboarding (three screens). High first impression for new users, currently plain. Reset the icons, type, and voice to the system.  
+5. Splash. Quick win, the wordmark and tagline in the new identity.  
+6. Paywall and plans, plus profile, settings, and the suggestion box. Mostly inherit from primitives, with a light hand tune for the gold-ink premium moments and the suggestion box personality.  
+7. Sign in. Inherits from the primitives, minimal custom work.
 
-- Large icon (tertiary color), warm serif headline, body-medium description
-- Match the editorial voice: "We're not there yet" (already good), "No saved restaurants yet" (fine)
+## Guardrails
 
-### Loading states (shimmer)
-
-- Base color: `surfaceVariant`. Highlight: `surface`. Same as current, but warmer with the new palette.
-
-## Prioritized opportunities (highest-impact first)
-
-1. **Switch to editorialDark** (or refined version above): Single change that transforms the entire app from generic to deliberate. Every screen benefits.
-2. **Rank badges**: Small component, high visibility. The serif treatment + warm accent makes them a signature element.
-3. **Restaurant detail screen**: The longest screen, most time spent. Serif restaurant name, refined spacing, warmer insider notes.
-4. **Home screen header**: App title in serif + warm tagline accent sets tone on first screen.
-5. **Upgrade screen**: Trust surface -- this is where the user decides to pay. Clean, confident, warm.
-6. **Onboarding**: First impression. Serif headlines, warm accent, generous spacing.
-7. **Profile/settings**: Lower traffic, inherits from component improvements.
-
-## Implementation notes
-
-- **No logic changes.** This is a visual pass only.
-- **Tokens, not magic numbers.** Every color, size, and spacing traces to AppTheme.
-- **One file for the switch**: Change `kActiveTheme` in `theme_variants.dart` and refine the `editorialDark` palette to match the values above. The theme system already supports this.
-- **Add `spacingXxs` and `rankDisplay`** as new tokens in `app_theme.dart`.
-- Tests as deliverables only where testable logic is touched.
+Visual only, no logic changes. Tests are deliverables only where testable logic is genuinely touched, since most of this is styling. Hold the quality floor: AA contrast, tap targets at least 44px, text that respects system scaling, reduced motion respected. No em dashes anywhere.  
