@@ -254,7 +254,10 @@ class _SocialButton extends StatelessWidget {
       label: Text(label, style: AppTheme.buttonText),
       style: OutlinedButton.styleFrom(
         foregroundColor: AppTheme.textPrimary,
-        side: BorderSide(color: AppTheme.divider),
+        side: BorderSide(
+          color: AppTheme.borderColor,
+          width: AppTheme.borderInkWidth,
+        ),
         padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusSm),
@@ -294,10 +297,27 @@ class _InputField extends StatelessWidget {
         hintText: hint,
         hintStyle: AppTheme.bodyMedium,
         filled: true,
-        fillColor: AppTheme.surfaceVariant,
+        fillColor: AppTheme.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(
+            color: AppTheme.borderColor,
+            width: AppTheme.borderInkWidth,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          borderSide: BorderSide(
+            color: AppTheme.borderColor,
+            width: AppTheme.borderInkWidth,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          borderSide: BorderSide(
+            color: AppTheme.accent,
+            width: AppTheme.borderInkWidth,
+          ),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppTheme.spacingMd,
