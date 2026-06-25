@@ -34,6 +34,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
 
   void _onToggleTop10(bool show) {
     unawaited(HapticFeedback.selectionClick());
+    final wasOff = !_showTop10;
     setState(() => _showTop10 = show);
     if (show) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,6 +48,18 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           );
         }
       });
+      // Auto-pop paywall for free users on transition into Top 10
+      if (wasOff) {
+        final membership = context.read<MembershipProvider>();
+        if (!membership.canViewTop10) {
+          Future<void>.delayed(
+            const Duration(milliseconds: 300),
+            () {
+              if (mounted) _showUpgrade(context);
+            },
+          );
+        }
+      }
     }
   }
 
@@ -118,9 +131,11 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 curve: Curves.easeOut,
                 alignment: Alignment.topCenter,
                 child: _showTop10 && top6to10.isNotEmpty
-                    ? AnimatedOpacity(
+                    ? TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: 1),
                         duration: const Duration(milliseconds: 300),
-                        opacity: 1,
+                        builder: (context, opacity, child) =>
+                            Opacity(opacity: opacity, child: child),
                         child: Column(
                           key: _top10Key,
                           crossAxisAlignment: CrossAxisAlignment.start,
