@@ -51,8 +51,8 @@ class _PaywallGateState extends State<PaywallGate> {
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.background.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              color: AppTheme.inkScrim.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             ),
             child: Center(
               child: IconTheme(

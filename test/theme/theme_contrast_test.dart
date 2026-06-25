@@ -25,6 +25,8 @@ void main() {
     // AA requires 4.5:1 for normal text, 3:1 for large text.
     // We check 4.5:1 (the stricter bar).
     const minRatio = 4.5;
+    // Large text threshold (3:1) for flame/gold on paper.
+    const minRatioLarge = 3.0;
 
     test('editorialDark textPrimary on background passes AA', () {
       final palette = ThemePalettes.editorialDark;
@@ -61,6 +63,52 @@ void main() {
     test('instagramDark textPrimary is not pure white', () {
       final palette = ThemePalettes.instagramDark;
       expect(palette.textPrimary.value & 0xFFFFFF, isNot(equals(0xFFFFFF)));
+    });
+
+    // Block Party contrast checks
+    test('blockParty ink on paper passes AA', () {
+      final palette = ThemePalettes.blockParty;
+      final ratio = _contrastRatio(
+        palette.textPrimary.value & 0xFFFFFF,
+        palette.background.value & 0xFFFFFF,
+      );
+      expect(ratio, greaterThanOrEqualTo(minRatio));
+    });
+
+    test('blockParty ink-2 on paper passes AA', () {
+      final palette = ThemePalettes.blockParty;
+      final ratio = _contrastRatio(
+        palette.textSecondary.value & 0xFFFFFF,
+        palette.background.value & 0xFFFFFF,
+      );
+      expect(ratio, greaterThanOrEqualTo(minRatio));
+    });
+
+    test('blockParty ink on paper-raised passes AA', () {
+      final palette = ThemePalettes.blockParty;
+      final ratio = _contrastRatio(
+        palette.textPrimary.value & 0xFFFFFF,
+        palette.surface.value & 0xFFFFFF,
+      );
+      expect(ratio, greaterThanOrEqualTo(minRatio));
+    });
+
+    test('blockParty flame on paper passes AA for large text', () {
+      final palette = ThemePalettes.blockParty;
+      final ratio = _contrastRatio(
+        palette.accent.value & 0xFFFFFF,
+        palette.background.value & 0xFFFFFF,
+      );
+      expect(ratio, greaterThanOrEqualTo(minRatioLarge));
+    });
+
+    test('blockParty gold-ink on paper passes AA for large text', () {
+      final palette = ThemePalettes.blockParty;
+      final ratio = _contrastRatio(
+        palette.goldInk!.value & 0xFFFFFF,
+        palette.background.value & 0xFFFFFF,
+      );
+      expect(ratio, greaterThanOrEqualTo(minRatioLarge));
     });
   });
 }

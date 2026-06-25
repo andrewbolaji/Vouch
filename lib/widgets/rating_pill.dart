@@ -9,6 +9,7 @@ class RatingPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isTop = rank <= 3;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isLarge
@@ -17,18 +18,19 @@ class RatingPill extends StatelessWidget {
         vertical: isLarge ? AppTheme.spacingSm : AppTheme.spacingXs,
       ),
       decoration: BoxDecoration(
-        color: rank <= 3 ? AppTheme.accent : AppTheme.surfaceVariant,
+        color: isTop ? AppTheme.accent : AppTheme.surfaceVariant,
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.borderColor,
+          width: AppTheme.borderInkWidth,
+        ),
       ),
       child: Text(
         '#$rank',
-        style: (isLarge ? AppTheme.rankDisplay : AppTheme.rankDisplay)
-            .copyWith(
-              fontSize: isLarge ? 20 : 14,
-              color: rank <= 3
-                  ? AppTheme.onAccent
-                  : AppTheme.textPrimary,
-            ),
+        style: AppTheme.rankDisplay.copyWith(
+          fontSize: isLarge ? 22 : 18,
+          color: isTop ? AppTheme.onAccent : AppTheme.textPrimary,
+        ),
       ),
     );
   }

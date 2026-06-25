@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-enum AppThemeVariant { editorialDark, instagramDark, editorialLight }
+enum AppThemeVariant { editorialDark, instagramDark, editorialLight, blockParty }
 
-const AppThemeVariant kActiveTheme = AppThemeVariant.editorialDark;
+const AppThemeVariant kActiveTheme = AppThemeVariant.blockParty;
 
 class ThemeColors {
 
@@ -20,6 +20,11 @@ class ThemeColors {
     required this.cardBackground,
     required this.primaryMuted,
     required this.brightness,
+    this.goldInk,
+    this.success,
+    this.warning,
+    this.borderColor,
+    this.lineSoft,
   });
   final Color background;
   final Color surface;
@@ -34,6 +39,11 @@ class ThemeColors {
   final Color cardBackground;
   final Color primaryMuted;
   final Brightness brightness;
+  final Color? goldInk;
+  final Color? success;
+  final Color? warning;
+  final Color? borderColor;
+  final Color? lineSoft;
 }
 
 class ThemePalettes {
@@ -87,6 +97,28 @@ class ThemePalettes {
     brightness: Brightness.light,
   );
 
+  // Block Party: warm paper base, screenprint ink, full color food
+  static const blockParty = ThemeColors(
+    background: Color(0xFFEEE7D8),       // paper
+    surface: Color(0xFFF7F2E6),           // paper-raised
+    surfaceVariant: Color(0xFFE6DFD0),    // slightly darker paper for inputs
+    accent: Color(0xFFE8502A),            // flame
+    accentMuted: Color(0xFFC2401C),       // flame-deep
+    textPrimary: Color(0xFF1A1714),       // ink
+    textSecondary: Color(0xFF5C5142),     // ink-2
+    textTertiary: Color(0xFF8B8273),      // ink-3
+    divider: Color(0x241A1714),           // line-soft (ink at 14% alpha)
+    error: Color(0xFFC23A2A),             // danger
+    cardBackground: Color(0xFFF7F2E6),    // paper-raised
+    primaryMuted: Color(0xFFE6DFD0),      // muted surface
+    brightness: Brightness.light,
+    goldInk: Color(0xFF9A6B1F),           // premium / cosign
+    success: Color(0xFF2E7D46),
+    warning: Color(0xFFB07A1C),
+    borderColor: Color(0xFF1A1714),       // ink for 2px borders
+    lineSoft: Color(0x241A1714),          // ink at 14% alpha
+  );
+
   static ThemeColors forVariant(AppThemeVariant variant) {
     switch (variant) {
       case AppThemeVariant.editorialDark:
@@ -95,6 +127,8 @@ class ThemePalettes {
         return instagramDark;
       case AppThemeVariant.editorialLight:
         return editorialLight;
+      case AppThemeVariant.blockParty:
+        return blockParty;
     }
   }
 }

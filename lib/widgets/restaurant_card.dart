@@ -17,6 +17,8 @@ class RestaurantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final showRank = !restaurant.isUnranked;
     final showVotes = restaurant.voteCount > 0;
+    // Pinned rule: only rank 1 gets the hard shadow
+    final isPrimary = restaurant.rank == 1;
     return Semantics(
       button: true,
       label: '${showRank ? '#${restaurant.rank} ' : ''}'
@@ -25,18 +27,16 @@ class RestaurantCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
         margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-        decoration: BoxDecoration(
-          color: AppTheme.cardBackground,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(color: AppTheme.divider),
-        ),
+        decoration: isPrimary
+            ? AppTheme.cardDecorationPrimary
+            : AppTheme.cardDecoration,
         child: Row(
           children: [
-            // Image
+            // Image with ink frame
             ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppTheme.radiusMd),
-                bottomLeft: Radius.circular(AppTheme.radiusMd),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppTheme.radiusSm),
+                bottomLeft: Radius.circular(AppTheme.radiusSm),
               ),
               child: RestaurantImage(
                 restaurant: restaurant,
@@ -76,7 +76,7 @@ class RestaurantCard extends StatelessWidget {
                       const SizedBox(height: AppTheme.spacingXs),
                       Text(
                         '${formatCount(restaurant.voteCount)} votes',
-                        style: AppTheme.bodySmall.copyWith(
+                        style: AppTheme.voteStat.copyWith(
                           color: AppTheme.accent,
                         ),
                       ),

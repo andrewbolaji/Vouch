@@ -15,13 +15,12 @@ class InsiderNotes extends StatelessWidget {
       margin: const EdgeInsets.only(top: AppTheme.spacingMd),
       padding: const EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.primaryMuted, AppTheme.surfaceVariant],
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.goldInk.withValues(alpha: 0.4),
+          width: AppTheme.borderInkWidth,
         ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,13 +29,15 @@ class InsiderNotes extends StatelessWidget {
             children: [
               Icon(
                 Icons.auto_awesome,
-                color: Theme.of(context).colorScheme.primary,
+                color: AppTheme.goldInk,
                 size: 18,
               ),
               const SizedBox(width: AppTheme.spacingSm),
               Text(
                 'Insider Notes',
-                style: AppTheme.accentItalic,
+                style: AppTheme.accentItalic.copyWith(
+                  color: AppTheme.goldInk,
+                ),
               ),
             ],
           ),

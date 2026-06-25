@@ -36,7 +36,11 @@ class _ShimmerCityCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.borderColor,
+          width: AppTheme.borderInkWidth,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,38 +49,20 @@ class _ShimmerCityCard extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.surfaceVariant,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppTheme.radiusMd),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppTheme.radiusSm),
                 ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(
-              AppTheme.spacingSm + AppTheme.spacingXxs,
-            ),
+            padding: const EdgeInsets.all(AppTheme.spacingMdSm),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 100,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(AppTheme.spacingXs),
-                  ),
-                ),
-                const SizedBox(
-                  height: AppTheme.spacingXsSm,
-                ),
-                Container(
-                  width: 140,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(AppTheme.spacingXs),
-                  ),
-                ),
+                _skeletonBlock(width: 100, height: 14),
+                const SizedBox(height: AppTheme.spacingXsSm),
+                _skeletonBlock(width: 140, height: 10),
               ],
             ),
           ),
@@ -118,7 +104,11 @@ class _ShimmerRestaurantCard extends StatelessWidget {
       height: 100,
       decoration: BoxDecoration(
         color: AppTheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.borderColor,
+          width: AppTheme.borderInkWidth,
+        ),
       ),
       child: Row(
         children: [
@@ -126,8 +116,8 @@ class _ShimmerRestaurantCard extends StatelessWidget {
             width: 100,
             decoration: BoxDecoration(
               color: AppTheme.surfaceVariant,
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(AppTheme.radiusMd),
+              borderRadius: BorderRadius.horizontal(
+                left: Radius.circular(AppTheme.radiusSm),
               ),
             ),
           ),
@@ -138,32 +128,11 @@ class _ShimmerRestaurantCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 140,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(AppTheme.spacingXs),
-                    ),
-                  ),
+                  _skeletonBlock(width: 140, height: 14),
                   const SizedBox(height: AppTheme.spacingSm),
-                  Container(
-                    width: 100,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(AppTheme.spacingXs),
-                    ),
-                  ),
+                  _skeletonBlock(width: 100, height: 10),
                   const SizedBox(height: AppTheme.spacingSm),
-                  Container(
-                    width: 60,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(AppTheme.spacingXs),
-                    ),
-                  ),
+                  _skeletonBlock(width: 60, height: 10),
                 ],
               ),
             ),
@@ -172,4 +141,15 @@ class _ShimmerRestaurantCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _skeletonBlock({required double width, required double height}) {
+  return Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: AppTheme.surfaceVariant,
+      borderRadius: BorderRadius.circular(AppTheme.spacingXxs),
+    ),
+  );
 }

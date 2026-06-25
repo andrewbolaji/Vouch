@@ -14,16 +14,18 @@ class PremiumBadge extends StatelessWidget {
         vertical: AppTheme.spacingXxs,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(AppTheme.spacingXs),
-        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
+        color: AppTheme.goldInk.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.goldInk.withValues(alpha: 0.4),
+        ),
       ),
       child: Text(
         label,
         style: AppTheme.bodySmall.copyWith(
-          color: AppTheme.accent,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
+          color: AppTheme.goldInk,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
