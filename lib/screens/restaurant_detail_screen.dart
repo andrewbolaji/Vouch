@@ -111,23 +111,35 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             expandedHeight: 250,
             pinned: true,
             backgroundColor: AppTheme.background,
-            foregroundColor: AppTheme.background,
-            iconTheme: IconThemeData(color: AppTheme.background),
+            foregroundColor: AppTheme.textPrimary,
             flexibleSpace: FlexibleSpaceBar(
               background: RestaurantDetailHero(
                 images: RestaurantImage.resolveImageSources(restaurant),
               ),
             ),
+            leading: Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingSm),
+              child: _AppBarChip(
+                icon: Icons.arrow_back,
+                onTap: () => Navigator.of(context).pop(),
+                tooltip: 'Back',
+              ),
+            ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.share_outlined),
-                tooltip: 'Share restaurant',
-                onPressed: () {
-                  ShareService.shareRestaurant(restaurant);
-                  context.read<AnalyticsService>().logShareRestaurant(
-                    restaurantId: widget.restaurantId,
-                  );
-                },
+              Padding(
+                padding: const EdgeInsets.only(
+                  right: AppTheme.spacingSm,
+                ),
+                child: _AppBarChip(
+                  icon: Icons.share_outlined,
+                  onTap: () {
+                    ShareService.shareRestaurant(restaurant);
+                    context.read<AnalyticsService>().logShareRestaurant(
+                      restaurantId: widget.restaurantId,
+                    );
+                  },
+                  tooltip: 'Share restaurant',
+                ),
               ),
             ],
           ),
@@ -575,6 +587,44 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => const UpgradeScreen(),
+      ),
+    );
+  }
+}
+
+/// Circular scrim chip for AppBar icons so they read over both the
+/// hero photo (expanded) and the paper bar (collapsed).
+class _AppBarChip extends StatelessWidget {
+  const _AppBarChip({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppTheme.inkScrim.withValues(alpha: 0.45),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: AppTheme.background,
+            size: 20,
+          ),
+        ),
       ),
     );
   }
