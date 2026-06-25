@@ -60,7 +60,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 style: AppTheme.bodyMedium,
               ),
               const SizedBox(height: AppTheme.spacingLg),
-              // Pill toggle (radiusPill per rule 5)
+              // Segmented toggle (square, matches cards)
               Row(
                 children: [
                   _ToggleButton(
@@ -172,7 +172,7 @@ class _ToggleButton extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isActive ? AppTheme.accent : AppTheme.surface,
-            borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             border: Border.all(
               color: isActive ? AppTheme.accent : AppTheme.borderColor,
               width: AppTheme.borderInkWidth,

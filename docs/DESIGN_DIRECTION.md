@@ -62,7 +62,7 @@ Type scale (mobile, px):
 ## Spacing, radii, borders, shadows
 
 - Spacing scale (4 based): 2, 4, 8, 12, 16, 20, 24, 32, 40, 48\.  
-- Radii are minimal, the hard edge is a signature: radius-sm 4\. Pill (999) is reserved only for segmented toggles where the rounded shape aids tapping.  
+- Radii are minimal, the hard edge is a signature: radius-sm 4\. Segmented toggles (Top 5 / Top 10) use radius-sm like everything else. Pill (999) remains only for small circular indicators (page dots) where the rounded shape is inherent to the element.  
 - Borders: border-ink is 2px solid ink on cards, image frames, and buttons. Hairline is 1px line-soft for dividers inside a card.  
 - Shadows: shadow-hard is a 4px 4px 0 offset in ink, no blur. Used sparingly on primary cards, primary buttons, and rank stickers. No soft or blurred shadows anywhere, they fight the screenprint look. Pressed state shifts the element 2px down and right and collapses the shadow to 2px, so it feels like a sticker pressing down.
 
