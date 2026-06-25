@@ -80,7 +80,7 @@ class RestaurantCard extends StatelessWidget {
                             Text(
                               '${formatCount(restaurant.voteCount)} votes',
                               style: AppTheme.voteStat.copyWith(
-                                color: AppTheme.accent,
+                                color: AppTheme.textPrimary,
                               ),
                             ),
                           if (isPrimary) ...[
