@@ -175,18 +175,20 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             vertical: AppTheme.spacingXs,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentMuted.withValues(alpha: 0.15),
+                            color: AppTheme.surface,
                             borderRadius: BorderRadius.circular(
-                              AppTheme.radiusXl,
+                              AppTheme.radiusSm,
                             ),
                             border: Border.all(
-                              color: AppTheme.accent.withValues(alpha: 0.3),
+                              color: AppTheme.accent,
+                              width: AppTheme.borderInkWidth,
                             ),
                           ),
                           child: Text(
                             tag,
-                            style: AppTheme.bodySmall.copyWith(
+                            style: AppTheme.labelMedium.copyWith(
                               color: AppTheme.accent,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         );
@@ -389,12 +391,33 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                                 : 'Add a comment...',
                             hintStyle: AppTheme.bodyMedium,
                             filled: true,
-                            fillColor: AppTheme.surfaceVariant,
+                            fillColor: AppTheme.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
                                 AppTheme.radiusSm,
                               ),
-                              borderSide: BorderSide.none,
+                              borderSide: BorderSide(
+                                color: AppTheme.borderColor,
+                                width: AppTheme.borderInkWidth,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusSm,
+                              ),
+                              borderSide: BorderSide(
+                                color: AppTheme.borderColor,
+                                width: AppTheme.borderInkWidth,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusSm,
+                              ),
+                              borderSide: BorderSide(
+                                color: AppTheme.accent,
+                                width: AppTheme.borderInkWidth,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: AppTheme.spacingMd,

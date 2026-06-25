@@ -13,8 +13,12 @@ class LocationCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
       padding: const EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceVariant,
+        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.borderColor,
+          width: AppTheme.borderInkWidth,
+        ),
       ),
       child: IconTheme(
         data: IconThemeData(color: Theme.of(context).colorScheme.primary),

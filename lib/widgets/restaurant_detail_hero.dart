@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:vouch/theme/app_theme.dart';
 import 'package:vouch/widgets/restaurant_image.dart';
 
 /// Layout constants for the split hero.
 const double kHeroPrimaryRatio = 0.61;
-const double kHeroGap = 2.0;
+const double kHeroGap = 2;
 
-/// Adaptive detail hero for the restaurant detail screen.
-///
-/// Given a list of [ImageSource]s (1 or 2):
-/// - One image: full-bleed hero, identical to the original layout.
-/// - Two images: split layout with primary on the left at [kHeroPrimaryRatio]
-///   width and secondary on the right, separated by a [kHeroGap] pixel gap.
-///   Both are cover-cropped to the same height.
-///
-/// The widget takes a generic list of [ImageSource]s so the real multi-photo
-/// path (Firestore photos subcollection) can feed it later without changing
-/// this widget.
+/// Adaptive detail hero with ink scrim gradient for text legibility.
 class RestaurantDetailHero extends StatelessWidget {
   const RestaurantDetailHero({
     required this.images,
@@ -28,10 +19,34 @@ class RestaurantDetailHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (images.length < 2) {
-      return _singleHero();
-    }
-    return _splitHero();
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (images.length < 2)
+          _singleHero()
+        else
+          _splitHero(),
+        // Ink scrim gradient (rule 2: ink-colored, never background)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 120,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.inkScrim.withValues(alpha: 0),
+                  AppTheme.inkScrim.withValues(alpha: 0.6),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _singleHero() {
