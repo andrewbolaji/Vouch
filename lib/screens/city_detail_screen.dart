@@ -52,6 +52,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Anton city name
               Text(city.displayName, style: AppTheme.displayLarge),
               const SizedBox(height: AppTheme.spacingXs),
               Text(
@@ -59,7 +60,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 style: AppTheme.bodyMedium,
               ),
               const SizedBox(height: AppTheme.spacingLg),
-              // Toggle
+              // Pill toggle (radiusPill per rule 5)
               Row(
                 children: [
                   _ToggleButton(
@@ -170,13 +171,18 @@ class _ToggleButton extends StatelessWidget {
             vertical: AppTheme.spacingSm,
           ),
           decoration: BoxDecoration(
-            color: isActive ? AppTheme.accent : AppTheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            color: isActive ? AppTheme.accent : AppTheme.surface,
+            borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+            border: Border.all(
+              color: isActive ? AppTheme.accent : AppTheme.borderColor,
+              width: AppTheme.borderInkWidth,
+            ),
           ),
           child: Text(
             label,
             style: AppTheme.labelMedium.copyWith(
               color: isActive ? AppTheme.onAccent : AppTheme.textSecondary,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -185,8 +191,7 @@ class _ToggleButton extends StatelessWidget {
   }
 }
 
-/// Placeholder for locked restaurant slots that reveals
-/// only the rank number, not the restaurant name/data.
+/// Placeholder for locked restaurant slots.
 class _LockedRestaurantPlaceholder extends StatelessWidget {
 
   const _LockedRestaurantPlaceholder({required this.rank});
@@ -199,17 +204,11 @@ class _LockedRestaurantPlaceholder extends StatelessWidget {
       margin: const EdgeInsets.only(
         bottom: AppTheme.spacingMd,
       ),
-      decoration: BoxDecoration(
-        color: AppTheme.cardBackground,
-        borderRadius: BorderRadius.circular(
-          AppTheme.radiusMd,
-        ),
-        border: Border.all(color: AppTheme.divider),
-      ),
+      decoration: AppTheme.cardDecoration,
       child: Center(
         child: Text(
           '#$rank',
-          style: AppTheme.headlineLarge.copyWith(
+          style: AppTheme.rankDisplay.copyWith(
             color: AppTheme.textTertiary,
           ),
         ),

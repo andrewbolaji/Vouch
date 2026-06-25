@@ -72,13 +72,28 @@ class RestaurantCard extends StatelessWidget {
                       '${restaurant.cuisine}  ${restaurant.priceLevelDisplay}',
                       style: AppTheme.bodySmall,
                     ),
-                    if (showVotes) ...[
+                    if (showVotes || isPrimary) ...[
                       const SizedBox(height: AppTheme.spacingXs),
-                      Text(
-                        '${formatCount(restaurant.voteCount)} votes',
-                        style: AppTheme.voteStat.copyWith(
-                          color: AppTheme.accent,
-                        ),
+                      Row(
+                        children: [
+                          if (showVotes)
+                            Text(
+                              '${formatCount(restaurant.voteCount)} votes',
+                              style: AppTheme.voteStat.copyWith(
+                                color: AppTheme.accent,
+                              ),
+                            ),
+                          if (isPrimary) ...[
+                            if (showVotes)
+                              const SizedBox(width: AppTheme.spacingSm),
+                            Text(
+                              'Most vouched',
+                              style: AppTheme.voteStat.copyWith(
+                                color: AppTheme.goldInk,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ],
