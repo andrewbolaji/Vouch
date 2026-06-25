@@ -23,6 +23,32 @@ class CityDetailScreen extends StatefulWidget {
 
 class _CityDetailScreenState extends State<CityDetailScreen> {
   bool _showTop10 = false;
+  final _scrollController = ScrollController();
+  final _top10Key = GlobalKey();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onToggleTop10(bool show) {
+    unawaited(HapticFeedback.selectionClick());
+    setState(() => _showTop10 = show);
+    if (show) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = _top10Key.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            alignment: 0.1,
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +73,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
         backgroundColor: AppTheme.surface,
         onRefresh: appState.refresh,
         child: SingleChildScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(AppTheme.spacingMd),
           child: Column(
@@ -66,55 +93,77 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                   _ToggleButton(
                     label: 'Top 5',
                     isActive: !_showTop10,
-                    onTap: () => setState(() => _showTop10 = false),
+                    onTap: () => _onToggleTop10(false),
                   ),
                   const SizedBox(width: AppTheme.spacingSm),
                   _ToggleButton(
                     label: 'Top 10',
                     isActive: _showTop10,
-                    onTap: () => setState(() => _showTop10 = true),
+                    showLock: !membership.canViewTop10,
+                    onTap: () => _onToggleTop10(true),
                   ),
                 ],
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              // Restaurant list
+              // Top 5 restaurant list
               ...top5.map(
                 (r) => RestaurantCard(
                   restaurant: r,
                   onTap: () => _openRestaurant(r),
                 ),
               ),
-              if (_showTop10 && top6to10.isNotEmpty) ...[
-                const SizedBox(height: AppTheme.spacingSm),
-                if (membership.canViewTop10)
-                  ...top6to10.map(
-                    (r) => RestaurantCard(
-                      restaurant: r,
-                      onTap: () => _openRestaurant(r),
-                    ),
-                  )
-                else
-                  PaywallGate(
-                    isLocked: true,
-                    source: 'top10',
-                    onUpgradeTap: () {
-                      unawaited(
-                        HapticFeedback.mediumImpact(),
-                      );
-                      _showUpgrade(context);
-                    },
-                    message: 'Unlock Top 10 '
-                        'with Locals Pass',
-                    child: Column(
-                      children: List.generate(
-                        top6to10.length,
-                        (i) => _LockedRestaurantPlaceholder(
-                          rank: i + 6,
+              // Top 10 section with animated reveal
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                alignment: Alignment.topCenter,
+                child: _showTop10 && top6to10.isNotEmpty
+                    ? AnimatedOpacity(
+                        duration: const Duration(milliseconds: 300),
+                        opacity: 1,
+                        child: Column(
+                          key: _top10Key,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: AppTheme.spacingSm),
+                            // Section header
+                            _Top10Header(
+                              isLocked: !membership.canViewTop10,
+                            ),
+                            const SizedBox(height: AppTheme.spacingMd),
+                            if (membership.canViewTop10)
+                              ...top6to10.map(
+                                (r) => RestaurantCard(
+                                  restaurant: r,
+                                  onTap: () => _openRestaurant(r),
+                                ),
+                              )
+                            else
+                              PaywallGate(
+                                isLocked: true,
+                                source: 'top10',
+                                onUpgradeTap: () {
+                                  unawaited(
+                                    HapticFeedback.mediumImpact(),
+                                  );
+                                  _showUpgrade(context);
+                                },
+                                message: 'Unlock Top 10 '
+                                    'with Locals Pass',
+                                child: Column(
+                                  children: List.generate(
+                                    top6to10.length,
+                                    (i) => _LockedRestaurantPlaceholder(
+                                      rank: i + 6,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ),
-              ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
         ),
@@ -146,16 +195,48 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   }
 }
 
+/// Section header for ranks 6 to 10.
+class _Top10Header extends StatelessWidget {
+  const _Top10Header({required this.isLocked});
+  final bool isLocked;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          'RANKS 6 TO 10',
+          style: AppTheme.labelMedium.copyWith(
+            color: isLocked ? AppTheme.goldInk : AppTheme.textSecondary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+        if (isLocked) ...[
+          const SizedBox(width: AppTheme.spacingXs),
+          Icon(
+            Icons.lock_outline,
+            color: AppTheme.goldInk,
+            size: 14,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _ToggleButton extends StatelessWidget {
 
   const _ToggleButton({
     required this.label,
     required this.isActive,
     required this.onTap,
+    this.showLock = false,
   });
   final String label;
   final bool isActive;
   final VoidCallback onTap;
+  final bool showLock;
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +246,9 @@ class _ToggleButton extends StatelessWidget {
       selected: isActive,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(
             horizontal: AppTheme.spacingMd,
             vertical: AppTheme.spacingSm,
@@ -178,12 +261,29 @@ class _ToggleButton extends StatelessWidget {
               width: AppTheme.borderInkWidth,
             ),
           ),
-          child: Text(
-            label,
-            style: AppTheme.labelMedium.copyWith(
-              color: isActive ? AppTheme.onAccent : AppTheme.textSecondary,
-              fontWeight: FontWeight.w700,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: AppTheme.labelMedium.copyWith(
+                  color: isActive
+                      ? AppTheme.onAccent
+                      : AppTheme.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (showLock) ...[
+                const SizedBox(width: AppTheme.spacingXs),
+                Icon(
+                  Icons.lock_outline,
+                  size: 13,
+                  color: isActive
+                      ? AppTheme.onAccent
+                      : AppTheme.textTertiary,
+                ),
+              ],
+            ],
           ),
         ),
       ),
