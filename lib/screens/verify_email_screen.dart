@@ -154,7 +154,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             ),
             const SizedBox(height: AppTheme.spacingMd),
             Text(
-              'Check your spam folder if you do not see it.',
+              'Not seeing it? Check your spam or promotions folder.',
               style: AppTheme.bodyMedium,
             ),
             const SizedBox(height: AppTheme.spacingXl),
