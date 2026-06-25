@@ -43,7 +43,7 @@ Key deferrals:
 
 ## Running lessons (captured live during build)
 
-### From Block 0 (initial refactor, Sessions 1-4)
+### From initial refactor
 
 - **The writeup must not do work the diff didn't.** A confident, well-organized writeup can make work look more thorough than it was. Senior reviewers spot this immediately. Audits should report counts and file references, not assertions. Silence on a deliverable is read as "didn't run."
 
@@ -51,7 +51,7 @@ Key deferrals:
 
 - **Frame diversity is the technique, not pass count.** One taste-frame pass plus one operational-frame pass catches different bugs than two taste-frame passes. The pre-launch security audit on Vouch's paywall added the third frame. All three frames are now part of the standard process.
 
-- **Trigger-based deferrals beat vague timelines.** "When SavedProvider has tests" is testable. "Next session" isn't. The deferrals that survived from Block 0 to here are the ones with concrete triggers.
+- **Trigger-based deferrals beat vague timelines.** "When SavedProvider has tests" is testable. "Next session" isn't. The deferrals that survived from the initial refactor to here are the ones with concrete triggers.
 
 - **Const optimization in Flutter is unlocked by Theme.of + IconTheme, not by making colors compile-time constants.** The original const audit was defeatist; the second look found a real pattern that fixed three sites without breaking runtime theme switching.
 

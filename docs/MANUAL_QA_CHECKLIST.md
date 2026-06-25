@@ -55,7 +55,7 @@ Items that require on-device verification before release. Each entry lists what 
 - [ ] Vermilion consistency check: Walk every screen and verify #FF5436 looks appetizing and consistent everywhere it appears: CTA buttons (onboarding "Get Started", upgrade "Start 7-day free trial", sign-in submit), vote pill (both active/voted and default states), vibe tags, Free/PRO/Insider badges, tagline "actually", accent text links ("Reply", "See plans", "Restore purchases"), send icon, location pin icon. No instance should look garish on large fills or washed out on small text.
 - [ ] Theme inheritance completeness: Verify every screen feels like one deliberate product. Specifically check the "inherited, no edits needed" screens (City Detail, Sign In, Splash, Saved Restaurants) for any hardcoded colors that didn't pick up the warm theme. No screen should feel stranded on the old cold black/pink theme.
 
-## Firestore data layer (Block 4)
+## Firestore data layer
 - [ ] Auth still works against the real Firebase project: sign in with Google/Apple/email, profile shows display name, sign out works. (kUseFirebase flipped to true.)
 - [ ] Cities load from Firestore after seed script runs: Home screen shows 4 cities with correct names, images, descriptions.
 - [ ] Restaurant rank gating: Free user sees only Top 5 in City Detail. Locals Pass user sees all 10.

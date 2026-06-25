@@ -97,7 +97,7 @@ A restaurant can enhance its listing, never buy its rank. Rankings stay fully lo
 ### Interactive engagement prompts (content-generation engine)
 **The idea:** After a user views or saves a place, prompt them with light questions: "Have you been here?", "What did you order?", "Your thoughts?" Responses feed directly into insider content for the City Insider tier and surface lesser-known spots that would otherwise stay buried.
 
-**Why v1.1:** Strong candidate because it doubles as a content-generation engine, not just engagement. The City Insider tier needs real insider tips and ordering advice to justify its price. User-generated answers are the scalable source. Without this, insider content stays editorial-only and does not grow with the user base.
+**Why v1.1:** Strong candidate because it doubles as a content-generation engine, not just engagement. The City Insider tier needs real insider tips and ordering advice to justify its value. User-generated answers are the scalable source. Without this, insider content stays editorial-only and does not grow with the user base.
 
 **Trigger:** City Insider tier is live and needs content beyond editorial seed data, OR user engagement metrics show users browse but do not interact.
 
@@ -191,7 +191,7 @@ A restaurant can enhance its listing, never buy its rank. Rankings stay fully lo
 ---
 
 ### Reconcile cost model against Firebase Console actuals
-**The idea:** Compare FIRESTORE_SCHEMA.md cost estimates (~145 reads, ~5 writes per DAU per day) against real Firebase Console billing. Validate the 345-DAU free-tier inflection point. Adjust comment page size or caching strategy if reads are higher than projected.
+**The idea:** Compare FIRESTORE_SCHEMA.md cost estimates against real Firebase Console billing. Validate the free-tier inflection point. Adjust comment page size or caching strategy if reads are higher than projected.
 
 **Why pin, not build:** No real users yet. Cost models are living documents updated against real telemetry, not estimates frozen at design time.
 
@@ -213,7 +213,7 @@ A restaurant can enhance its listing, never buy its rank. Rankings stay fully lo
 ## Business tier candidates
 
 ### Rank-independent restaurant deals
-**The idea:** A restaurant offers a small perk to Vouch users (a freebie, a happy hour, "show this screen"), in a separate, clearly labeled surface, available to any place regardless of rank. Drives foot traffic, gives users a reason to keep and upgrade, and is a potential B2B revenue line.
+**The idea:** A restaurant offers a small perk to Vouch users (a freebie, a happy hour, "show this screen"), in a separate, clearly labeled surface, available to any place regardless of rank. Drives foot traffic and gives users a reason to keep and upgrade.
 
 **Why pin, not build:** Andrew wants more discussion before committing. The hard part is the firewall: it works only if it is obviously walled off from rank and not pay-to-play, or it becomes the exact thing Vouch replaces.
 

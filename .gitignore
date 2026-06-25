@@ -56,10 +56,16 @@ lib/firebase_options.dart
 # Node modules (Cloud Functions, test-rules, scripts)
 **/node_modules/
 
-# Service account keys (never commit)
+# Service account keys and signing credentials (never commit)
 **/serviceAccountKey*.json
 **/*credentials*.json
 **/*sa-*.json
+**/*-adminsdk-*.json
+*.pem
+*.p8
+*.key
+.env
+.env.*
 
 # Portable framework/strategy docs (not Vouch project docs)
 /AI_BUILD_FRAMEWORK.md
