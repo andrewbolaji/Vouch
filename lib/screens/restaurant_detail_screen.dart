@@ -111,7 +111,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             expandedHeight: 250,
             pinned: true,
             backgroundColor: AppTheme.background,
-            foregroundColor: AppTheme.textPrimary,
+            foregroundColor: AppTheme.background,
+            iconTheme: IconThemeData(color: AppTheme.background),
             flexibleSpace: FlexibleSpaceBar(
               background: RestaurantDetailHero(
                 images: RestaurantImage.resolveImageSources(restaurant),
