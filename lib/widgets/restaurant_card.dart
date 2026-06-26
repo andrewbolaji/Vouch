@@ -74,7 +74,9 @@ class RestaurantCard extends StatelessWidget {
                     ),
                     if (showVotes || isPrimary) ...[
                       const SizedBox(height: AppTheme.spacingXs),
-                      Row(
+                      Wrap(
+                        spacing: AppTheme.spacingSm,
+                        runSpacing: AppTheme.spacingXxs,
                         children: [
                           if (showVotes)
                             Text(
@@ -83,16 +85,13 @@ class RestaurantCard extends StatelessWidget {
                                 color: AppTheme.textPrimary,
                               ),
                             ),
-                          if (isPrimary) ...[
-                            if (showVotes)
-                              const SizedBox(width: AppTheme.spacingSm),
+                          if (isPrimary)
                             Text(
                               'Most vouched',
                               style: AppTheme.voteStat.copyWith(
                                 color: AppTheme.goldInk,
                               ),
                             ),
-                          ],
                         ],
                       ),
                     ],
