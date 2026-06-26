@@ -102,7 +102,13 @@ class RestaurantCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.only(right: AppTheme.spacingMd),
-              child: Icon(Icons.chevron_right, color: AppTheme.textTertiary),
+              child: isPrimary
+                  ? Icon(
+                      Icons.workspace_premium,
+                      color: AppTheme.goldInk,
+                      size: 24,
+                    )
+                  : Icon(Icons.chevron_right, color: AppTheme.textTertiary),
             ),
           ],
         ),
