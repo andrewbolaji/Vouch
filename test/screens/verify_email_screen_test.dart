@@ -38,7 +38,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.textContaining('spam folder'),
+        find.textContaining('spam or promotions folder'),
         findsOneWidget,
       );
     });
