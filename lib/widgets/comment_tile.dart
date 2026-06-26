@@ -50,8 +50,8 @@ class CommentTile extends StatelessWidget {
               Text(timeAgo(comment.createdAt), style: AppTheme.bodySmall),
               if (!isOwnComment && (onReport != null || onBlock != null))
                 SizedBox(
-                  width: 28,
-                  height: 28,
+                  width: 44,
+                  height: 44,
                   child: PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
                     iconSize: 18,

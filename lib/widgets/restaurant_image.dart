@@ -70,22 +70,30 @@ class RestaurantImage extends StatelessWidget {
     final demoAsset = resolveDemoAsset(restaurant.name);
 
     if (demoAsset != null) {
-      return Image.asset(
-        demoAsset,
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (context, error, stack) => _placeholder(),
+      return Semantics(
+        label: '${restaurant.name} photo',
+        image: true,
+        child: Image.asset(
+          demoAsset,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stack) => _placeholder(),
+        ),
       );
     }
 
-    return CachedNetworkImage(
-      imageUrl: restaurant.imageUrl,
-      width: width,
-      height: height,
+    return Semantics(
+      label: '${restaurant.name} photo',
+      image: true,
+      child: CachedNetworkImage(
+        imageUrl: restaurant.imageUrl,
+        width: width,
+        height: height,
       fit: fit,
-      placeholder: (context, url) => _placeholder(),
-      errorWidget: (context, url, error) => _placeholderWithIcon(),
+        placeholder: (context, url) => _placeholder(),
+        errorWidget: (context, url, error) => _placeholderWithIcon(),
+      ),
     );
   }
 

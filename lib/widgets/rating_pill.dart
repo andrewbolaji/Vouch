@@ -24,7 +24,9 @@ class RatingPill extends StatelessWidget {
         ? (isFirst ? AppTheme.spacingSm + AppTheme.spacingXxs : AppTheme.spacingSm)
         : (isFirst ? AppTheme.spacingXsSm : AppTheme.spacingXs);
 
-    return Container(
+    return Semantics(
+      label: 'Rank $rank',
+      child: Container(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
       decoration: BoxDecoration(
         color: isTop ? AppTheme.accent : AppTheme.surfaceVariant,
@@ -40,6 +42,7 @@ class RatingPill extends StatelessWidget {
           fontSize: fontSize,
           color: isTop ? AppTheme.onAccent : AppTheme.textPrimary,
         ),
+      ),
       ),
     );
   }

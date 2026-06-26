@@ -257,7 +257,7 @@ class _ToggleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: label,
+      label: showLock ? '$label, locked, upgrade to view' : label,
       selected: isActive,
       child: GestureDetector(
         onTap: onTap,
