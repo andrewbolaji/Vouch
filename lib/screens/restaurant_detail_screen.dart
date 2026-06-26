@@ -225,14 +225,17 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             );
                             return;
                           }
+                          final isAdding = !hasVoted;
                           appState.toggleVote(
                             widget.restaurantId,
                             userId: uid,
                           );
-                          context.read<AnalyticsService>().logVoteCast(
-                            restaurantId: widget.restaurantId,
-                            cityId: restaurant.cityId,
-                          );
+                          if (isAdding) {
+                            context.read<AnalyticsService>().logVoteCast(
+                              restaurantId: widget.restaurantId,
+                              cityId: restaurant.cityId,
+                            );
+                          }
                         },
                       ),
                       const Spacer(),
