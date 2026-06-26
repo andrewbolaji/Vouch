@@ -15,7 +15,7 @@ import 'package:vouch/theme/app_theme.dart';
 /// Anton and Archivo TTFs are registered in pubspec.yaml under fonts:,
 /// so they are included in the asset bundle. google_fonts detects a
 /// matching family name in the bundle and uses it without fetching.
-/// [allowRuntimeFetching] is disabled so tests never attempt network
+/// Runtime fetching is disabled so tests never attempt network
 /// access.
 ///
 /// Baselines are validated on this machine (macOS arm64). Flutter goldens

@@ -61,7 +61,7 @@ class RestaurantImage extends StatelessWidget {
     }
     return [
       ImageSource.asset(paths.primary),
-      if (paths.secondary != null) ImageSource.asset(paths.secondary!),
+      if (paths.secondary != null) ImageSource.asset(paths.secondary),
     ];
   }
 

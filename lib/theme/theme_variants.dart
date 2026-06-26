@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
-enum AppThemeVariant { editorialDark, instagramDark, editorialLight, blockParty }
+enum AppThemeVariant {
+  editorialDark,
+  instagramDark,
+  editorialLight,
+  blockParty,
+}
 
 const AppThemeVariant kActiveTheme = AppThemeVariant.blockParty;
 

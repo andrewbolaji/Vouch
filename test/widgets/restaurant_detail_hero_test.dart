@@ -8,7 +8,7 @@ void main() {
     testWidgets('renders single full-bleed hero when given one image',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: SizedBox(
               width: 400,
@@ -30,7 +30,7 @@ void main() {
 
     testWidgets('renders split layout when given two images', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: SizedBox(
               width: 400,
@@ -57,13 +57,13 @@ void main() {
       // Primary is wider than secondary (61% vs 39% minus gap)
       final primaryBox = row.children[0] as SizedBox;
       final secondaryBox = row.children[2] as SizedBox;
-      expect(primaryBox.width!, greaterThan(secondaryBox.width!));
+      expect(primaryBox.width, greaterThan(secondaryBox.width!));
     });
 
     testWidgets('split uses named constants for ratio and gap',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: SizedBox(
               width: 400,
@@ -85,8 +85,8 @@ void main() {
 
       // Primary width should be approximately 61% of 400 minus half gap
       final primaryBox = row.children[0] as SizedBox;
-      final expectedPrimary = 400 * kHeroPrimaryRatio - kHeroGap / 2;
-      expect(primaryBox.width!, closeTo(expectedPrimary, 0.1));
+      const expectedPrimary = 400 * kHeroPrimaryRatio - kHeroGap / 2;
+      expect(primaryBox.width, closeTo(expectedPrimary, 0.1));
     });
   });
 }

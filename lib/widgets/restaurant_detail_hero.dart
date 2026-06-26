@@ -78,7 +78,7 @@ class RestaurantDetailHero extends StatelessWidget {
                 iconSize: iconSize,
               ),
             ),
-            SizedBox(width: kHeroGap),
+            const SizedBox(width: kHeroGap),
             SizedBox(
               width: secondaryWidth,
               height: constraints.maxHeight,

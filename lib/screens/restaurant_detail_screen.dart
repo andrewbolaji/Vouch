@@ -17,14 +17,14 @@ import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/share_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 import 'package:vouch/widgets/comment_tile.dart';
-import 'package:vouch/widgets/report_comment_sheet.dart';
 import 'package:vouch/widgets/insider_notes.dart';
 import 'package:vouch/widgets/location_card.dart';
 import 'package:vouch/widgets/paywall_gate.dart';
 import 'package:vouch/widgets/rating_pill.dart';
-import 'package:vouch/widgets/save_button.dart';
+import 'package:vouch/widgets/report_comment_sheet.dart';
 import 'package:vouch/widgets/restaurant_detail_hero.dart';
 import 'package:vouch/widgets/restaurant_image.dart';
+import 'package:vouch/widgets/save_button.dart';
 import 'package:vouch/widgets/vote_button.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
@@ -218,11 +218,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         onTap: () {
                           final uid = auth.currentUser?.uid;
                           if (uid == null) {
-                            Navigator.of(context).push(
+                            unawaited(Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (_) => const SignInScreen(),
                               ),
-                            );
+                            ));
                             return;
                           }
                           final isAdding = !hasVoted;
@@ -272,6 +272,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             final error = await savedProvider
                                 .toggleSaved(widget.restaurantId);
                             if (error != null && mounted) {
+                              // ignore: use_build_context_synchronously, guarded by mounted check above
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(error.message),

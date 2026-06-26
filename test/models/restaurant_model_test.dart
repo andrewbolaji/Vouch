@@ -95,7 +95,6 @@ void main() {
         imageUrl: 'placeholder://restaurant',
         description: 'A test restaurant.',
         rank: kUnrankedRank,
-        voteCount: 0,
         priceLevel: 3,
         placeId: 'ChIJabc123',
         isMobileVenue: true,

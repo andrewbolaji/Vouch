@@ -31,7 +31,7 @@ void main() {
 
       test('returns true when user has voted', () async {
         await voteDoc('r1', 'user1').set({
-          'createdAt': Timestamp.fromDate(DateTime(2024, 3, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024, 3)),
         });
 
         final result = await repository.hasVoted('r1', 'user1');
@@ -40,7 +40,7 @@ void main() {
 
       test('returns false for different user on same restaurant', () async {
         await voteDoc('r1', 'user1').set({
-          'createdAt': Timestamp.fromDate(DateTime(2024, 3, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024, 3)),
         });
 
         final result = await repository.hasVoted('r1', 'user2');
@@ -49,7 +49,7 @@ void main() {
 
       test('returns false for same user on different restaurant', () async {
         await voteDoc('r1', 'user1').set({
-          'createdAt': Timestamp.fromDate(DateTime(2024, 3, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024, 3)),
         });
 
         final result = await repository.hasVoted('r2', 'user1');
@@ -85,7 +85,7 @@ void main() {
     group('unvote', () {
       test('removes a vote document', () async {
         await voteDoc('r1', 'user1').set({
-          'createdAt': Timestamp.fromDate(DateTime(2024, 3, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024, 3)),
         });
 
         await repository.unvote('r1', 'user1');

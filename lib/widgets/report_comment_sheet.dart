@@ -42,19 +42,19 @@ class ReportCommentSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppTheme.spacingSm),
-            _ReasonTile(
+            const _ReasonTile(
               reason: ReportReason.spam,
               label: 'Spam or advertising',
             ),
-            _ReasonTile(
+            const _ReasonTile(
               reason: ReportReason.harassment,
               label: 'Harassment or bullying',
             ),
-            _ReasonTile(
+            const _ReasonTile(
               reason: ReportReason.inappropriate,
               label: 'Inappropriate content',
             ),
-            _ReasonTile(
+            const _ReasonTile(
               reason: ReportReason.other,
               label: 'Something else',
             ),

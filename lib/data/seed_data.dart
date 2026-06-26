@@ -54,7 +54,7 @@ class SeedData {
       cuisine: 'Ramen',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Tokyo ramen master Tomoharu Shono\'s Houston'
+          "Tokyo ramen master Tomoharu Shono's Houston"
           ' shop. Michelin-recognized, known for a'
           ' wagyu-meets-Texas-BBQ bowl.',
       rank: 1,
@@ -235,7 +235,7 @@ class SeedData {
       ],
       insiderTip:
           'Reservations are Resy-only and go fast.'
-          ' BYOB with a \$20 corkage.',
+          r' BYOB with a $20 corkage.',
       whatToOrder:
           'The omakase. The uni and the wagyu larb hand'
           ' roll are standouts.',

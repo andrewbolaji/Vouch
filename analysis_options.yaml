@@ -5,6 +5,11 @@ analyzer:
     # Treat these as errors, not warnings
     missing_required_param: error
     missing_return: error
+  exclude:
+    # Generated files from build_runner (freezed, json_serializable).
+    # Cannot be edited; regenerated on every build.
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
 
 linter:
   rules:

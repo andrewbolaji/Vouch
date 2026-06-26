@@ -49,7 +49,7 @@ class _ShimmerCityCard extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.surfaceVariant,
-                borderRadius: BorderRadius.vertical(
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(AppTheme.radiusSm),
                 ),
               ),
@@ -116,7 +116,7 @@ class _ShimmerRestaurantCard extends StatelessWidget {
             width: 100,
             decoration: BoxDecoration(
               color: AppTheme.surfaceVariant,
-              borderRadius: BorderRadius.horizontal(
+              borderRadius: const BorderRadius.horizontal(
                 left: Radius.circular(AppTheme.radiusSm),
               ),
             ),

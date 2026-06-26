@@ -15,11 +15,11 @@ void main() {
       tester,
       Scaffold(
         backgroundColor: AppTheme.background,
-        body: Padding(
-          padding: const EdgeInsets.all(32),
+        body: const Padding(
+          padding: EdgeInsets.all(32),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: const [
+            children: [
               RatingPill(rank: 1),
               RatingPill(rank: 2),
               RatingPill(rank: 4),
@@ -41,11 +41,11 @@ void main() {
       tester,
       Scaffold(
         backgroundColor: AppTheme.background,
-        body: Padding(
-          padding: const EdgeInsets.all(32),
+        body: const Padding(
+          padding: EdgeInsets.all(32),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: const [
+            children: [
               RatingPill(rank: 1, isLarge: true),
               RatingPill(rank: 3, isLarge: true),
               RatingPill(rank: 5, isLarge: true),
@@ -118,23 +118,23 @@ void main() {
       tester,
       Scaffold(
         backgroundColor: AppTheme.background,
-        body: Padding(
-          padding: const EdgeInsets.all(32),
+        body: const Padding(
+          padding: EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
                   _TogglePill(label: 'Top 5', isActive: true),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   _TogglePill(label: 'Top 10', isActive: false),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Row(
                 children: [
                   _TogglePill(label: 'Top 5', isActive: false),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   _TogglePill(label: 'Top 10', isActive: true),
                 ],
               ),

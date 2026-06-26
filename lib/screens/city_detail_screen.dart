@@ -24,7 +24,7 @@ class CityDetailScreen extends StatefulWidget {
 class _CityDetailScreenState extends State<CityDetailScreen> {
   bool _showTop10 = false;
   final _scrollController = ScrollController();
-  final _top10Key = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _top10Key = GlobalKey();
 
   @override
   void dispose() {
@@ -40,12 +40,12 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final ctx = _top10Key.currentContext;
         if (ctx != null) {
-          Scrollable.ensureVisible(
+          unawaited(Scrollable.ensureVisible(
             ctx,
             alignment: 0.1,
             duration: const Duration(milliseconds: 450),
             curve: Curves.easeOut,
-          );
+          ));
         }
       });
       // Auto-pop paywall for free users on transition into Top 10

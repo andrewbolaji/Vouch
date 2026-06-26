@@ -34,7 +34,7 @@ class RestaurantCard extends StatelessWidget {
           children: [
             // Image with ink frame
             ClipRRect(
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppTheme.radiusSm),
                 bottomLeft: Radius.circular(AppTheme.radiusSm),
               ),

@@ -59,7 +59,7 @@ void main() {
       });
 
       test('returns comments ordered by createdAt descending', () async {
-        final baseTime = DateTime(2024, 3, 1);
+        final baseTime = DateTime(2024, 3);
         for (var i = 0; i < 5; i++) {
           await commentsRef('r1').doc('c$i').set({
             'userId': 'user1',
@@ -83,7 +83,7 @@ void main() {
 
       test('pagination: first page returns cursor when more pages exist',
           () async {
-        final baseTime = DateTime(2024, 6, 1);
+        final baseTime = DateTime(2024, 6);
         for (var i = 0; i < 5; i++) {
           await commentsRef('r1').doc('c$i').set({
             'userId': 'user1',
@@ -107,7 +107,7 @@ void main() {
       test('pagination: cursor encodes the last document path', () async {
         // Verifies that the cursor returned is a valid base64 encoding of the
         // last document's reference path, which the repository uses to resume.
-        final baseTime = DateTime(2024, 6, 1);
+        final baseTime = DateTime(2024, 6);
         for (var i = 0; i < 3; i++) {
           await commentsRef('r1').doc('c$i').set({
             'userId': 'user1',
@@ -133,7 +133,7 @@ void main() {
 
       test('pagination: no cursor returned when results fit in one page',
           () async {
-        final baseTime = DateTime(2024, 6, 1);
+        final baseTime = DateTime(2024, 6);
         for (var i = 0; i < 3; i++) {
           await commentsRef('r1').doc('c$i').set({
             'userId': 'user1',
@@ -147,7 +147,7 @@ void main() {
           });
         }
 
-        final result = await repository.getPage('r1', pageSize: 20);
+        final result = await repository.getPage('r1');
 
         expect(result.comments, hasLength(3));
         expect(result.nextCursor, isNull);
@@ -191,7 +191,7 @@ void main() {
       });
 
       test('does not return replies for a different parent', () async {
-        final now = DateTime(2024, 4, 1);
+        final now = DateTime(2024, 4);
         await commentsRef('r1').doc('reply1').set({
           'userId': 'user2',
           'userName': 'Bob',
@@ -224,9 +224,7 @@ void main() {
           userId: 'user1',
           userName: 'Alice',
           text: 'Amazing food!',
-          createdAt: DateTime(2024, 5, 1),
-          parentId: null,
-          isInsider: false,
+          createdAt: DateTime(2024, 5),
         );
 
         await repository.add('r1', comment);
@@ -244,7 +242,7 @@ void main() {
           'userId': 'user1',
           'userName': 'Alice',
           'text': 'To be deleted',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
           'parentId': null,
           'isInsider': false,
         });

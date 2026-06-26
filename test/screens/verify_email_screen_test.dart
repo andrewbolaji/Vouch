@@ -27,7 +27,6 @@ void main() {
           uid: 'u1',
           email: 'test@example.com',
           method: AuthMethod.email,
-          emailVerified: false,
         ),
       );
       await tester.pumpWidget(_buildTestApp(auth));
@@ -49,7 +48,6 @@ void main() {
           uid: 'u1',
           email: 'test@example.com',
           method: AuthMethod.email,
-          emailVerified: false,
         ),
       );
       await tester.pumpWidget(_buildTestApp(auth));
@@ -67,7 +65,6 @@ void main() {
           uid: 'u1',
           email: 'test@example.com',
           method: AuthMethod.email,
-          emailVerified: false,
         ),
       );
       await tester.pumpWidget(_buildTestApp(auth));
@@ -83,7 +80,6 @@ void main() {
         uid: 'u1',
         email: 'a@b.com',
         method: AuthMethod.email,
-        emailVerified: false,
       );
       expect(unverified.needsEmailVerification, isTrue);
 

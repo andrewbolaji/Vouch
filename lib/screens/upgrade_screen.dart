@@ -18,7 +18,7 @@ class UpgradeScreen extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppTheme.background,
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppTheme.spacingMd),
         ),
         border: Border(

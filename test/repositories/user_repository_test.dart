@@ -21,7 +21,7 @@ void main() {
       });
 
       test('returns user profile when it exists', () async {
-        final createdAt = DateTime(2024, 1, 1);
+        final createdAt = DateTime(2024);
         final lastActiveAt = DateTime(2024, 6, 15);
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice Johnson',
@@ -47,7 +47,7 @@ void main() {
       });
 
       test('returns user with default values for optional fields', () async {
-        final now = DateTime(2024, 5, 1);
+        final now = DateTime(2024, 5);
         await fakeFirestore.collection('users').doc('uid2').set({
           'displayName': 'Bob',
           'email': 'bob@example.com',
@@ -70,10 +70,8 @@ void main() {
           id: 'uid1',
           displayName: 'Charlie',
           email: 'charlie@example.com',
-          createdAt: DateTime(2024, 2, 1),
-          lastActiveAt: DateTime(2024, 2, 1),
-          photoUrl: null,
-          membershipTier: 'free',
+          createdAt: DateTime(2024, 2),
+          lastActiveAt: DateTime(2024, 2),
           savedRestaurantIds: [],
         );
 
@@ -89,16 +87,16 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Old Name',
           'email': 'old@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
         });
 
         final profile = UserProfile(
           id: 'uid1',
           displayName: 'New Name',
           email: 'new@example.com',
-          createdAt: DateTime(2024, 3, 1),
-          lastActiveAt: DateTime(2024, 3, 1),
+          createdAt: DateTime(2024, 3),
+          lastActiveAt: DateTime(2024, 3),
         );
 
         await repository.createUser(profile);
@@ -114,8 +112,8 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
           'savedRestaurantIds': ['r1'],
         });
 
@@ -133,8 +131,8 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
           'savedRestaurantIds': ['r1', 'r2', 'r3'],
         });
 
@@ -153,8 +151,8 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
           'savedRestaurantIds': ['r1'],
         });
 
@@ -171,8 +169,8 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
           'savedRestaurantIds': ['r1'],
         });
 
@@ -193,8 +191,8 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
           'savedRestaurantIds': <String>[],
         });
 
@@ -206,8 +204,8 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
           'savedRestaurantIds': ['r1', 'r2', 'r3'],
         });
 
@@ -220,8 +218,8 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
         });
 
         final saved = await repository.getSavedIds('uid1');
@@ -234,14 +232,15 @@ void main() {
         await fakeFirestore.collection('users').doc('uid1').set({
           'displayName': 'Alice',
           'email': 'alice@example.com',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'lastActiveAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
         });
 
         await repository.updateLastActive('uid1');
 
         final doc = await fakeFirestore.collection('users').doc('uid1').get();
-        // With fake_cloud_firestore, serverTimestamp() is set to a non-null value
+        // With fake_cloud_firestore, serverTimestamp()
+        // is set to a non-null value
         expect(doc.data()!['lastActiveAt'], isNotNull);
       });
     });

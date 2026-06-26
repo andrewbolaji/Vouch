@@ -27,7 +27,6 @@ void main() {
         description: 'A Houston classic.',
         rank: 3,
         voteCount: 500,
-        priceLevel: 2,
       );
 
       await tester.pumpWidget(buildCard(restaurant));
@@ -48,8 +47,6 @@ void main() {
         imageUrl: 'placeholder://restaurant',
         description: '',
         rank: kUnrankedRank,
-        voteCount: 0,
-        priceLevel: 2,
       );
 
       await tester.pumpWidget(buildCard(restaurant));
@@ -69,7 +66,6 @@ void main() {
         imageUrl: 'placeholder://restaurant',
         description: '',
         rank: kUnrankedRank,
-        voteCount: 0,
         priceLevel: 1,
       );
 
@@ -92,7 +88,6 @@ void main() {
         description: '',
         rank: kUnrankedRank,
         voteCount: 15,
-        priceLevel: 2,
       );
 
       await tester.pumpWidget(buildCard(restaurant));

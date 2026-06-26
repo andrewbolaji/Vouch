@@ -32,7 +32,7 @@ class SuggestionRepository {
       await _functions.httpsCallable('submitSuggestion').call<dynamic>({
         'type': type,
         'text': text,
-        if (cityId != null) 'cityId': cityId,
+        'cityId': ?cityId,
       });
     } on FirebaseFunctionsException catch (e) {
       if (e.code == 'resource-exhausted') {

@@ -467,7 +467,8 @@ void main() {
       expect(service.isLoading, isFalse);
     }, timeout: const Timeout(Duration(seconds: 20)));
 
-    test('signInWithGoogle happy path sets Google user via auth state', () async {
+    test('signInWithGoogle happy path sets Google user via auth state',
+        () async {
       final service = createService();
       final mockUser = MockFirebaseUser();
       final mockCred = MockUserCredential();

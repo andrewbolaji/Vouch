@@ -94,7 +94,7 @@ class AppTheme {
   static BorderSide get borderInk =>
       BorderSide(color: borderColor, width: borderInkWidth);
   static BorderSide get borderHairline =>
-      BorderSide(color: lineSoft, width: borderHairlineWidth);
+      BorderSide(color: lineSoft);
 
   // Shadows (hard offset, no blur, screenprint sticker feel)
   static List<BoxShadow> get shadowHard => [

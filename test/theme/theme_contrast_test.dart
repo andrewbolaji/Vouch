@@ -13,8 +13,16 @@ double _luminance(int r, int g, int b) {
 }
 
 double _contrastRatio(int fgValue, int bgValue) {
-  final fg = _luminance((fgValue >> 16) & 0xFF, (fgValue >> 8) & 0xFF, fgValue & 0xFF);
-  final bg = _luminance((bgValue >> 16) & 0xFF, (bgValue >> 8) & 0xFF, bgValue & 0xFF);
+  final fg = _luminance(
+    (fgValue >> 16) & 0xFF,
+    (fgValue >> 8) & 0xFF,
+    fgValue & 0xFF,
+  );
+  final bg = _luminance(
+    (bgValue >> 16) & 0xFF,
+    (bgValue >> 8) & 0xFF,
+    bgValue & 0xFF,
+  );
   final lighter = fg > bg ? fg : bg;
   final darker = fg > bg ? bg : fg;
   return (lighter + 0.05) / (darker + 0.05);
@@ -29,84 +37,86 @@ void main() {
     const minRatioLarge = 3.0;
 
     test('editorialDark textPrimary on background passes AA', () {
-      final palette = ThemePalettes.editorialDark;
+      const palette = ThemePalettes.editorialDark;
       final ratio = _contrastRatio(
-        palette.textPrimary.value & 0xFFFFFF,
-        palette.background.value & 0xFFFFFF,
+        palette.textPrimary.toARGB32() & 0xFFFFFF,
+        palette.background.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatio));
     });
 
     test('instagramDark textPrimary on background passes AA', () {
-      final palette = ThemePalettes.instagramDark;
+      const palette = ThemePalettes.instagramDark;
       final ratio = _contrastRatio(
-        palette.textPrimary.value & 0xFFFFFF,
-        palette.background.value & 0xFFFFFF,
+        palette.textPrimary.toARGB32() & 0xFFFFFF,
+        palette.background.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatio));
     });
 
     test('editorialDark textSecondary on background passes AA', () {
-      final palette = ThemePalettes.editorialDark;
+      const palette = ThemePalettes.editorialDark;
       final ratio = _contrastRatio(
-        palette.textSecondary.value & 0xFFFFFF,
-        palette.background.value & 0xFFFFFF,
+        palette.textSecondary.toARGB32() & 0xFFFFFF,
+        palette.background.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatio));
     });
 
     test('editorialDark textPrimary is not pure white', () {
-      final palette = ThemePalettes.editorialDark;
-      expect(palette.textPrimary.value & 0xFFFFFF, isNot(equals(0xFFFFFF)));
+      const palette = ThemePalettes.editorialDark;
+      final rgb = palette.textPrimary.toARGB32() & 0xFFFFFF;
+      expect(rgb, isNot(equals(0xFFFFFF)));
     });
 
     test('instagramDark textPrimary is not pure white', () {
-      final palette = ThemePalettes.instagramDark;
-      expect(palette.textPrimary.value & 0xFFFFFF, isNot(equals(0xFFFFFF)));
+      const palette = ThemePalettes.instagramDark;
+      final rgb = palette.textPrimary.toARGB32() & 0xFFFFFF;
+      expect(rgb, isNot(equals(0xFFFFFF)));
     });
 
     // Block Party contrast checks
     test('blockParty ink on paper passes AA', () {
-      final palette = ThemePalettes.blockParty;
+      const palette = ThemePalettes.blockParty;
       final ratio = _contrastRatio(
-        palette.textPrimary.value & 0xFFFFFF,
-        palette.background.value & 0xFFFFFF,
+        palette.textPrimary.toARGB32() & 0xFFFFFF,
+        palette.background.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatio));
     });
 
     test('blockParty ink-2 on paper passes AA', () {
-      final palette = ThemePalettes.blockParty;
+      const palette = ThemePalettes.blockParty;
       final ratio = _contrastRatio(
-        palette.textSecondary.value & 0xFFFFFF,
-        palette.background.value & 0xFFFFFF,
+        palette.textSecondary.toARGB32() & 0xFFFFFF,
+        palette.background.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatio));
     });
 
     test('blockParty ink on paper-raised passes AA', () {
-      final palette = ThemePalettes.blockParty;
+      const palette = ThemePalettes.blockParty;
       final ratio = _contrastRatio(
-        palette.textPrimary.value & 0xFFFFFF,
-        palette.surface.value & 0xFFFFFF,
+        palette.textPrimary.toARGB32() & 0xFFFFFF,
+        palette.surface.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatio));
     });
 
     test('blockParty flame on paper passes AA for large text', () {
-      final palette = ThemePalettes.blockParty;
+      const palette = ThemePalettes.blockParty;
       final ratio = _contrastRatio(
-        palette.accent.value & 0xFFFFFF,
-        palette.background.value & 0xFFFFFF,
+        palette.accent.toARGB32() & 0xFFFFFF,
+        palette.background.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatioLarge));
     });
 
     test('blockParty gold-ink on paper passes AA for large text', () {
-      final palette = ThemePalettes.blockParty;
+      const palette = ThemePalettes.blockParty;
       final ratio = _contrastRatio(
-        palette.goldInk!.value & 0xFFFFFF,
-        palette.background.value & 0xFFFFFF,
+        palette.goldInk!.toARGB32() & 0xFFFFFF,
+        palette.background.toARGB32() & 0xFFFFFF,
       );
       expect(ratio, greaterThanOrEqualTo(minRatioLarge));
     });

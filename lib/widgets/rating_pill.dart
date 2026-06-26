@@ -21,7 +21,9 @@ class RatingPill extends StatelessWidget {
             ? AppTheme.spacingMdSm
             : AppTheme.spacingSm + AppTheme.spacingXxs);
     final vPad = isLarge
-        ? (isFirst ? AppTheme.spacingSm + AppTheme.spacingXxs : AppTheme.spacingSm)
+        ? (isFirst
+            ? AppTheme.spacingSm + AppTheme.spacingXxs
+            : AppTheme.spacingSm)
         : (isFirst ? AppTheme.spacingXsSm : AppTheme.spacingXs);
 
     return Semantics(
