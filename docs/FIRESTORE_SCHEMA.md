@@ -645,7 +645,7 @@ is final:
    Admin-only writes via a Cloud Function, or a
    Firestore admin SDK script?
 
-5. **Vote weight.** City Insider tier has "2x vote
+5. **Vote weight.** City Insider tier has "3x vote
    weight" in the membership copy. Is this actually
    desired? If yes, the Cloud Function that
    aggregates `voteCount` needs to read the voter's

@@ -18,7 +18,7 @@ A curated, community-voted Top 10 restaurant list for every major city. Not anot
 
 - 4 launch cities: Houston, NYC, LA, Chicago
 - Curated Top 10 per city (editorially seeded, community-voted)
-- Three membership tiers: Free (Top 5, vote, comment), Locals Pass (Top 10, save, ad-free), City Insider (insider tips, badge, 2x vote weight)
+- Three membership tiers: Free (Top 5, vote, comment), Locals Pass (Top 10, save, ad-free), City Insider (insider tips, badge, 3x vote weight)
 - Firebase Auth (Email, Google, Apple)
 - Firestore data layer with security rules
 - RevenueCat IAP integration

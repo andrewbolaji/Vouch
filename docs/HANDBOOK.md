@@ -26,7 +26,7 @@ Internal reference for how the app's systems work. Written for the team: enough 
 
 - Ranks update at most once a day (overnight in the US), not in real time. A vote shows in the count immediately but moves the rank only at the next recompute.
 - One vote per person per restaurant, tied to the account, not the device.
-- Verified-visit 2x weighting is built structurally (the `weight` field) but not active; every vote counts equally for now.
+- Verified-visit 3x weighting is built structurally (the `weight` field) but not active; every vote counts equally for now.
 - If the daily recompute runs for a city with no vote records yet (for example before the seed migration), every restaurant scores zero and the order falls back to the cosmetic `voteCount`, which reproduces the editorial order.
 
 **Where it shows up.**
@@ -223,7 +223,7 @@ Internal reference for how the app's systems work. Written for the team: enough 
 - **Tier definitions:**
   - Free: Top 5 rankings, voting, commenting.
   - Locals Pass ($4.99/month, $39.99/year): Full Top 10, save restaurants, trending tab, ad-free.
-  - City Insider ($9.99/month, $79.99/year): Everything in Locals Pass plus insider tips ("what to order" and "pro tip"), insider badge on comments, verified-visit 2x vote weight (when live), early access to new cities.
+  - City Insider ($9.99/month, $79.99/year): Everything in Locals Pass plus insider tips ("what to order" and "pro tip"), insider badge on comments, verified-visit 3x vote weight (when live), early access to new cities.
 - **Client-side gating:** `MembershipProvider` holds the current tier and exposes convenience getters: `canViewTop10`, `canSaveRestaurants`, `canViewInsiderTips`, `hasInsiderBadge`, `isAdFree`. Screens read these to show or hide content and render paywall gates.
 - **Server-side gating:** Firestore security rules enforce tier-based access using custom claims on the auth token. Free users (no claim or `membershipTier == "free"`) can only read restaurant docs with `rank <= 5`. Locals Pass and City Insider can read all ranks. Insider notes live in a subcollection (`/restaurants/{id}/insiderNotes/{noteId}`) with a rule requiring `membershipTier == "cityInsider"`.
 - **Billing is not wired yet.** `RevenueCatService` is a stubbed service layer. `purchaseTier()` and `restorePurchases()` call the stub. The planned mechanism: a RevenueCat webhook fires a Cloud Function (`setMembershipClaim`, currently a TODO in index.ts) that sets a custom claim on the user's auth token. The client reads the claim on token refresh.
@@ -232,7 +232,7 @@ Internal reference for how the app's systems work. Written for the team: enough 
 **Limits and gotchas.**
 
 - Tiers are not purchasable in-app yet. The upgrade screen renders but purchases do not process until RevenueCat is configured and the custom-claim Cloud Function ships.
-- Verified-visit 2x vote weighting is not active. The `weight` field on vote docs is enforced at 1 by security rules. When verified-visit detection ships, the rule will be updated to allow `weight > 1` with a verification claim.
+- Verified-visit 3x vote weighting is not active. The `weight` field on vote docs is enforced at 1 by security rules. When verified-visit detection ships, the rule will be updated to allow `weight > 1` with a verification claim.
 - Client-side gating on saves is present but not server-enforced (deferred until RevenueCat lands). The security rules gate reads (rank-based), but save writes to the user doc are not tier-checked.
 
 **Where it shows up.**
