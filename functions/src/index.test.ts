@@ -193,7 +193,7 @@ describe("Comment trigger path matches app write path", () => {
     await clearFirestore();
   });
 
-  test("comment at restaurants/{id}/comments/{id} increments commentCount", async () => {
+  test("comment increments commentCount", async () => {
     // Write a comment at the exact path the app uses (subcollection)
     const commentRef = db
       .collection("restaurants")
