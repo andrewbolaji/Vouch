@@ -17,6 +17,7 @@ class RestaurantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final showRank = !restaurant.isUnranked;
     final showVotes = restaurant.voteCount > 0;
+    final showComments = restaurant.commentCount > 0;
     // Pinned rule: only rank 1 gets the hard shadow
     final isPrimary = restaurant.rank == 1;
     return Semantics(
@@ -72,7 +73,7 @@ class RestaurantCard extends StatelessWidget {
                       '${restaurant.cuisine}  ${restaurant.priceLevelDisplay}',
                       style: AppTheme.bodySmall,
                     ),
-                    if (showVotes || isPrimary) ...[
+                    if (showVotes || showComments || isPrimary) ...[
                       const SizedBox(height: AppTheme.spacingXs),
                       Wrap(
                         spacing: AppTheme.spacingSm,
@@ -83,6 +84,27 @@ class RestaurantCard extends StatelessWidget {
                               '${formatCount(restaurant.voteCount)} votes',
                               style: AppTheme.voteStat.copyWith(
                                 color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          if (showComments)
+                            Semantics(
+                              label: '${restaurant.commentCount} comments',
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline,
+                                    color: AppTheme.textSecondary,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    formatCount(restaurant.commentCount),
+                                    style: AppTheme.voteStat.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           if (isPrimary)

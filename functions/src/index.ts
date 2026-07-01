@@ -17,6 +17,10 @@ import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
+import {
+  applyCommentCreated,
+  applyCommentDeleted,
+} from "./comment_aggregation";
 import {deleteUserData} from "./user_cleanup";
 import {recomputeAllRanks} from "./rank_recompute";
 
@@ -46,7 +50,27 @@ export const onVoteDeleted = onDocumentDeleted(
 );
 
 // ---------------------------------------------------------------------------
-// 2. submitSuggestion
+// 2. onCommentCreated / onCommentDeleted
+//    Firestore trigger on /restaurants/{restaurantId}/comments/{commentId}
+//    Delegates to shared applyCommentCreated/applyCommentDeleted functions.
+// ---------------------------------------------------------------------------
+
+export const onCommentCreated = onDocumentCreated(
+  "restaurants/{restaurantId}/comments/{commentId}",
+  async (event) => {
+    await applyCommentCreated(db, event.params.restaurantId);
+  }
+);
+
+export const onCommentDeleted = onDocumentDeleted(
+  "restaurants/{restaurantId}/comments/{commentId}",
+  async (event) => {
+    await applyCommentDeleted(db, event.params.restaurantId);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 3. submitSuggestion
 //    HTTPS callable. Enforces a daily cap of 1 suggestion per user.
 //    Writes suggestion + increments counter inside a transaction.
 // ---------------------------------------------------------------------------

@@ -97,5 +97,42 @@ void main() {
       // But no rank badge
       expect(find.text('#$kUnrankedRank'), findsNothing);
     });
+
+    testWidgets('shows comment badge when commentCount > 0', (tester) async {
+      const restaurant = Restaurant(
+        id: 'hou-1',
+        cityId: 'houston',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: 'placeholder://restaurant',
+        description: '',
+        rank: 1,
+        voteCount: 100,
+        commentCount: 7,
+      );
+
+      await tester.pumpWidget(buildCard(restaurant));
+
+      expect(find.byIcon(Icons.chat_bubble_outline), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+    });
+
+    testWidgets('hides comment badge when commentCount is 0', (tester) async {
+      const restaurant = Restaurant(
+        id: 'hou-2',
+        cityId: 'houston',
+        name: 'Cool Runnings',
+        cuisine: 'Jamaican',
+        imageUrl: 'placeholder://restaurant',
+        description: '',
+        rank: 2,
+        voteCount: 50,
+        // commentCount defaults to 0
+      );
+
+      await tester.pumpWidget(buildCard(restaurant));
+
+      expect(find.byIcon(Icons.chat_bubble_outline), findsNothing);
+    });
   });
 }

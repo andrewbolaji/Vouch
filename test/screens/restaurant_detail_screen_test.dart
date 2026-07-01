@@ -139,7 +139,27 @@ void main() {
       );
     });
 
-    testWidgets('comments section header shows count', (tester) async {
+    // A1: Empty state renders for a restaurant with zero comments.
+    // hou-2 (Cool Runnings) has no seed comments.
+    testWidgets('shows empty state when no comments (hou-2)', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const RestaurantDetailScreen(restaurantId: 'hou-2'),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 700));
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Be the first to weigh in.'), findsOneWidget);
+      // The empty-state speech bubble icon
+      expect(find.byIcon(Icons.chat_bubble_outline), findsWidgets);
+    });
+
+    // A2: Header count renders the actual formatted count next to Comments.
+    // hou-1 (Mensho) has 2 seed comments.
+    testWidgets('comments section header shows actual count', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           const RestaurantDetailScreen(restaurantId: 'hou-1'),
@@ -147,12 +167,40 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 700));
 
-      // Scroll down to reveal the comments section
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
       await tester.pumpAndSettle();
 
-      // hou-1 has seed comments, header should show 'Comments' with a count
       expect(find.text('Comments'), findsOneWidget);
+      // The count '2' should render next to the header
+      expect(find.text('2'), findsWidgets);
+    });
+
+    // A3: Comments section renders above the City Insider paywall gate.
+    // Uses default (free, non-insider) user so PaywallGate is present.
+    testWidgets('comments header renders above paywall gate', (tester) async {
+      // hou-1 has insiderTip/whatToOrder, so the paywall gate shows for free users
+      await tester.pumpWidget(
+        buildTestApp(
+          const RestaurantDetailScreen(restaurantId: 'hou-1'),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 700));
+
+      // Scroll to reveal both sections
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
+      await tester.pumpAndSettle();
+
+      final commentsFinder = find.text('Comments');
+      final paywallFinder = find.text('City Insider exclusive');
+
+      expect(commentsFinder, findsOneWidget);
+      expect(paywallFinder, findsOneWidget);
+
+      final commentsBox = tester.getTopLeft(commentsFinder);
+      final paywallBox = tester.getTopLeft(paywallFinder);
+
+      // Comments header dy should be less (higher on screen) than paywall
+      expect(commentsBox.dy, lessThan(paywallBox.dy));
     });
   });
 }

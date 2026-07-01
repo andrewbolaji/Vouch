@@ -12,6 +12,10 @@
 import {initializeApp, getApps, deleteApp} from "firebase-admin/app";
 import {getFirestore, FieldValue, Timestamp} from "firebase-admin/firestore";
 import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
+import {
+  applyCommentCreated,
+  applyCommentDeleted,
+} from "./comment_aggregation";
 import {deleteUserData} from "./user_cleanup";
 import {
   computeScore,
@@ -103,6 +107,63 @@ describe("Vote aggregation (real function bodies)", () => {
 
     const snap = await db.collection("restaurants").doc("hou-1").get();
     expect(snap.data()?.voteCount).toBe(100);
+  });
+});
+
+// ================================================================
+// Comment aggregation
+//
+// Tests call the real applyCommentCreated/applyCommentDeleted
+// functions from comment_aggregation.ts, mirroring the vote
+// aggregation test pattern.
+// ================================================================
+
+describe("Comment aggregation (real function bodies)", () => {
+  beforeEach(async () => {
+    await clearFirestore();
+    await db.collection("restaurants").doc("hou-1").set({
+      id: "hou-1",
+      cityId: "houston",
+      name: "Turkey Leg Hut",
+      rank: 1,
+      voteCount: 100,
+      commentCount: 5,
+    });
+  });
+
+  afterAll(async () => {
+    await clearFirestore();
+  });
+
+  test("applyCommentCreated increments commentCount", async () => {
+    await applyCommentCreated(db, "hou-1");
+
+    const snap = await db.collection("restaurants").doc("hou-1").get();
+    expect(snap.data()?.commentCount).toBe(6);
+  });
+
+  test("applyCommentDeleted decrements commentCount", async () => {
+    await applyCommentDeleted(db, "hou-1");
+
+    const snap = await db.collection("restaurants").doc("hou-1").get();
+    expect(snap.data()?.commentCount).toBe(4);
+  });
+
+  test("multiple increments are additive", async () => {
+    await applyCommentCreated(db, "hou-1");
+    await applyCommentCreated(db, "hou-1");
+    await applyCommentCreated(db, "hou-1");
+
+    const snap = await db.collection("restaurants").doc("hou-1").get();
+    expect(snap.data()?.commentCount).toBe(8);
+  });
+
+  test("increment after decrement nets to zero change", async () => {
+    await applyCommentCreated(db, "hou-1");
+    await applyCommentDeleted(db, "hou-1");
+
+    const snap = await db.collection("restaurants").doc("hou-1").get();
+    expect(snap.data()?.commentCount).toBe(5);
   });
 });
 

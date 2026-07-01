@@ -187,6 +187,13 @@ describe("restaurants", () => {
     const db = cityInsiderUser().firestore();
     await assertFails(deleteDoc(doc(db, "restaurants/hou-1")));
   });
+
+  test("no user can write commentCount directly", async () => {
+    const db = cityInsiderUser().firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1"), { commentCount: 999 }, { merge: true })
+    );
+  });
 });
 
 // ================================================================

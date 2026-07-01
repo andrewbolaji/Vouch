@@ -31,6 +31,7 @@ _Restaurant _$RestaurantFromJson(Map<String, dynamic> json) => _Restaurant(
   description: json['description'] as String,
   rank: (json['rank'] as num).toInt(),
   voteCount: (json['voteCount'] as num?)?.toInt() ?? 0,
+  commentCount: (json['commentCount'] as num?)?.toInt() ?? 0,
   priceLevel: (json['priceLevel'] as num?)?.toDouble() ?? 2,
   locations:
       (json['locations'] as List<dynamic>?)
@@ -63,6 +64,7 @@ Map<String, dynamic> _$RestaurantToJson(_Restaurant instance) =>
       'description': instance.description,
       'rank': instance.rank,
       'voteCount': instance.voteCount,
+      'commentCount': instance.commentCount,
       'priceLevel': instance.priceLevel,
       'locations': instance.locations,
       'insiderTip': instance.insiderTip,

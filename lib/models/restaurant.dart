@@ -33,6 +33,7 @@ abstract class Restaurant with _$Restaurant {
     required String description,
     required int rank,
     @Default(0) int voteCount,
+    @Default(0) int commentCount,
     @Default(2) double priceLevel,
     @Default([]) List<RestaurantLocation> locations,
     String? insiderTip,
