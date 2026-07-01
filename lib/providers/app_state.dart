@@ -218,6 +218,7 @@ class AppState extends ChangeNotifier {
       _cities = List.from(SeedData.cities);
       _restaurants = List.from(SeedData.restaurants);
       _comments = _generateSeedComments();
+      _applySeedCommentCounts();
     }
 
     await _loadVotes();
@@ -249,6 +250,7 @@ class AppState extends ChangeNotifier {
       _cities = List.from(SeedData.cities);
       _restaurants = List.from(SeedData.restaurants);
       _comments = _generateSeedComments();
+      _applySeedCommentCounts();
     }
   }
 
@@ -284,5 +286,22 @@ class AppState extends ChangeNotifier {
         createdAt: DateTime(2026, 4, 22),
       ),
     ];
+  }
+
+  /// Sets commentCount on each seed restaurant to match the number of
+  /// seed comments for that restaurant. Counts ALL comments including
+  /// replies, mirroring the Firestore backfill which counts every doc
+  /// in the subcollection without excluding replies.
+  void _applySeedCommentCounts() {
+    final counts = <String, int>{};
+    for (final c in _comments) {
+      counts[c.restaurantId] = (counts[c.restaurantId] ?? 0) + 1;
+    }
+    for (var i = 0; i < _restaurants.length; i++) {
+      final count = counts[_restaurants[i].id];
+      if (count != null && count > 0) {
+        _restaurants[i] = _restaurants[i].copyWith(commentCount: count);
+      }
+    }
   }
 }

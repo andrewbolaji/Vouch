@@ -186,6 +186,28 @@ void main() {
       expect(replies.last.text, 'A reply');
     });
 
+    test('seed restaurant commentCount matches seed comment count', () async {
+      final state = AppState(useFirebase: false);
+      await Future<void>.delayed(
+        const Duration(milliseconds: 600),
+      );
+
+      // hou-1 (Mensho) has 2 seed comments (c1, c2), including replies
+      final hou1 = state.restaurantById('hou-1');
+      expect(hou1, isNotNull);
+      expect(hou1!.commentCount, 2);
+
+      // nyc-1 (Peter Luger) has 1 seed comment (c3)
+      final nyc1 = state.restaurantById('nyc-1');
+      expect(nyc1, isNotNull);
+      expect(nyc1!.commentCount, 1);
+
+      // hou-2 (Cool Runnings) has 0 seed comments
+      final hou2 = state.restaurantById('hou-2');
+      expect(hou2, isNotNull);
+      expect(hou2!.commentCount, 0);
+    });
+
     test('refresh reloads data', () async {
       final state = AppState(useFirebase: false);
       await Future<void>.delayed(
