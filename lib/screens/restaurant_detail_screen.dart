@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/core/utils/block_filter.dart';
+import 'package:vouch/core/utils/format_utils.dart';
 import 'package:vouch/models/comment.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
@@ -39,6 +40,7 @@ class RestaurantDetailScreen extends StatefulWidget {
 
 class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   final _commentController = TextEditingController();
+  final GlobalKey _commentsSectionKey = GlobalKey();
   String? _replyingToId;
   String? _replyingToUserName;
   Set<String> _blockedUserIds = {};
@@ -238,6 +240,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           }
                         },
                       ),
+                      const SizedBox(width: AppTheme.spacingSm),
+                      _CommentActionButton(
+                        count: comments.length,
+                        onTap: _scrollToComments,
+                      ),
                       const Spacer(),
                       if (!auth.isSignedIn)
                         Semantics(
@@ -317,37 +324,22 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       (loc) => LocationCard(location: loc),
                     ),
                   ],
-                  // Insider notes
-                  if (restaurant.whatToOrder != null ||
-                      restaurant.insiderTip != null) ...[
-                    const SizedBox(height: AppTheme.spacingMd),
-                    if (membership.canViewInsiderTips)
-                      InsiderNotes(
-                        whatToOrder: restaurant.whatToOrder,
-                        tip: restaurant.insiderTip,
-                      )
-                    else
-                      PaywallGate(
-                        isLocked: true,
-                        source: 'insider_notes',
-                        onUpgradeTap: () {
-                          unawaited(
-                            HapticFeedback.mediumImpact(),
-                          );
-                          _showUpgrade(context);
-                        },
-                        message: 'City Insider exclusive',
-                        child: const InsiderNotes(
-                          whatToOrder: 'Unlock to see what '
-                              'insiders order here',
-                          tip: 'Unlock to see the '
-                              'insider tip',
+                  // Comments (before insider notes so the conversation
+                  // is reachable without scrolling past the paywall)
+                  const SizedBox(height: AppTheme.spacingLg),
+                  Row(
+                    key: _commentsSectionKey,
+                    children: [
+                      Text('Comments', style: AppTheme.headlineMedium),
+                      const SizedBox(width: AppTheme.spacingSm),
+                      Text(
+                        formatCount(comments.length),
+                        style: AppTheme.labelLarge.copyWith(
+                          color: AppTheme.textSecondary,
                         ),
                       ),
-                  ],
-                  // Comments
-                  const SizedBox(height: AppTheme.spacingLg),
-                  Text('Comments', style: AppTheme.headlineMedium),
+                    ],
+                  ),
                   const SizedBox(height: AppTheme.spacingMd),
                   // Reply indicator
                   if (_replyingToId != null)
@@ -455,9 +447,28 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   ),
                   const SizedBox(height: AppTheme.spacingMd),
                   if (comments.isEmpty)
-                    Text(
-                      'No comments yet. Be the first.',
-                      style: AppTheme.bodyMedium,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppTheme.spacingMd,
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              color: AppTheme.textTertiary,
+                              size: 32,
+                            ),
+                            const SizedBox(height: AppTheme.spacingSm),
+                            Text(
+                              'Be the first to weigh in.',
+                              style: AppTheme.bodyMedium.copyWith(
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     )
                   else
                     ...comments.map((comment) {
@@ -476,6 +487,35 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         onBlock: () => _blockUser(comment.userId),
                       );
                     }),
+                  // Insider notes (below comments so conversation is
+                  // reachable for free users without passing the paywall)
+                  if (restaurant.whatToOrder != null ||
+                      restaurant.insiderTip != null) ...[
+                    const SizedBox(height: AppTheme.spacingMd),
+                    if (membership.canViewInsiderTips)
+                      InsiderNotes(
+                        whatToOrder: restaurant.whatToOrder,
+                        tip: restaurant.insiderTip,
+                      )
+                    else
+                      PaywallGate(
+                        isLocked: true,
+                        source: 'insider_notes',
+                        onUpgradeTap: () {
+                          unawaited(
+                            HapticFeedback.mediumImpact(),
+                          );
+                          _showUpgrade(context);
+                        },
+                        message: 'City Insider exclusive',
+                        child: const InsiderNotes(
+                          whatToOrder: 'Unlock to see what '
+                              'insiders order here',
+                          tip: 'Unlock to see the '
+                              'insider tip',
+                        ),
+                      ),
+                  ],
                   const SizedBox(height: AppTheme.spacingXl),
                 ],
               ),
@@ -484,6 +524,18 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         ],
       ),
     );
+  }
+
+  void _scrollToComments() {
+    final ctx = _commentsSectionKey.currentContext;
+    if (ctx != null) {
+      unawaited(Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.1,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOut,
+      ));
+    }
   }
 
   void _startReply(String parentId, String userName) {
@@ -636,6 +688,57 @@ class _AppBarChip extends StatelessWidget {
                 size: 22,
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Speech-bubble pill for the action row that shows the comment count
+/// and scrolls to the comments section on tap. Matches VoteButton style.
+class _CommentActionButton extends StatelessWidget {
+  const _CommentActionButton({
+    required this.count,
+    required this.onTap,
+  });
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Comments, $count, jump to comments',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingMd,
+            vertical: AppTheme.spacingSm,
+          ),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceVariant,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            border: Border.all(color: AppTheme.divider),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                color: AppTheme.textSecondary,
+                size: 18,
+              ),
+              const SizedBox(width: AppTheme.spacingXsSm),
+              Text(
+                formatCount(count),
+                style: AppTheme.labelLarge.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
       ),

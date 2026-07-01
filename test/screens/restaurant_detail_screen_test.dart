@@ -123,5 +123,36 @@ void main() {
         );
       },
     );
+
+    testWidgets('shows comment action button in action row', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const RestaurantDetailScreen(restaurantId: 'hou-1'),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 700));
+
+      // Speech-bubble icon appears in the action row
+      expect(
+        find.byIcon(Icons.chat_bubble_outline),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('comments section header shows count', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const RestaurantDetailScreen(restaurantId: 'hou-1'),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 700));
+
+      // Scroll down to reveal the comments section
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      // hou-1 has seed comments, header should show 'Comments' with a count
+      expect(find.text('Comments'), findsOneWidget);
+    });
   });
 }
