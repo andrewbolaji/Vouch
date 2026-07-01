@@ -170,9 +170,20 @@ void main() {
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
       await tester.pumpAndSettle();
 
-      expect(find.text('Comments'), findsOneWidget);
-      // The count '2' should render next to the header
-      expect(find.text('2'), findsWidgets);
+      // Find the header Row that contains both 'Comments' and the count.
+      // The header is a Row with Text('Comments') + Text('2').
+      final headerRow = find.ancestor(
+        of: find.text('Comments'),
+        matching: find.byType(Row),
+      );
+      expect(headerRow, findsOneWidget);
+
+      // The count '2' must be inside that same Row, not just anywhere on screen
+      final countInHeader = find.descendant(
+        of: headerRow,
+        matching: find.text('2'),
+      );
+      expect(countInHeader, findsOneWidget);
     });
 
     // A3: Comments section renders above the City Insider paywall gate.
