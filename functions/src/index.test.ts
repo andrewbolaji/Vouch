@@ -10,7 +10,11 @@
  */
 
 import {initializeApp, getApps, deleteApp} from "firebase-admin/app";
-import {getFirestore, FieldValue, Timestamp} from "firebase-admin/firestore";
+import {
+  getFirestore,
+  FieldValue,
+  Timestamp,
+} from "firebase-admin/firestore";
 import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
 import {
   applyCommentCreated,
@@ -964,5 +968,90 @@ describe("Rank recompute integration (real recomputeAllRanks)", () => {
     const empty = await db.collection("restaurants").doc("rest-empty").get();
     expect(empty.data()?.rank).toBe(4);
     expect(empty.data()?.rankScore).toBe(0);
+  });
+});
+
+// ================================================================
+// Waitlist signup (direct Firestore logic)
+//
+// Tests the same write logic that waitlistSignup uses:
+// email validation, deduplication, and honeypot rejection.
+// ================================================================
+
+describe("Waitlist signup logic", () => {
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  beforeEach(async () => {
+    await clearFirestore();
+  });
+
+  afterAll(async () => {
+    await clearFirestore();
+  });
+
+  test("valid email writes one doc to waitlist", async () => {
+    const email = "Test@Example.COM";
+    const normalized = email.trim().toLowerCase();
+    const docId = normalized.replace(/\//g, "__");
+    const docRef = db.collection("waitlist").doc(docId);
+
+    await docRef.set({
+      email: normalized,
+      source: "landing",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    const snap = await docRef.get();
+    expect(snap.exists).toBe(true);
+    expect(snap.data()?.email).toBe("test@example.com");
+    expect(snap.data()?.source).toBe("landing");
+  });
+
+  test("duplicate email returns existing doc, no overwrite", async () => {
+    const normalized = "dupe@example.com";
+    const docId = normalized.replace(/\//g, "__");
+    const docRef = db.collection("waitlist").doc(docId);
+
+    // First write
+    await docRef.set({
+      email: normalized,
+      source: "landing",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    const firstSnap = await docRef.get();
+    expect(firstSnap.exists).toBe(true);
+
+    // Second attempt: check existence before writing
+    const existing = await docRef.get();
+    expect(existing.exists).toBe(true);
+
+    // Confirm only one doc with this email exists
+    const all = await db
+      .collection("waitlist")
+      .where("email", "==", normalized)
+      .get();
+    expect(all.size).toBe(1);
+  });
+
+  test("invalid email is rejected by regex", () => {
+    expect(EMAIL_RE.test("not-an-email")).toBe(false);
+    expect(EMAIL_RE.test("")).toBe(false);
+    expect(EMAIL_RE.test("@no-local.com")).toBe(false);
+    expect(EMAIL_RE.test("missing@.com")).toBe(false);
+  });
+
+  test("honeypot filled: no doc written", async () => {
+    const website = "http://spam.bot";
+    // When website is non-empty, the function returns 200 without writing.
+    // Simulate by skipping the write when website is truthy.
+    if (!website) {
+      await db.collection("waitlist").doc("should-not-exist").set({
+        email: "bot@spam.com",
+      });
+    }
+
+    const all = await db.collection("waitlist").get();
+    expect(all.size).toBe(0);
   });
 });

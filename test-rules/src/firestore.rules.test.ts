@@ -988,3 +988,47 @@ describe("reports", () => {
     );
   });
 });
+
+// ================================================================
+// WAITLIST (admin-only, all client access denied)
+// ================================================================
+
+describe("waitlist", () => {
+  test("DENIED: unauthenticated user cannot read waitlist", async () => {
+    await seedAsAdmin("waitlist/test-at-example-com", {
+      email: "test@example.com",
+      source: "landing",
+    });
+    const db = unauthenticated().firestore();
+    await assertFails(getDoc(doc(db, "waitlist/test-at-example-com")));
+  });
+
+  test("DENIED: unauthenticated user cannot write waitlist", async () => {
+    const db = unauthenticated().firestore();
+    await assertFails(
+      setDoc(doc(db, "waitlist/bot-signup"), {
+        email: "bot@example.com",
+        source: "landing",
+      })
+    );
+  });
+
+  test("DENIED: authenticated user cannot read waitlist", async () => {
+    await seedAsAdmin("waitlist/test-at-example-com", {
+      email: "test@example.com",
+      source: "landing",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(getDoc(doc(db, "waitlist/test-at-example-com")));
+  });
+
+  test("DENIED: authenticated user cannot write waitlist", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "waitlist/alice-signup"), {
+        email: "alice@example.com",
+        source: "landing",
+      })
+    );
+  });
+});

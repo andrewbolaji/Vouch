@@ -165,6 +165,17 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------
+    // waitlist - admin-only (Cloud Function via Admin SDK)
+    //
+    // No client can read or write. The waitlistSignup HTTPS
+    // function uses the Admin SDK which bypasses rules.
+    // -------------------------------------------------------
+    match /waitlist/{docId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------
     // suggestions - no direct client creates
     //
     // Only the Cloud Function (admin SDK) can create

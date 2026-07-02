@@ -10,7 +10,7 @@ import {
   onDocumentCreated,
   onDocumentDeleted,
 } from "firebase-functions/v2/firestore";
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as auth from "firebase-functions/v1/auth";
 import * as logger from "firebase-functions/logger";
@@ -175,7 +175,67 @@ export const recomputeRanks = onSchedule(
 );
 
 // ---------------------------------------------------------------------------
-// 5. Custom claim setter (deferred)
+// 5. waitlistSignup
+//    HTTPS endpoint for pre-launch landing page email collection.
+//    Writes to the `waitlist` collection. Dedupes by normalized email.
+// ---------------------------------------------------------------------------
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const waitlistSignup = onRequest(
+  {cors: true},
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ok: false, error: "method_not_allowed"});
+      return;
+    }
+
+    try {
+      const {email, source, website} = req.body as {
+        email?: string;
+        source?: string;
+        website?: string;
+      };
+
+      // Honeypot: bots fill hidden fields. Silently accept.
+      if (website) {
+        res.status(200).json({ok: true});
+        return;
+      }
+
+      if (!email || !EMAIL_RE.test(email.trim())) {
+        res.status(400).json({ok: false, error: "invalid_email"});
+        return;
+      }
+
+      const normalized = email.trim().toLowerCase();
+      // Firestore doc IDs cannot contain '/'. Replace with '__'.
+      const docId = normalized.replace(/\//g, "__");
+      const docRef = db.collection("waitlist").doc(docId);
+
+      const existing = await docRef.get();
+      if (existing.exists) {
+        res.status(200).json({ok: true, duplicate: true});
+        return;
+      }
+
+      await docRef.set({
+        email: normalized,
+        source: source || "landing",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      logger.info(`Waitlist signup: ${normalized}`);
+      res.status(200).json({ok: true});
+    } catch (err) {
+      logger.error("waitlistSignup error", err);
+      res.status(500).json({ok: false});
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 6. Custom claim setter (deferred)
 // ---------------------------------------------------------------------------
 
 // TODO(vouch): Add setMembershipClaim Cloud Function.
