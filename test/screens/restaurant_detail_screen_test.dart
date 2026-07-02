@@ -11,8 +11,14 @@ import 'package:vouch/screens/restaurant_detail_screen.dart';
 import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/auth_service.dart';
 
-Widget buildTestApp(Widget child) {
-  final auth = AuthService.mock();
+const _signedInUser = AuthUser(
+  uid: 'test-uid',
+  email: 'test@test.com',
+  method: AuthMethod.email,
+);
+
+Widget buildTestApp(Widget child, {AuthService? authOverride}) {
+  final auth = authOverride ?? AuthService.mock();
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => AppState(useFirebase: false)),
@@ -70,12 +76,13 @@ void main() {
       expect(find.text('Mensho'), findsOneWidget);
     });
 
-    testWidgets('has comment input', (tester) async {
+    testWidgets('has comment input when signed in', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           const RestaurantDetailScreen(
             restaurantId: 'hou-1',
           ),
+          authOverride: AuthService.mock(initialUser: _signedInUser),
         ),
       );
       await tester.pumpAndSettle(
@@ -141,10 +148,12 @@ void main() {
 
     // A1: Empty state renders for a restaurant with zero comments.
     // hou-2 (Cool Runnings) has no seed comments.
-    testWidgets('shows empty state when no comments (hou-2)', (tester) async {
+    testWidgets('shows empty state when signed in, no comments (hou-2)',
+        (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           const RestaurantDetailScreen(restaurantId: 'hou-2'),
+          authOverride: AuthService.mock(initialUser: _signedInUser),
         ),
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 700));
@@ -212,6 +221,33 @@ void main() {
 
       // Comments header dy should be less (higher on screen) than paywall
       expect(commentsBox.dy, lessThan(paywallBox.dy));
+    });
+
+    // Condition 3: signed-out user sees prompt, not input or crash
+    testWidgets('signed-out user sees sign-in prompt instead of comment input',
+        (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const RestaurantDetailScreen(restaurantId: 'hou-2'),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 700));
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      // No TextField visible (comment input hidden)
+      expect(find.byType(TextField), findsNothing);
+      // Sign-in prompt visible
+      expect(
+        find.text('Sign in to join the conversation'),
+        findsOneWidget,
+      );
+      // Empty state text for signed-out
+      expect(
+        find.text('Sign in to see and post comments.'),
+        findsOneWidget,
+      );
     });
   });
 }

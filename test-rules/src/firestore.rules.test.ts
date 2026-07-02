@@ -108,9 +108,9 @@ describe("cities", () => {
     await assertSucceeds(getDoc(doc(db, "cities/houston")));
   });
 
-  test("unauthenticated user cannot read a city", async () => {
+  test("unauthenticated user CAN read a city", async () => {
     const db = unauthenticated().firestore();
-    await assertFails(getDoc(doc(db, "cities/houston")));
+    await assertSucceeds(getDoc(doc(db, "cities/houston")));
   });
 
   test("authenticated user cannot write a city", async () => {
@@ -171,9 +171,24 @@ describe("restaurants", () => {
     await assertSucceeds(getDoc(doc(db, "restaurants/hou-10")));
   });
 
-  test("unauthenticated user cannot read any restaurant", async () => {
+  test("unauthenticated user CAN read a rank-1 restaurant", async () => {
     const db = unauthenticated().firestore();
-    await assertFails(getDoc(doc(db, "restaurants/hou-1")));
+    await assertSucceeds(getDoc(doc(db, "restaurants/hou-1")));
+  });
+
+  test("unauthenticated user CAN read a rank-5 restaurant", async () => {
+    const db = unauthenticated().firestore();
+    await assertSucceeds(getDoc(doc(db, "restaurants/hou-5")));
+  });
+
+  test("unauthenticated user DENIED reading a rank-6 restaurant", async () => {
+    const db = unauthenticated().firestore();
+    await assertFails(getDoc(doc(db, "restaurants/hou-6")));
+  });
+
+  test("unauthenticated user DENIED reading a rank-10 restaurant", async () => {
+    const db = unauthenticated().firestore();
+    await assertFails(getDoc(doc(db, "restaurants/hou-10")));
   });
 
   test("no user can write a restaurant", async () => {

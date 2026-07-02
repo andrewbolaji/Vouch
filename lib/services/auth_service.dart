@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/secure_storage_service.dart';
@@ -237,16 +239,26 @@ class AuthService extends ChangeNotifier {
     _setLoading(false);
   }
 
-  /// Sign in with Google.
+  /// Sign in with Google via the native Google Sign-In SDK.
   /// Throws [AuthException] or [NetworkException] on failure.
   ///
-  /// No timeout: the user controls how long the interactive OAuth consent
-  /// screen takes. Timing out an interactive flow is a bug, not a safety net.
+  /// No timeout: the user controls how long the native consent
+  /// screen takes.
   Future<void> signInWithGoogle() async {
     _setLoading(true);
     try {
-      final googleProvider = fb.GoogleAuthProvider();
-      await _firebaseAuth!.signInWithProvider(googleProvider);
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        // User cancelled the native picker.
+        _setLoading(false);
+        return;
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = fb.GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        accessToken: googleAuth.accessToken,
+      );
+      await _firebaseAuth!.signInWithCredential(credential);
       _analyticsService?.logSignIn(method: 'google');
     } on fb.FirebaseAuthException catch (e) {
       _log('google', 'FirebaseAuthException: '
@@ -261,16 +273,34 @@ class AuthService extends ChangeNotifier {
     _setLoading(false);
   }
 
-  /// Sign in with Apple.
+  /// Sign in with Apple via the native Sign in with Apple SDK.
   /// Throws [AuthException] or [NetworkException] on failure.
   ///
   /// No timeout: same reasoning as [signInWithGoogle].
   Future<void> signInWithApple() async {
     _setLoading(true);
     try {
-      final appleProvider = fb.AppleAuthProvider();
-      await _firebaseAuth!.signInWithProvider(appleProvider);
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+      final oauthCredential = fb.OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+      await _firebaseAuth!.signInWithCredential(oauthCredential);
       _analyticsService?.logSignIn(method: 'apple');
+    } on SignInWithAppleAuthorizationException catch (e) {
+      _setLoading(false);
+      if (e.code == AuthorizationErrorCode.canceled) {
+        // User cancelled the native sheet.
+        return;
+      }
+      _log('apple', 'AppleAuthException: code=${e.code}, '
+          'message=${e.message}');
+      throw AuthException.unknown;
     } on fb.FirebaseAuthException catch (e) {
       _log('apple', 'FirebaseAuthException: '
           'code=${e.code}, message=${e.message}');
@@ -376,7 +406,8 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Re-authenticate the current user via their OAuth provider
-  /// (Google or Apple). Returns the provider ID used, or throws.
+  /// (Google or Apple) using the native SDK flow, then pass
+  /// the credential to reauthenticateWithCredential.
   Future<void> reauthenticateWithProvider() async {
     final user = _firebaseAuth!.currentUser;
     if (user == null) throw AuthException.accountDeletionFailed;
@@ -388,9 +419,26 @@ class AuthService extends ChangeNotifier {
 
     try {
       if (isGoogle) {
-        await user.reauthenticateWithProvider(fb.GoogleAuthProvider());
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) throw AuthException.accountDeletionFailed;
+        final googleAuth = await googleUser.authentication;
+        final credential = fb.GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+          accessToken: googleAuth.accessToken,
+        );
+        await user.reauthenticateWithCredential(credential);
       } else if (isApple) {
-        await user.reauthenticateWithProvider(fb.AppleAuthProvider());
+        final appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+        );
+        final oauthCredential = fb.OAuthProvider('apple.com').credential(
+          idToken: appleCredential.identityToken,
+          accessToken: appleCredential.authorizationCode,
+        );
+        await user.reauthenticateWithCredential(oauthCredential);
       } else {
         throw AuthException.accountDeletionFailed;
       }

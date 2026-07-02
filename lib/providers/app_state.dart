@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vouch/data/seed_data.dart';
 import 'package:vouch/models/models.dart';
+import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/repositories/repositories.dart';
 
 const bool kUseFirebase = true;
@@ -16,11 +17,16 @@ class AppState extends ChangeNotifier {
     CommentRepository? commentRepo,
     VoteRepository? voteRepo,
     bool? useFirebase,
+    bool isPaidTier = false,
+    MembershipProvider? membershipProvider,
   })  : _cityRepo = cityRepo,
         _restaurantRepo = restaurantRepo,
         _commentRepo = commentRepo,
         _voteRepo = voteRepo,
-        _useFirebase = useFirebase ?? kUseFirebase {
+        _useFirebase = useFirebase ?? kUseFirebase,
+        _isPaidTier = isPaidTier,
+        _membershipProvider = membershipProvider {
+    _membershipProvider?.addListener(_onMembershipChanged);
     unawaited(_loadData());
   }
 
@@ -29,6 +35,8 @@ class AppState extends ChangeNotifier {
   final CommentRepository? _commentRepo;
   final VoteRepository? _voteRepo;
   final bool _useFirebase;
+  final MembershipProvider? _membershipProvider;
+  bool _isPaidTier;
 
   static const String _votedKey = 'voted_restaurant_ids';
   static final DateTime _seedDate = DateTime(2026, 4, 27);
@@ -97,6 +105,19 @@ class AppState extends ChangeNotifier {
 
   bool hasVoted(String restaurantId) =>
       _votedRestaurantIds.contains(restaurantId);
+
+  void _onMembershipChanged() {
+    final newPaid = _membershipProvider?.canViewTop10 ?? false;
+    if (newPaid != _isPaidTier) {
+      unawaited(refresh(isPaidTier: newPaid));
+    }
+  }
+
+  @override
+  void dispose() {
+    _membershipProvider?.removeListener(_onMembershipChanged);
+    super.dispose();
+  }
 
   // Actions
   void setSearchQuery(String? query) {
@@ -200,7 +221,10 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> refresh() async {
+  /// Reload data. Call after sign-in or membership change so the
+  /// query uses the correct tier gate.
+  Future<void> refresh({bool? isPaidTier}) async {
+    if (isPaidTier != null) _isPaidTier = isPaidTier;
     await _loadData();
   }
 
@@ -238,7 +262,7 @@ class AppState extends ChangeNotifier {
       for (final city in _cities) {
         final cityRestaurants = await restaurantRepo.getForCity(
           city.id,
-          canViewTop10: true,
+          canViewTop10: _isPaidTier,
         );
         _restaurants.addAll(cityRestaurants);
       }

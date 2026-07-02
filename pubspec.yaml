@@ -1,7 +1,7 @@
 name: vouch
 description: "Curated Top 10 restaurant rankings per city, voted on by locals."
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.10.8
@@ -20,12 +20,14 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   freezed_annotation: ^3.0.0
   google_fonts: ^6.2.1
+  google_sign_in: ^6.2.2
   http: ^1.3.0
   json_annotation: ^4.12.0
   provider: ^6.1.2
   share_plus: ^10.1.4
   shared_preferences: ^2.3.4
   shimmer: ^3.0.0
+  sign_in_with_apple: ^7.0.1
 
 dev_dependencies:
   build_runner: ^2.4.15

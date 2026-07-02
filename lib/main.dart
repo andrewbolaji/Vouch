@@ -42,9 +42,14 @@ void main() async {
 
   final authService = AuthService();
   final analyticsService = AnalyticsService();
+  final membershipProvider = MembershipProvider(authService: authService);
 
   runApp(
-    VouchApp(authService: authService, analyticsService: analyticsService),
+    VouchApp(
+      authService: authService,
+      analyticsService: analyticsService,
+      membershipProvider: membershipProvider,
+    ),
   );
 }
 
@@ -52,18 +57,24 @@ class VouchApp extends StatelessWidget {
   const VouchApp({
     required this.authService,
     required this.analyticsService,
+    required this.membershipProvider,
     super.key,
   });
 
   final AuthService authService;
   final AnalyticsService analyticsService;
+  final MembershipProvider membershipProvider;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppState()),
-        ChangeNotifierProvider(create: (_) => MembershipProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AppState(
+            membershipProvider: membershipProvider,
+          ),
+        ),
+        ChangeNotifierProvider.value(value: membershipProvider),
         ChangeNotifierProvider.value(value: authService),
         Provider.value(value: analyticsService),
         ChangeNotifierProvider(

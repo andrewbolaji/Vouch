@@ -96,6 +96,50 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Offline indicator
+                    if (appState.isOffline)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingMd,
+                          ).copyWith(top: AppTheme.spacingSm),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spacingMd,
+                              vertical: AppTheme.spacingSm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surface,
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusSm,
+                              ),
+                              border: Border.all(
+                                color: AppTheme.textTertiary
+                                    .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.cloud_off,
+                                  color: AppTheme.textSecondary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: AppTheme.spacingSm),
+                                Expanded(
+                                  child: Text(
+                                    "Can't reach the network right now. "
+                                    'Some info may be missing.',
+                                    style: AppTheme.bodySmall.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     const SliverToBoxAdapter(
                       child: SizedBox(height: AppTheme.spacingLg),
                     ),

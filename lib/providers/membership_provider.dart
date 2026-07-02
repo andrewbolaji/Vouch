@@ -1,17 +1,44 @@
 import 'package:flutter/foundation.dart';
 import 'package:vouch/models/models.dart';
+import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/revenue_cat_service.dart';
 
 class MembershipProvider extends ChangeNotifier {
   MembershipProvider({
     MembershipTier initialTier = MembershipTier.free,
-  }) : _currentTier = initialTier;
+    AuthService? authService,
+  })  : _currentTier = initialTier,
+        _authService = authService {
+    _authService?.addListener(_onAuthChanged);
+  }
 
+  final AuthService? _authService;
   MembershipTier _currentTier;
   bool _isYearlyBilling = false;
 
+  void _onAuthChanged() {
+    if (_authService?.isSignedIn == false &&
+        _currentTier != MembershipTier.free) {
+      _currentTier = MembershipTier.free;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _authService?.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
   MembershipTier get currentTier => _currentTier;
   bool get isYearlyBilling => _isYearlyBilling;
+
+  /// Test only: sets the tier and notifies listeners.
+  @visibleForTesting
+  void setTierForTest(MembershipTier tier) {
+    _currentTier = tier;
+    notifyListeners();
+  }
 
   bool get canViewTop10 =>
       _currentTier == MembershipTier.localsPass ||

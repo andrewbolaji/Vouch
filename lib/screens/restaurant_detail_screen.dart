@@ -341,6 +341,55 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: AppTheme.spacingMd),
+                  if (!auth.isSignedIn)
+                    // Signed-out prompt instead of comment input
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: AppTheme.spacingMd,
+                      ),
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SignInScreen(),
+                          ),
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingMd,
+                            vertical: AppTheme.spacingMd,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface,
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusSm,
+                            ),
+                            border: Border.all(
+                              color: AppTheme.borderColor,
+                              width: AppTheme.borderInkWidth,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                color: AppTheme.accent,
+                                size: 18,
+                              ),
+                              const SizedBox(width: AppTheme.spacingSm),
+                              Text(
+                                'Sign in to join the conversation',
+                                style: AppTheme.bodyMedium.copyWith(
+                                  color: AppTheme.accent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  else ...[
                   // Reply indicator
                   if (_replyingToId != null)
                     Container(
@@ -446,6 +495,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: AppTheme.spacingMd),
+                  ],
                   if (comments.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -461,7 +511,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             ),
                             const SizedBox(height: AppTheme.spacingSm),
                             Text(
-                              'Be the first to weigh in.',
+                              auth.isSignedIn
+                                  ? 'Be the first to weigh in.'
+                                  : 'Sign in to see and post comments.',
                               style: AppTheme.bodyMedium.copyWith(
                                 color: AppTheme.textSecondary,
                               ),

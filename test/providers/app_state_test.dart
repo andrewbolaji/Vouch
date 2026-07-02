@@ -1,6 +1,44 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vouch/models/models.dart';
 import 'package:vouch/providers/app_state.dart';
+import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/repositories/city_repository.dart';
+import 'package:vouch/repositories/restaurant_repository.dart';
+import 'package:vouch/services/auth_service.dart';
+
+/// Stub CityRepository that returns a fixed list without Firestore.
+class StubCityRepository extends CityRepository {
+  StubCityRepository() : super(firestore: FakeFirebaseFirestore());
+
+  @override
+  Future<List<City>> getCities() async => [
+        const City(
+          id: 'test-city',
+          name: 'Test City',
+          state: 'TX',
+          imageUrl: '',
+          description: '',
+        ),
+      ];
+}
+
+/// Spy RestaurantRepository that records canViewTop10 arguments.
+class SpyRestaurantRepository extends RestaurantRepository {
+  SpyRestaurantRepository() : super(firestore: FakeFirebaseFirestore());
+
+  final List<bool> canViewTop10Calls = [];
+
+  @override
+  Future<List<Restaurant>> getForCity(
+    String cityId, {
+    required bool canViewTop10,
+  }) async {
+    canViewTop10Calls.add(canViewTop10);
+    return [];
+  }
+}
 
 void main() {
   group('AppState', () {
@@ -220,5 +258,157 @@ void main() {
       await refreshFuture;
       expect(state.isLoading, isFalse);
     });
+  });
+
+  group('AppState paid-tier reload wiring', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test(
+      'membership change free to paid reloads '
+      'with canViewTop10 true',
+      () async {
+        final spyRepo = SpyRestaurantRepository();
+        final membership = MembershipProvider();
+        // ignore: unused_local_variable, keeps AppState alive
+        final state = AppState(
+          useFirebase: true,
+          cityRepo: StubCityRepository(),
+          restaurantRepo: spyRepo,
+          membershipProvider: membership,
+        );
+
+        // Wait for initial load
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(spyRepo.canViewTop10Calls, [false]);
+
+        // Simulate paid purchase via direct tier set
+        membership.setTierForTest(MembershipTier.localsPass);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(spyRepo.canViewTop10Calls, [false, true]);
+      },
+    );
+
+    test(
+      'membership change paid to free reloads '
+      'with canViewTop10 false',
+      () async {
+        final spyRepo = SpyRestaurantRepository();
+        final membership = MembershipProvider(
+          initialTier: MembershipTier.localsPass,
+        );
+        // ignore: unused_local_variable, keeps AppState alive
+        final state = AppState(
+          useFirebase: true,
+          cityRepo: StubCityRepository(),
+          restaurantRepo: spyRepo,
+          membershipProvider: membership,
+          isPaidTier: true,
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(spyRepo.canViewTop10Calls, [true]);
+
+        membership.setTierForTest(MembershipTier.free);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(spyRepo.canViewTop10Calls, [true, false]);
+      },
+    );
+
+    test(
+      'no reload when tier unchanged '
+      '(billing cycle toggle)',
+      () async {
+        final spyRepo = SpyRestaurantRepository();
+        final membership = MembershipProvider();
+        // ignore: unused_local_variable, keeps AppState alive
+        final state = AppState(
+          useFirebase: true,
+          cityRepo: StubCityRepository(),
+          restaurantRepo: spyRepo,
+          membershipProvider: membership,
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(spyRepo.canViewTop10Calls, [false]);
+
+        // toggleBillingCycle calls notifyListeners but
+        // does not change canViewTop10
+        membership.toggleBillingCycle();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Still only one call (the initial load)
+        expect(spyRepo.canViewTop10Calls, [false]);
+      },
+    );
+
+    test(
+      'no duplicate load on first construction',
+      () async {
+        final spyRepo = SpyRestaurantRepository();
+        final membership = MembershipProvider();
+        AppState(
+          useFirebase: true,
+          cityRepo: StubCityRepository(),
+          restaurantRepo: spyRepo,
+          membershipProvider: membership,
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Exactly one load from construction, not two
+        expect(spyRepo.canViewTop10Calls, [false]);
+      },
+    );
+
+    test(
+      'sign-out resets membership to free and '
+      'triggers reload with canViewTop10 false',
+      () async {
+        final spyRepo = SpyRestaurantRepository();
+        final auth = AuthService.mock(
+          initialUser: const AuthUser(
+            uid: 'u1',
+            email: 'a@b.com',
+            method: AuthMethod.email,
+          ),
+        );
+        final membership = MembershipProvider(
+          initialTier: MembershipTier.localsPass,
+          authService: auth,
+        );
+        // ignore: unused_local_variable, keeps AppState alive
+        final state = AppState(
+          useFirebase: true,
+          cityRepo: StubCityRepository(),
+          restaurantRepo: spyRepo,
+          membershipProvider: membership,
+          isPaidTier: true,
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(spyRepo.canViewTop10Calls, [true]);
+
+        // Simulate sign-out
+        auth.setMockUser(null);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(membership.canViewTop10, isFalse);
+        expect(spyRepo.canViewTop10Calls, [true, false]);
+      },
+    );
   });
 }

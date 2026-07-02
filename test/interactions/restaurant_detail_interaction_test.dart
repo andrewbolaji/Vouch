@@ -173,6 +173,7 @@ void main() {
             const RestaurantDetailScreen(
               restaurantId: 'hou-1',
             ),
+            authOverride: AuthService.mock(initialUser: _testUser),
           ),
         );
         await tester.pumpAndSettle(seedLoadDuration);
@@ -209,6 +210,7 @@ void main() {
             const RestaurantDetailScreen(
               restaurantId: 'hou-1',
             ),
+            authOverride: AuthService.mock(initialUser: _testUser),
           ),
         );
         await tester.pumpAndSettle(seedLoadDuration);

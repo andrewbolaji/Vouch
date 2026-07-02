@@ -32,23 +32,23 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------
-    // cities - read-only for authenticated users, no client writes
+    // cities - public read, no client writes
     // -------------------------------------------------------
     match /cities/{cityId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if false;
     }
 
     // -------------------------------------------------------
-    // restaurants - rank-based read gating via custom claims
+    // restaurants - public discovery + paid tier gating
     //
-    // Free users (no claim or claim == "free") can only read
-    // restaurants with rank <= 5. localsPass and cityInsider
-    // can read all restaurants.
+    // Ranks 1-5 are publicly readable (no auth required).
+    // Ranks 6-10 require authentication AND a paid tier
+    // (localsPass or cityInsider).
     // -------------------------------------------------------
     match /restaurants/{restaurantId} {
-      allow read: if isAuthenticated()
-        && (resource.data.rank <= 5 || isPaidTier());
+      allow read: if resource.data.rank <= 5
+        || (isAuthenticated() && isPaidTier());
       allow write: if false;
 
       // ---------------------------------------------------
