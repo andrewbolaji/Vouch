@@ -23,7 +23,7 @@ void main() {
 
         // At least first 2 cities visible
         expect(find.text('Houston'), findsOneWidget);
-        expect(find.text('New York'), findsOneWidget);
+        expect(find.text('Atlanta'), findsOneWidget);
 
         // Type to filter
         await tester.enterText(
@@ -34,7 +34,7 @@ void main() {
 
         // "Houston" appears in both the search field and the card
         expect(find.text('Houston'), findsNWidgets(2));
-        expect(find.text('New York'), findsNothing);
+        expect(find.text('Atlanta'), findsNothing);
 
         // Clear restores all
         await tester.enterText(
@@ -44,7 +44,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Houston'), findsOneWidget);
-        expect(find.text('New York'), findsOneWidget);
+        expect(find.text('Atlanta'), findsOneWidget);
       },
     );
 

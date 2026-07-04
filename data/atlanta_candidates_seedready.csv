@@ -1,0 +1,18 @@
+Restaurant,Cuisine,Area,Address,Rank,WhatToOrder,PriceFallback
+Pasta da Pulcinella,Italian,Midtown,"1100 W Peachtree St NW, Atlanta, GA 30309",1,"Tortelli di Mele (round ravioli filled with Granny Smith apple, sausage, and parmigiano, topped with browned butter and sage)",2
+Pollo Primo,Sinaloan grilled chicken,East Atlanta Village,"792 Moreland Ave SE, Atlanta, GA 30316",2,"Whole bird combo, the stewed beans, house flour tortillas, churros",1
+Best Wings,Wings,Old Fourth Ward,"463 Ponce De Leon Ave NE, Atlanta, GA 30308",3,"Honey hot wings (ask for the sauce on the fries too)",1
+Red Rice,Soul food,East Atlanta (Moreland Ave),"1401 Moreland Ave SE, Atlanta, GA 30316",4,"Red rice, smothered turkey wings, black-eyed peas, mac and cheese",1
+Poor Calvin's,Southern-Asian fusion,Midtown,"510 Piedmont Ave NE, Atlanta, GA 30308",5,"Fried chicken with lobster mac, the Pho cocktail",2
+Aviva by Kameel,Mediterranean,Downtown (Peachtree Center),"225 Peachtree St NW, Atlanta, GA 30303",6,"Falafel, the lentil soup, fresh garlic bread",2
+The Optimist,Seafood,West Midtown,"914 Howell Mill Rd NW, Atlanta, GA 30318",7,"Oysters, the lobster roll",3
+Flavor Rich,Elevated soul food / brunch,Downtown,"549 Peachtree St, Atlanta, GA 30308",8,"Crawfish and crab mac, chef French toast, wagyu burger",2
+Clay's,Wings / sports cafe,Sandy Springs,"5975 Roswell Rd D-245, Atlanta, GA 30328",9,"Garlic parmesan wings, lemon pepper fries",1
+Kimball House,Oysters + cocktails,Decatur,"303 E Howard Ave, Decatur, GA 30030",10,"Oysters at happy hour, Caviar and Middlins",3
+Juci Jerk,Jamaican / Caribbean,Stone Mountain,"5503 Memorial Dr, Stone Mountain, GA 30083",11,Jerk chicken,1
+Jamaican Jerk Biz,Jamaican / seafood,Mableton,"1400 Veterans Memorial Hwy SE, Mableton, GA 30126",12,"Jerk chicken, oxtail",1
+The Dining Experience,American / seafood / desserts,Fairburn,"8420 Senoia Rd Ste 201, Fairburn, GA 30213",13,,2
+La Grotta,Italian (old-school fine dining),Buckhead,"2637 Peachtree Rd NE, Atlanta, GA 30305",14,House-made pastas,3
+Le Colonial,French-Vietnamese,Buckhead,"3035 Peachtree Rd NE, Atlanta, GA 30305",15,"Shaking beef, spring rolls",3
+The Porter Beer Bar,Gastropub / beer,Little Five Points,"1156 Euclid Ave NE, Atlanta, GA 30307",16,"Mussels, beer cheese, the huge beer list",2
+La Fonda Latina,Mexican / comfort,Poncey-Highland,"923 Ponce De Leon Ave NE, Atlanta, GA 30306",17,"Paella, breakfast burrito",1

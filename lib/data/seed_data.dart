@@ -15,6 +15,17 @@ class SeedData {
       restaurantCount: 10,
     ),
     City(
+      id: 'atlanta',
+      name: 'Atlanta',
+      state: 'GA',
+      imageUrl:
+          'https://images.unsplash.com/photo-1575917649111-0cee4e0e4b5b?w=800',
+      description:
+          'Where soul food meets global flavor.'
+          ' The South starts here.',
+      restaurantCount: 17,
+    ),
+    City(
       id: 'nyc',
       name: 'New York',
       state: 'NY',
@@ -321,6 +332,387 @@ class SeedData {
           'Chicken and waffles (try the chicken-fried'
           ' lobster version) and a craft cocktail.',
       vibeTags: ['Lively', 'Group Friendly', 'Comfort Food'],
+    ),
+
+    // Atlanta
+    Restaurant(
+      id: 'atl-1',
+      cityId: 'atlanta',
+      name: 'Pasta da Pulcinella',
+      cuisine: 'Italian',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 1,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Midtown',
+          address:
+              '1100 W Peachtree St NW, Atlanta, GA 30309',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Tortelli di Mele (round ravioli filled with'
+          ' Granny Smith apple, sausage, and parmigiano,'
+          ' topped with browned butter and sage)',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-2',
+      cityId: 'atlanta',
+      name: 'Pollo Primo',
+      cuisine: 'Sinaloan grilled chicken',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 2,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'East Atlanta Village',
+          address:
+              '792 Moreland Ave SE, Atlanta, GA 30316',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Whole bird combo, the stewed beans, house'
+          ' flour tortillas, churros',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-3',
+      cityId: 'atlanta',
+      name: 'Best Wings',
+      cuisine: 'Wings',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 3,
+      voteCount: 0,
+      priceLevel: 1,
+      locations: [
+        RestaurantLocation(
+          name: 'Old Fourth Ward',
+          address:
+              '463 Ponce De Leon Ave NE, Atlanta,'
+              ' GA 30308',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Honey hot wings (ask for the sauce on the'
+          ' fries too)',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-4',
+      cityId: 'atlanta',
+      name: 'Red Rice',
+      cuisine: 'Soul food',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 4,
+      voteCount: 0,
+      priceLevel: 1,
+      locations: [
+        RestaurantLocation(
+          name: 'East Atlanta (Moreland Ave)',
+          address:
+              '1401 Moreland Ave SE, Atlanta, GA 30316',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Red rice, smothered turkey wings, black-eyed'
+          ' peas, mac and cheese',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-5',
+      cityId: 'atlanta',
+      name: "Poor Calvin's",
+      cuisine: 'Southern-Asian fusion',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 5,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Midtown',
+          address:
+              '510 Piedmont Ave NE, Atlanta, GA 30308',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Fried chicken with lobster mac, the Pho'
+          ' cocktail',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-6',
+      cityId: 'atlanta',
+      name: 'Aviva by Kameel',
+      cuisine: 'Mediterranean',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 6,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Downtown (Peachtree Center)',
+          address:
+              '225 Peachtree St NW, Atlanta, GA 30303',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Falafel, the lentil soup, fresh garlic bread',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-7',
+      cityId: 'atlanta',
+      name: 'The Optimist',
+      cuisine: 'Seafood',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 7,
+      voteCount: 0,
+      priceLevel: 3,
+      locations: [
+        RestaurantLocation(
+          name: 'West Midtown',
+          address:
+              '914 Howell Mill Rd NW, Atlanta, GA 30318',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder: 'Oysters, the lobster roll',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-8',
+      cityId: 'atlanta',
+      name: 'Flavor Rich',
+      cuisine: 'Elevated soul food / brunch',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 8,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Downtown',
+          address:
+              '549 Peachtree St, Atlanta, GA 30308',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Crawfish and crab mac, chef French toast,'
+          ' wagyu burger',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-9',
+      cityId: 'atlanta',
+      name: "Clay's",
+      cuisine: 'Wings / sports cafe',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 9,
+      voteCount: 0,
+      priceLevel: 1,
+      locations: [
+        RestaurantLocation(
+          name: 'Sandy Springs',
+          address:
+              '5975 Roswell Rd D-245, Atlanta, GA 30328',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Garlic parmesan wings, lemon pepper fries',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-10',
+      cityId: 'atlanta',
+      name: 'Kimball House',
+      cuisine: 'Oysters + cocktails',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 10,
+      voteCount: 0,
+      priceLevel: 3,
+      locations: [
+        RestaurantLocation(
+          name: 'Decatur',
+          address:
+              '303 E Howard Ave, Decatur, GA 30030',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Oysters at happy hour, Caviar and Middlins',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-11',
+      cityId: 'atlanta',
+      name: 'Juci Jerk',
+      cuisine: 'Jamaican / Caribbean',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 11,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Stone Mountain',
+          address:
+              '5503 Memorial Dr, Stone Mountain,'
+              ' GA 30083',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder: 'Jerk chicken',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-12',
+      cityId: 'atlanta',
+      name: 'Jamaican Jerk Biz',
+      cuisine: 'Jamaican / seafood',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 12,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Mableton',
+          address:
+              '1400 Veterans Memorial Hwy SE, Mableton,'
+              ' GA 30126',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder: 'Jerk chicken, oxtail',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-13',
+      cityId: 'atlanta',
+      name: 'The Dining Experience',
+      cuisine: 'American / seafood / desserts',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 13,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Fairburn',
+          address:
+              '8420 Senoia Rd Ste 201, Fairburn,'
+              ' GA 30213',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder: '',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-14',
+      cityId: 'atlanta',
+      name: 'La Grotta',
+      cuisine: 'Italian (old-school fine dining)',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 14,
+      voteCount: 0,
+      priceLevel: 4,
+      locations: [
+        RestaurantLocation(
+          name: 'Buckhead',
+          address:
+              '2637 Peachtree Rd NE, Atlanta, GA 30305',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder: 'House-made pastas',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-15',
+      cityId: 'atlanta',
+      name: 'Le Colonial',
+      cuisine: 'French-Vietnamese',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 15,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Buckhead',
+          address:
+              '3035 Peachtree Rd NE, Atlanta, GA 30305',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder: 'Shaking beef, spring rolls',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-16',
+      cityId: 'atlanta',
+      name: 'The Porter Beer Bar',
+      cuisine: 'Gastropub / beer',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 16,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Little Five Points',
+          address:
+              '1156 Euclid Ave NE, Atlanta, GA 30307',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder:
+          'Mussels, beer cheese, the huge beer list',
+      vibeTags: [],
+    ),
+    Restaurant(
+      id: 'atl-17',
+      cityId: 'atlanta',
+      name: 'La Fonda Latina',
+      cuisine: 'Mexican / comfort',
+      imageUrl: 'placeholder://restaurant',
+      description: '',
+      rank: 17,
+      voteCount: 0,
+      priceLevel: 1,
+      locations: [
+        RestaurantLocation(
+          name: 'Poncey-Highland',
+          address:
+              '923 Ponce De Leon Ave NE, Atlanta,'
+              ' GA 30306',
+        ),
+      ],
+      insiderTip: '',
+      whatToOrder: 'Paella, breakfast burrito',
+      vibeTags: [],
     ),
 
     // NYC
