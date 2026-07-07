@@ -303,6 +303,7 @@ async function writeAtlantaData(db, FieldValue, enrichedCandidates, confirm) {
         description:
           "Where soul food meets global flavor. The South starts here.",
         restaurantCount: enrichedCandidates.length,
+        status: "live",
         createdAt: now,
         updatedAt: now,
       });

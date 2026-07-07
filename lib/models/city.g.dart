@@ -13,6 +13,9 @@ _City _$CityFromJson(Map<String, dynamic> json) => _City(
   imageUrl: json['imageUrl'] as String,
   description: json['description'] as String,
   restaurantCount: (json['restaurantCount'] as num?)?.toInt() ?? 0,
+  status:
+      $enumDecodeNullable(_$CityStatusEnumMap, json['status']) ??
+      CityStatus.comingSoon,
 );
 
 Map<String, dynamic> _$CityToJson(_City instance) => <String, dynamic>{
@@ -22,4 +25,10 @@ Map<String, dynamic> _$CityToJson(_City instance) => <String, dynamic>{
   'imageUrl': instance.imageUrl,
   'description': instance.description,
   'restaurantCount': instance.restaurantCount,
+  'status': _$CityStatusEnumMap[instance.status]!,
+};
+
+const _$CityStatusEnumMap = {
+  CityStatus.live: 'live',
+  CityStatus.comingSoon: 'comingSoon',
 };

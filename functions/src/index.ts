@@ -12,6 +12,7 @@ import {
 } from "firebase-functions/v2/firestore";
 import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import {defineSecret} from "firebase-functions/params";
 import * as auth from "firebase-functions/v1/auth";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
@@ -23,6 +24,11 @@ import {
 } from "./comment_aggregation";
 import {deleteUserData} from "./user_cleanup";
 import {recomputeAllRanks} from "./rank_recompute";
+import {
+  handleWebhookEvent,
+  isValidAuth,
+  RevenueCatWebhookEvent,
+} from "./membership_webhook";
 
 initializeApp();
 const db = getFirestore();
@@ -235,11 +241,50 @@ export const waitlistSignup = onRequest(
 );
 
 // ---------------------------------------------------------------------------
-// 6. Custom claim setter (deferred)
+// 6. RevenueCat webhook: membership tier management
+//
+// HTTPS endpoint called by RevenueCat when a subscription event occurs.
+// Validates the Authorization header against a secret stored in
+// Google Cloud Secret Manager (set via: firebase functions:secrets:set
+// REVENUECAT_WEBHOOK_SECRET). Never stored in source.
+//
+// On valid events: sets the membershipTier custom claim on the
+// user's Auth token, then updates /users/{uid}.membershipTier.
 // ---------------------------------------------------------------------------
 
-// TODO(vouch): Add setMembershipClaim Cloud Function.
-// Triggered by RevenueCat webhook when a purchase is verified.
-// Sets custom claim { membershipTier: 'localsPass' |
-// 'cityInsider' } on the user's auth token.
-// Deferred to the RevenueCat integration block.
+const revenueCatWebhookSecret = defineSecret("REVENUECAT_WEBHOOK_SECRET");
+
+export const onRevenueCatWebhook = onRequest(
+  {cors: false, secrets: [revenueCatWebhookSecret]},
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({error: "method_not_allowed"});
+      return;
+    }
+
+    const secret = revenueCatWebhookSecret.value();
+    if (!isValidAuth(req.headers.authorization, secret)) {
+      res.status(401).json({error: "unauthorized"});
+      return;
+    }
+
+    try {
+      const body = req.body as {event?: RevenueCatWebhookEvent};
+      const event = body.event;
+
+      if (!event?.app_user_id || !event?.type) {
+        res.status(400).json({error: "missing_event_fields"});
+        return;
+      }
+
+      const result = await handleWebhookEvent(db, event);
+      logger.info(
+        `Webhook ${event.type}: uid=${result.uid}, tier=${result.tier}`
+      );
+      res.status(200).json({ok: true});
+    } catch (err) {
+      logger.error("onRevenueCatWebhook error", err);
+      res.status(500).json({error: "internal"});
+    }
+  }
+);

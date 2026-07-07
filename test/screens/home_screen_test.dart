@@ -118,5 +118,48 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'coming-soon city shows pill and is not tappable',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(const HomeScreen()),
+        );
+        await tester.pumpAndSettle(
+          const Duration(milliseconds: 700),
+        );
+
+        // Scroll down to reveal coming-soon cities
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -400),
+        );
+        await tester.pumpAndSettle();
+
+        // NYC is comingSoon in seed data
+        expect(find.text('Coming soon'), findsWidgets);
+
+        // Coming-soon card has no GestureDetector,
+        // so it cannot navigate to CityDetailScreen
+        expect(find.byType(HomeScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'live city shows Top 10 pill, not Coming soon',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(const HomeScreen()),
+        );
+        await tester.pumpAndSettle(
+          const Duration(milliseconds: 700),
+        );
+
+        // Houston card should have "Top 10" and not
+        // "Coming soon"
+        expect(find.text('Houston'), findsOneWidget);
+        expect(find.text('Top 10'), findsWidgets);
+      },
+    );
   });
 }

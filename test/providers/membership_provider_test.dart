@@ -1,10 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vouch/models/membership.dart';
 import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/services/revenue_cat_service.dart';
 
 void main() {
   group('MembershipProvider', () {
-    setUp(TestWidgetsFlutterBinding.ensureInitialized);
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      RevenueCatService.resetSimulatedState();
+    });
 
     test('starts at free tier', () {
       final provider = MembershipProvider();
@@ -77,6 +81,57 @@ void main() {
 
       provider.toggleBillingCycle();
       expect(notified, isTrue);
+    });
+  });
+
+  group('MembershipProvider simulate path', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      RevenueCatService.resetSimulatedState();
+    });
+
+    test('kSimulatePurchases is true in the test environment', () {
+      expect(kSimulatePurchases, isTrue);
+    });
+
+    test('simulate purchase localsPass grants locals_pass entitlement',
+        () async {
+      final provider = MembershipProvider();
+      await provider.purchaseTier(MembershipTier.localsPass);
+
+      // Restore on a fresh provider picks up simulated entitlements
+      final provider2 = MembershipProvider();
+      await provider2.restorePurchases();
+      expect(provider2.currentTier, MembershipTier.localsPass);
+    });
+
+    test('simulate purchase cityInsider grants both entitlements', () async {
+      final provider = MembershipProvider();
+      await provider.purchaseTier(MembershipTier.cityInsider);
+
+      final provider2 = MembershipProvider();
+      await provider2.restorePurchases();
+      expect(provider2.currentTier, MembershipTier.cityInsider);
+    });
+
+    test('refreshEntitlements reflects simulated state', () async {
+      final provider = MembershipProvider();
+      await provider.purchaseTier(MembershipTier.localsPass);
+
+      final provider2 = MembershipProvider();
+      await provider2.refreshEntitlements();
+      expect(provider2.currentTier, MembershipTier.localsPass);
+    });
+
+    test('logOut clears simulated entitlements', () async {
+      final provider = MembershipProvider();
+      await provider.purchaseTier(MembershipTier.cityInsider);
+
+      await RevenueCatService.logOut();
+
+      final provider2 = MembershipProvider();
+      await provider2.refreshEntitlements();
+      expect(provider2.currentTier, MembershipTier.free);
     });
   });
 }

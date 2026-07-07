@@ -17,6 +17,7 @@ import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/screens/splash_screen.dart';
 import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/auth_service.dart';
+import 'package:vouch/services/revenue_cat_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
 void main() async {
@@ -39,6 +40,8 @@ void main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+
+  await RevenueCatService.configure();
 
   final authService = AuthService();
   final analyticsService = AnalyticsService();

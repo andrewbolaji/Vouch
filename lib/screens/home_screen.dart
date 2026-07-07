@@ -196,6 +196,12 @@ class HomeScreen extends StatelessWidget {
                             index,
                           ) {
                             final city = appState.cities[index];
+                            if (!city.isLive) {
+                              return _ComingSoonCityCard(
+                                name: city.name,
+                                state: city.state,
+                              );
+                            }
                             return _CityCard(
                               name: city.name,
                               state: city.state,
@@ -399,6 +405,88 @@ class _CityCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ComingSoonCityCard extends StatelessWidget {
+  const _ComingSoonCityCard({
+    required this.name,
+    required this.state,
+  });
+  final String name;
+  final String state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$name, $state, coming soon',
+      child: Opacity(
+        opacity: 0.55,
+        child: Container(
+          decoration: AppTheme.cardDecoration,
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              Positioned(
+                right: -AppTheme.spacingSm,
+                bottom: -AppTheme.spacingSm,
+                child: Text(
+                  state,
+                  style: AppTheme.displayLarge.copyWith(
+                    fontSize: AppTheme.watermarkFontSize,
+                    color: AppTheme.textPrimary.withValues(
+                      alpha: AppTheme.alphaWatermark,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppTheme.spacingMd),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: AppTheme.displayMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppTheme.spacingXxs),
+                    Text(
+                      state,
+                      style: AppTheme.bodySmall,
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacingSm,
+                        vertical: AppTheme.spacingXs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.radiusSm),
+                        border: Border.all(
+                          color: AppTheme.textTertiary,
+                          width: AppTheme.borderInkWidth,
+                        ),
+                      ),
+                      child: Text(
+                        'Coming soon',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.textTertiary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],

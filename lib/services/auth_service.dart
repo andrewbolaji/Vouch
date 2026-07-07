@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/services/analytics_service.dart';
+import 'package:vouch/services/revenue_cat_service.dart';
 import 'package:vouch/services/secure_storage_service.dart';
 
 enum AuthMethod { anonymous, email, google, apple }
@@ -104,12 +105,14 @@ class AuthService extends ChangeNotifier {
       _currentUser = null;
       _setCrashlyticsUserId('');
       _analyticsService?.setSignInMethod('anonymous');
+      unawaited(RevenueCatService.logOut());
     } else {
       _currentUser = _mapFirebaseUser(fbUser);
       unawaited(_cacheDisplayInfo(fbUser));
       unawaited(_persistToken(fbUser));
       _setCrashlyticsUserId(fbUser.uid);
       _analyticsService?.setSignInMethod(_currentUser!.method.name);
+      unawaited(RevenueCatService.logIn(fbUser.uid));
     }
     notifyListeners();
   }
@@ -504,6 +507,20 @@ class AuthService extends ChangeNotifier {
       await _firebaseAuth!.currentUser?.getIdToken(true);
     } on Exception catch (e) {
       _log('token', 'force refresh failed: $e');
+    }
+  }
+
+  /// Returns the membershipTier custom claim from the current ID token.
+  /// Forces a token refresh to get the latest claims from the server.
+  Future<String?> getMembershipTierClaim() async {
+    if (_firebaseAuth == null) return null;
+    try {
+      final result =
+          await _firebaseAuth.currentUser?.getIdTokenResult(true);
+      return result?.claims?['membershipTier'] as String?;
+    } on Exception catch (e) {
+      _log('claims', 'failed to get membership claim: $e');
+      return null;
     }
   }
 

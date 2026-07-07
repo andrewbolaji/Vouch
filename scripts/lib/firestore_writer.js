@@ -133,6 +133,7 @@ async function writeHoustonData(db, FieldValue, enrichedCandidates, confirm) {
         description:
           "The most diverse food city in America. No debate.",
         restaurantCount: enrichedCandidates.length,
+        status: "live",
         createdAt: now,
         updatedAt: now,
       });

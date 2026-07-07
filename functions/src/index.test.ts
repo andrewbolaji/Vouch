@@ -27,9 +27,16 @@ import {
   DEFAULT_HALF_LIFE_DAYS,
 } from "./rank_engine";
 import {recomputeAllRanks} from "./rank_recompute";
+import {
+  tierFromEntitlements,
+  tierFromEvent,
+  isValidAuth,
+  handleWebhookEvent,
+} from "./membership_webhook";
 
-// Initialize admin SDK for emulator
+// Initialize admin SDK for emulators
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
 
 if (getApps().length === 0) {
   initializeApp({projectId: "vouch-test"});
@@ -1053,5 +1060,327 @@ describe("Waitlist signup logic", () => {
 
     const all = await db.collection("waitlist").get();
     expect(all.size).toBe(0);
+  });
+});
+
+// ================================================================
+// Membership webhook: pure tier mapping (no emulator needed)
+// ================================================================
+
+describe("Membership webhook tier mapping (pure)", () => {
+  test("city_insider entitlement maps to cityInsider", () => {
+    expect(tierFromEntitlements(["city_insider"])).toBe("cityInsider");
+  });
+
+  test("locals_pass entitlement maps to localsPass", () => {
+    expect(tierFromEntitlements(["locals_pass"])).toBe("localsPass");
+  });
+
+  test("both entitlements map to cityInsider (highest tier wins)", () => {
+    expect(
+      tierFromEntitlements(["locals_pass", "city_insider"])
+    ).toBe("cityInsider");
+  });
+
+  test("empty entitlements map to free", () => {
+    expect(tierFromEntitlements([])).toBe("free");
+  });
+
+  test("unknown entitlements map to free", () => {
+    expect(tierFromEntitlements(["some_other"])).toBe("free");
+  });
+});
+
+// ================================================================
+// Membership webhook: event type to tier (pure, no emulator)
+// ================================================================
+
+describe("Membership webhook event type mapping (pure)", () => {
+  test("INITIAL_PURCHASE with locals_pass -> localsPass", () => {
+    expect(tierFromEvent({
+      type: "INITIAL_PURCHASE",
+      app_user_id: "uid",
+      entitlement_ids: ["locals_pass"],
+    })).toBe("localsPass");
+  });
+
+  test("INITIAL_PURCHASE with city_insider -> cityInsider", () => {
+    expect(tierFromEvent({
+      type: "INITIAL_PURCHASE",
+      app_user_id: "uid",
+      entitlement_ids: ["city_insider", "locals_pass"],
+    })).toBe("cityInsider");
+  });
+
+  test("RENEWAL with locals_pass -> localsPass", () => {
+    expect(tierFromEvent({
+      type: "RENEWAL",
+      app_user_id: "uid",
+      entitlement_ids: ["locals_pass"],
+    })).toBe("localsPass");
+  });
+
+  test("PRODUCT_CHANGE to city_insider -> cityInsider", () => {
+    expect(tierFromEvent({
+      type: "PRODUCT_CHANGE",
+      app_user_id: "uid",
+      entitlement_ids: ["city_insider", "locals_pass"],
+    })).toBe("cityInsider");
+  });
+
+  test("CANCELLATION keeps active entitlements", () => {
+    expect(tierFromEvent({
+      type: "CANCELLATION",
+      app_user_id: "uid",
+      entitlement_ids: ["locals_pass"],
+    })).toBe("localsPass");
+  });
+
+  test("EXPIRATION always sets free regardless of entitlement_ids", () => {
+    expect(tierFromEvent({
+      type: "EXPIRATION",
+      app_user_id: "uid",
+      entitlement_ids: ["locals_pass"],
+    })).toBe("free");
+  });
+
+  test("EXPIRATION with no entitlement_ids -> free", () => {
+    expect(tierFromEvent({
+      type: "EXPIRATION",
+      app_user_id: "uid",
+    })).toBe("free");
+  });
+});
+
+// ================================================================
+// Membership webhook: auth validation (pure, no emulator)
+// ================================================================
+
+describe("Membership webhook auth validation (pure)", () => {
+  const secret = "test-secret-value";
+
+  test("valid Bearer token accepted", () => {
+    expect(isValidAuth(`Bearer ${secret}`, secret)).toBe(true);
+  });
+
+  test("missing header rejected", () => {
+    expect(isValidAuth(undefined, secret)).toBe(false);
+  });
+
+  test("empty header rejected", () => {
+    expect(isValidAuth("", secret)).toBe(false);
+  });
+
+  test("wrong secret rejected", () => {
+    expect(isValidAuth("Bearer wrong-secret", secret)).toBe(false);
+  });
+
+  test("missing Bearer prefix rejected", () => {
+    expect(isValidAuth(secret, secret)).toBe(false);
+  });
+});
+
+// ================================================================
+// Membership webhook: full handler (requires Firestore + Auth emulators)
+//
+// These tests exercise handleWebhookEvent which calls
+// admin.auth().setCustomUserClaims and writes to Firestore.
+// Run with:
+//   firebase emulators:exec --only firestore,auth,functions \
+//     'cd functions && npx jest --forceExit --detectOpenHandles --verbose'
+// ================================================================
+
+import {getAuth} from "firebase-admin/auth";
+
+describe("Membership webhook handler (emulator)", () => {
+  const testUid = "webhook-test-user";
+
+  beforeEach(async () => {
+    await clearFirestore();
+    // Create test user in auth emulator
+    try {
+      await getAuth().deleteUser(testUid);
+    } catch {
+      // User may not exist yet
+    }
+    await getAuth().createUser({
+      uid: testUid,
+      email: "webhook-test@example.com",
+    });
+  });
+
+  afterAll(async () => {
+    await clearFirestore();
+    try {
+      await getAuth().deleteUser(testUid);
+    } catch {
+      // Cleanup
+    }
+  });
+
+  test("INITIAL_PURCHASE sets claim and creates user doc", async () => {
+    const result = await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    expect(result.tier).toBe("localsPass");
+    expect(result.uid).toBe(testUid);
+
+    // Verify custom claim
+    const user = await getAuth().getUser(testUid);
+    expect(user.customClaims?.membershipTier).toBe("localsPass");
+
+    // Verify Firestore user doc (created via merge)
+    const userDoc = await db.collection("users").doc(testUid).get();
+    expect(userDoc.exists).toBe(true);
+    expect(userDoc.data()?.membershipTier).toBe("localsPass");
+  });
+
+  // eslint-disable-next-line max-len
+  test("INITIAL_PURCHASE with city_insider sets cityInsider claim and doc", async () => {
+    await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: testUid,
+      entitlement_ids: ["city_insider", "locals_pass"],
+    });
+
+    const user = await getAuth().getUser(testUid);
+    expect(user.customClaims?.membershipTier).toBe("cityInsider");
+
+    const userDoc = await db.collection("users").doc(testUid).get();
+    expect(userDoc.data()?.membershipTier).toBe("cityInsider");
+  });
+
+  test("RENEWAL preserves paid tier", async () => {
+    await handleWebhookEvent(db, {
+      type: "RENEWAL",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    const user = await getAuth().getUser(testUid);
+    expect(user.customClaims?.membershipTier).toBe("localsPass");
+  });
+
+  test("PRODUCT_CHANGE upgrades tier", async () => {
+    // Start with localsPass
+    await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    // Upgrade to cityInsider
+    await handleWebhookEvent(db, {
+      type: "PRODUCT_CHANGE",
+      app_user_id: testUid,
+      entitlement_ids: ["city_insider", "locals_pass"],
+    });
+
+    const user = await getAuth().getUser(testUid);
+    expect(user.customClaims?.membershipTier).toBe("cityInsider");
+
+    const userDoc = await db.collection("users").doc(testUid).get();
+    expect(userDoc.data()?.membershipTier).toBe("cityInsider");
+  });
+
+  test("EXPIRATION resets to free", async () => {
+    // Start with a paid tier
+    await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    // Expire
+    await handleWebhookEvent(db, {
+      type: "EXPIRATION",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    const user = await getAuth().getUser(testUid);
+    expect(user.customClaims?.membershipTier).toBe("free");
+
+    const userDoc = await db.collection("users").doc(testUid).get();
+    expect(userDoc.data()?.membershipTier).toBe("free");
+  });
+
+  test("CANCELLATION keeps current tier (access until expiry)", async () => {
+    await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    await handleWebhookEvent(db, {
+      type: "CANCELLATION",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    const user = await getAuth().getUser(testUid);
+    expect(user.customClaims?.membershipTier).toBe("localsPass");
+  });
+
+  // eslint-disable-next-line max-len
+  test("missing user doc is created via merge (does not crash)", async () => {
+    // Do NOT seed a user doc. handleWebhookEvent should create it.
+    const docBefore = await db.collection("users").doc(testUid).get();
+    expect(docBefore.exists).toBe(false);
+
+    await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: testUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    const docAfter = await db.collection("users").doc(testUid).get();
+    expect(docAfter.exists).toBe(true);
+    expect(docAfter.data()?.membershipTier).toBe("localsPass");
+  });
+
+  // eslint-disable-next-line max-len
+  test("user-not-found returns skipped result (no throw)", async () => {
+    const fakeUid = "nonexistent-revenuecat-test-user";
+    const result = await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: fakeUid,
+      entitlement_ids: ["locals_pass"],
+    });
+
+    expect(result.skipped).toBe(true);
+    expect(result.uid).toBe(fakeUid);
+    expect(result.tier).toBe("localsPass");
+
+    // Should NOT have written a Firestore doc for a non-existent user
+    const doc = await db.collection("users").doc(fakeUid).get();
+    expect(doc.exists).toBe(false);
+  });
+
+  // eslint-disable-next-line max-len
+  test("existing user doc is updated without losing other fields", async () => {
+    // Seed a full user doc
+    await db.collection("users").doc(testUid).set({
+      id: testUid,
+      displayName: "TestUser",
+      email: "webhook-test@example.com",
+      membershipTier: "free",
+      savedRestaurantIds: ["hou-1"],
+    });
+
+    await handleWebhookEvent(db, {
+      type: "INITIAL_PURCHASE",
+      app_user_id: testUid,
+      entitlement_ids: ["city_insider", "locals_pass"],
+    });
+
+    const userDoc = await db.collection("users").doc(testUid).get();
+    expect(userDoc.data()?.membershipTier).toBe("cityInsider");
+    // Other fields preserved
+    expect(userDoc.data()?.displayName).toBe("TestUser");
+    expect(userDoc.data()?.savedRestaurantIds).toEqual(["hou-1"]);
   });
 });

@@ -31,10 +31,10 @@
               "client_type": 3
             },
             {
-              "client_id": "400845601317-rs05c8rsj3ik8qer6m5ibgke42qkcc76.apps.googleusercontent.com",
+              "client_id": "400845601317-3u8mrgacb140bnhiqhhjom6vn71hg907.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.majorcitymusteats"
+                "bundle_id": "com.thunderrivertech.vouch"
               }
             }
           ]

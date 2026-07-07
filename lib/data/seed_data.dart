@@ -13,6 +13,7 @@ class SeedData {
       description:
           'The most diverse food city in America. No debate.',
       restaurantCount: 10,
+      status: CityStatus.live,
     ),
     City(
       id: 'atlanta',
@@ -24,6 +25,7 @@ class SeedData {
           'Where soul food meets global flavor.'
           ' The South starts here.',
       restaurantCount: 17,
+      status: CityStatus.live,
     ),
     City(
       id: 'nyc',

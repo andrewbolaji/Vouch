@@ -34,10 +34,10 @@ const { Timestamp, FieldValue } = admin.firestore;
 // ---- Seed Data ----
 
 const cities = [
-  { id: "houston", name: "Houston", state: "TX", imageUrl: "https://images.unsplash.com/photo-1530089711124-9ca31fb9e863?w=800", description: "The most diverse food city in America. No debate.", restaurantCount: 10 },
-  { id: "nyc", name: "New York", state: "NY", imageUrl: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800", description: "Only the best survive here.", restaurantCount: 10 },
-  { id: "la", name: "Los Angeles", state: "CA", imageUrl: "https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=800", description: "Tacos, sushi, and everything between. Always outside.", restaurantCount: 10 },
-  { id: "chicago", name: "Chicago", state: "IL", imageUrl: "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=800", description: "Deep dish is just the beginning.", restaurantCount: 10 },
+  { id: "houston", name: "Houston", state: "TX", imageUrl: "https://images.unsplash.com/photo-1530089711124-9ca31fb9e863?w=800", description: "The most diverse food city in America. No debate.", restaurantCount: 10, status: "live" },
+  { id: "nyc", name: "New York", state: "NY", imageUrl: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800", description: "Only the best survive here.", restaurantCount: 10, status: "comingSoon" },
+  { id: "la", name: "Los Angeles", state: "CA", imageUrl: "https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=800", description: "Tacos, sushi, and everything between. Always outside.", restaurantCount: 10, status: "comingSoon" },
+  { id: "chicago", name: "Chicago", state: "IL", imageUrl: "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=800", description: "Deep dish is just the beginning.", restaurantCount: 10, status: "comingSoon" },
 ];
 
 const restaurants = [
