@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -165,8 +166,9 @@ class AppState extends ChangeNotifier {
         _votedKey,
         _votedRestaurantIds.toList(),
       );
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('AppState: failed to save votes: $e');
+      _recordError('_saveVotes', e, stack);
     }
   }
 
@@ -177,8 +179,9 @@ class AppState extends ChangeNotifier {
       if (ids != null) {
         _votedRestaurantIds.addAll(ids);
       }
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('AppState: failed to load votes: $e');
+      _recordError('_loadVotes', e, stack);
     }
   }
 
@@ -267,8 +270,9 @@ class AppState extends ChangeNotifier {
         _restaurants.addAll(cityRestaurants);
       }
       _isOffline = false;
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('AppState: Firestore load failed: $e');
+      _recordError('_loadFromFirestore', e, stack);
       _isOffline = true;
       // Fall back to seed data on failure
       _cities = List.from(SeedData.cities);
@@ -310,6 +314,18 @@ class AppState extends ChangeNotifier {
         createdAt: DateTime(2026, 4, 22),
       ),
     ];
+  }
+
+  static void _recordError(String reason, Object error, StackTrace stack) {
+    try {
+      unawaited(FirebaseCrashlytics.instance.recordError(
+        error,
+        stack,
+        reason: 'AppState: $reason',
+      ));
+    } on Exception catch (_) {
+      // Crashlytics unavailable (unit tests).
+    }
   }
 
   /// Sets commentCount on each seed restaurant to match the number of

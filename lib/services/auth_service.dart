@@ -505,8 +505,9 @@ class AuthService extends ChangeNotifier {
   Future<void> forceTokenRefresh() async {
     try {
       await _firebaseAuth!.currentUser?.getIdToken(true);
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       _log('token', 'force refresh failed: $e');
+      _recordNonFatal('forceTokenRefresh', e, stack);
     }
   }
 
@@ -518,8 +519,9 @@ class AuthService extends ChangeNotifier {
       final result =
           await _firebaseAuth.currentUser?.getIdTokenResult(true);
       return result?.claims?['membershipTier'] as String?;
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       _log('claims', 'failed to get membership claim: $e');
+      _recordNonFatal('getMembershipTierClaim', e, stack);
       return null;
     }
   }
@@ -536,6 +538,18 @@ class AuthService extends ChangeNotifier {
   static void _log(String tag, String message) {
     debugPrint('AuthService [$tag] $message');
     _crashlyticsLog('AuthService [$tag] $message');
+  }
+
+  static void _recordNonFatal(String reason, Object error, StackTrace stack) {
+    try {
+      unawaited(FirebaseCrashlytics.instance.recordError(
+        error,
+        stack,
+        reason: 'AuthService: $reason',
+      ));
+    } on Exception catch (_) {
+      // Crashlytics unavailable (unit tests).
+    }
   }
 
   static void _crashlyticsLog(String message) {

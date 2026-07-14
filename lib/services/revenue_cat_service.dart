@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -78,8 +81,9 @@ class RevenueCatService {
           : RevenueCatConfig.googleApiKey;
       await Purchases.configure(PurchasesConfiguration(apiKey));
       _isConfigured = true;
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: configure failed: $e');
+      _recordError('configure', e, stack);
     }
   }
 
@@ -93,8 +97,9 @@ class RevenueCatService {
 
     try {
       await Purchases.logIn(userId);
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: logIn failed: $e');
+      _recordError('logIn (uid=$userId)', e, stack);
     }
   }
 
@@ -108,8 +113,9 @@ class RevenueCatService {
 
     try {
       await Purchases.logOut();
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: logOut failed: $e');
+      _recordError('logOut', e, stack);
     }
   }
 
@@ -122,8 +128,9 @@ class RevenueCatService {
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.keys.toSet();
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: getActiveEntitlements failed: $e');
+      _recordError('getActiveEntitlements', e, stack);
       return {};
     }
   }
@@ -149,8 +156,9 @@ class RevenueCatService {
             pkg.storeProduct.priceString;
       }
       return prices;
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: getLocalizedPrices failed: $e');
+      _recordError('getLocalizedPrices', e, stack);
       return {};
     }
   }
@@ -180,16 +188,24 @@ class RevenueCatService {
       }
       debugPrint('RevenueCatService: product $productId not found in '
           'offerings (${packages.length} packages available)');
+      _recordError(
+        'purchase: product not found (productId=$productId, '
+        'availableCount=${packages.length})',
+        Exception('product_not_found: $productId'),
+        StackTrace.current,
+      );
       return PurchaseResult.failed;
-    } on PlatformException catch (e) {
+    } on PlatformException catch (e, stack) {
       final errorCode = PurchasesErrorHelper.getErrorCode(e);
       if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
         return PurchaseResult.cancelled;
       }
       debugPrint('RevenueCatService: purchase failed: $e');
+      _recordError('purchase (productId=$productId)', e, stack);
       return PurchaseResult.failed;
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: purchase failed: $e');
+      _recordError('purchase (productId=$productId)', e, stack);
       return PurchaseResult.failed;
     }
   }
@@ -204,9 +220,24 @@ class RevenueCatService {
     try {
       final info = await Purchases.restorePurchases();
       return info.entitlements.active.keys.toSet();
-    } on Exception catch (e) {
+    } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: restorePurchases failed: $e');
+      _recordError('restorePurchases', e, stack);
       return {};
+    }
+  }
+
+  /// Reports a non-fatal error to Crashlytics with a clear reason tag.
+  /// Keeps the debugPrint for local dev; this adds the production signal.
+  static void _recordError(String reason, Object error, StackTrace stack) {
+    try {
+      unawaited(FirebaseCrashlytics.instance.recordError(
+        error,
+        stack,
+        reason: 'RevenueCatService: $reason',
+      ));
+    } on Exception catch (_) {
+      // Crashlytics unavailable (unit tests without Firebase).
     }
   }
 }

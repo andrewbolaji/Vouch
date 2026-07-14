@@ -273,17 +273,26 @@ export const onRevenueCatWebhook = onRequest(
       const event = body.event;
 
       if (!event?.app_user_id || !event?.type) {
+        logger.error(
+          "[webhook] rejected: missing event fields",
+          {body: JSON.stringify(req.body).slice(0, 500)}
+        );
         res.status(400).json({error: "missing_event_fields"});
         return;
       }
 
       const result = await handleWebhookEvent(db, event);
       logger.info(
-        `Webhook ${event.type}: uid=${result.uid}, tier=${result.tier}`
+        `[webhook] ${event.type}: uid=${result.uid}, ` +
+        `tier=${result.tier}, ` +
+        `claimSet=${result.skipped ? "skipped (user not found)" : "yes"}`
       );
       res.status(200).json({ok: true});
     } catch (err) {
-      logger.error("onRevenueCatWebhook error", err);
+      logger.error("[webhook] FAILED", {
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       res.status(500).json({error: "internal"});
     }
   }

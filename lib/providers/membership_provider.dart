@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vouch/models/models.dart';
 import 'package:vouch/services/auth_service.dart';
@@ -137,6 +140,16 @@ class MembershipProvider extends ChangeNotifier {
       'MembershipProvider: claim poll exhausted after '
       '$kClaimPollMaxRetries retries, proceeding',
     );
+    try {
+      unawaited(FirebaseCrashlytics.instance.recordError(
+        Exception('claim poll exhausted after $kClaimPollMaxRetries retries'),
+        StackTrace.current,
+        reason: 'MembershipProvider: _pollForMembershipClaim '
+            '(expected=$expectedClaim)',
+      ));
+    } on Exception catch (_) {
+      // Crashlytics unavailable (unit tests).
+    }
   }
 
   // ------------------------------------------------------------------
