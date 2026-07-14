@@ -119,14 +119,14 @@ void main() {
 
     testWidgets('hides comment badge when commentCount is 0', (tester) async {
       const restaurant = Restaurant(
-        id: 'hou-2',
+        id: 'hou-11',
         cityId: 'houston',
-        name: 'Cool Runnings',
-        cuisine: 'Jamaican',
+        name: 'Tacos Los Brothers',
+        cuisine: 'Mexican (Tacos)',
         imageUrl: 'placeholder://restaurant',
         description: '',
         rank: 2,
-        voteCount: 50,
+        voteCount: 0,
         // commentCount defaults to 0
       );
 

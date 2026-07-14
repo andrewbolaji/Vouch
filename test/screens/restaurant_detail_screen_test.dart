@@ -147,12 +147,12 @@ void main() {
     });
 
     // A1: Empty state renders for a restaurant with zero comments.
-    // hou-2 (Cool Runnings) has no seed comments.
-    testWidgets('shows empty state when signed in, no comments (hou-2)',
+    // hou-11 (Tacos Los Brothers) has no seed comments.
+    testWidgets('shows empty state when signed in, no comments (hou-11)',
         (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          const RestaurantDetailScreen(restaurantId: 'hou-2'),
+          const RestaurantDetailScreen(restaurantId: 'hou-11'),
           authOverride: AuthService.mock(initialUser: _signedInUser),
         ),
       );
@@ -228,7 +228,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          const RestaurantDetailScreen(restaurantId: 'hou-2'),
+          const RestaurantDetailScreen(restaurantId: 'hou-11'),
         ),
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 700));

@@ -56,12 +56,12 @@ void main() {
         await tester.tap(voteFinder);
         await tester.pumpAndSettle();
 
-        expect(find.text('2.8k'), findsOneWidget);
+        expect(find.text('1'), findsOneWidget);
 
         await tester.tap(voteFinder);
         await tester.pumpAndSettle();
 
-        expect(find.text('2.8k'), findsOneWidget);
+        expect(find.text('0'), findsOneWidget);
       },
     );
 

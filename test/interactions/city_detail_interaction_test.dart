@@ -57,15 +57,15 @@ void main() {
 
         // Should see paywall message
         expect(
-          find.text('Unlock Top 10 with Locals Pass'),
+          find.text('Unlock full rankings with Locals Pass'),
           findsOneWidget,
         );
         // Should NOT see real restaurant names
         // behind the paywall (security: content
-        // withheld from tree). These are rank 6-7
-        // in the current seed (Dona Leti's, Hidden Omakase).
-        expect(find.text("Dona Leti's"), findsNothing);
-        expect(find.text('Hidden Omakase'), findsNothing);
+        // withheld from tree). These are rank 7-8
+        // in the current seed (Top Sushi, The Better Box).
+        expect(find.text('Top Sushi'), findsNothing);
+        expect(find.text('The Better Box'), findsNothing);
       },
     );
 
@@ -116,7 +116,7 @@ void main() {
         );
         expect(
           find.text(
-            'Unlock Top 10 with Locals Pass',
+            'Unlock full rankings with Locals Pass',
           ),
           findsOneWidget,
         );

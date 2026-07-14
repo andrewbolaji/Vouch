@@ -1,12 +1,46 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/models/models.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/services/analytics_service.dart';
+import 'package:vouch/services/revenue_cat_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
-class UpgradeScreen extends StatelessWidget {
+class UpgradeScreen extends StatefulWidget {
   const UpgradeScreen({super.key});
+
+  @override
+  State<UpgradeScreen> createState() => _UpgradeScreenState();
+}
+
+class _UpgradeScreenState extends State<UpgradeScreen> {
+  Map<String, String>? _prices;
+  bool _loading = true;
+  bool _purchasing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadPrices());
+  }
+
+  Future<void> _loadPrices() async {
+    final prices = await RevenueCatService.getLocalizedPrices();
+    if (mounted) {
+      setState(() {
+        _prices = prices;
+        _loading = false;
+      });
+    }
+  }
+
+  String _priceFor(MembershipTier tier, {required bool yearly}) {
+    if (_prices == null || _prices!.isEmpty) return '...';
+    final productId = RevenueCatConfig.productIdFor(tier, yearly: yearly);
+    return _prices![productId] ?? '...';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +61,9 @@ class UpgradeScreen extends StatelessWidget {
           right: AppTheme.borderInk,
         ),
       ),
-      child: SingleChildScrollView(
+      child: Stack(
+        children: [
+          SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.spacingLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,9 +126,10 @@ class UpgradeScreen extends StatelessWidget {
             // Tier cards
             ...membershipTiers.skip(1).map((tier) {
               final isCurrentTier = membership.currentTier == tier.tier;
-              final price = membership.isYearlyBilling
-                  ? tier.yearlyPrice
-                  : tier.monthlyPrice;
+              final price = _priceFor(
+                tier.tier,
+                yearly: membership.isYearlyBilling,
+              );
               final period = membership.isYearlyBilling ? '/year' : '/month';
 
               return Container(
@@ -150,17 +187,9 @@ class UpgradeScreen extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: isCurrentTier
+                        onPressed: isCurrentTier || _loading || _purchasing
                             ? null
-                            : () async {
-                                context.read<AnalyticsService>().logUpgradeTap(
-                                  tier: tier.tier.name,
-                                );
-                                await membership.purchaseTier(tier.tier);
-                                if (context.mounted) {
-                                  Navigator.of(context).pop();
-                                }
-                              },
+                            : () => _handlePurchase(context, tier.tier),
                         style: isCurrentTier
                             ? AppTheme.secondaryButtonStyle
                             : AppTheme.accentButtonStyle,
@@ -194,6 +223,67 @@ class UpgradeScreen extends StatelessWidget {
           ],
         ),
       ),
+          if (_purchasing)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.background.withValues(alpha: 0.85),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppTheme.spacingMd),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: AppTheme.accent,
+                    ),
+                    const SizedBox(height: AppTheme.spacingMd),
+                    Text(
+                      'Confirming your purchase...',
+                      style: AppTheme.bodyLarge.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _handlePurchase(
+    BuildContext context,
+    MembershipTier tier,
+  ) async {
+    context.read<AnalyticsService>().logUpgradeTap(tier: tier.name);
+    final membership = context.read<MembershipProvider>();
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    setState(() => _purchasing = true);
+    final result = await membership.purchaseTier(tier);
+
+    if (!mounted) return;
+
+    setState(() => _purchasing = false);
+
+    switch (result) {
+      case PurchaseResult.success:
+        navigator.pop();
+      case PurchaseResult.cancelled:
+        break; // User cancelled, no error needed.
+      case PurchaseResult.failed:
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Something went wrong. Please try again.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 }

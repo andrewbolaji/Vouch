@@ -51,16 +51,16 @@ void main() {
               RestaurantCard(
                 restaurant: _makeRestaurant(
                   rank: 2,
-                  name: 'Cool Runnings',
-                  voteCount: 2534,
+                  name: 'Tacos Los Brothers',
+                  voteCount: 0,
                 ),
                 onTap: () {},
               ),
               RestaurantCard(
                 restaurant: _makeRestaurant(
                   rank: 5,
-                  name: 'Le Jardinier',
-                  voteCount: 1876,
+                  name: 'Corkscrew BBQ',
+                  voteCount: 0,
                 ),
                 onTap: () {},
               ),

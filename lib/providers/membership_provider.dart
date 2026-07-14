@@ -79,10 +79,10 @@ class MembershipProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> purchaseTier(MembershipTier tier) async {
+  Future<PurchaseResult> purchaseTier(MembershipTier tier) async {
     final productId = _productIdFor(tier);
-    final success = await RevenueCatService.purchase(productId);
-    if (success) {
+    final result = await RevenueCatService.purchase(productId);
+    if (result == PurchaseResult.success) {
       // In release builds, poll for the custom claim set by the
       // RevenueCat webhook before unlocking gated content.
       if (!kSimulatePurchases && _authService != null) {
@@ -91,6 +91,7 @@ class MembershipProvider extends ChangeNotifier {
       _currentTier = tier;
       notifyListeners();
     }
+    return result;
   }
 
   Future<void> restorePurchases() async {

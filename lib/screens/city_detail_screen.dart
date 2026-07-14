@@ -163,7 +163,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                                   );
                                   _showUpgrade(context);
                                 },
-                                message: 'Unlock Top 10 '
+                                message: 'Unlock full rankings '
                                     'with Locals Pass',
                                 child: Column(
                                   children: List.generate(
@@ -210,7 +210,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   }
 }
 
-/// Section header for ranks 6 to 10.
+/// Section header for ranks beyond the free top 5.
 class _Top10Header extends StatelessWidget {
   const _Top10Header({required this.isLocked});
   final bool isLocked;
@@ -220,7 +220,7 @@ class _Top10Header extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'RANKS 6 TO 10',
+          'RANKS 6+',
           style: AppTheme.labelMedium.copyWith(
             color: isLocked ? AppTheme.goldInk : AppTheme.textSecondary,
             fontWeight: FontWeight.w700,

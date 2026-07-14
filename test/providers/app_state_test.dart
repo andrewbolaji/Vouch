@@ -149,7 +149,7 @@ void main() {
 
       expect(state.hasVoted('hou-1'), isTrue);
       expect(state.hasVoted('nyc-1'), isTrue);
-      expect(state.hasVoted('hou-2'), isFalse);
+      expect(state.hasVoted('hou-11'), isFalse);
     });
 
     test('setSearchQuery filters cities', () async {
@@ -240,10 +240,10 @@ void main() {
       expect(nyc1, isNotNull);
       expect(nyc1!.commentCount, 1);
 
-      // hou-2 (Cool Runnings) has 0 seed comments
-      final hou2 = state.restaurantById('hou-2');
-      expect(hou2, isNotNull);
-      expect(hou2!.commentCount, 0);
+      // hou-11 (Tacos Los Brothers) has 0 seed comments
+      final hou11 = state.restaurantById('hou-11');
+      expect(hou11, isNotNull);
+      expect(hou11!.commentCount, 0);
     });
 
     test('refresh reloads data', () async {

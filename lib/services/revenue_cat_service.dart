@@ -1,9 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:vouch/models/membership.dart';
 
 /// True only in debug builds. The compiler tree-shakes this branch
 /// in release mode, so a release build cannot take the simulate path.
 const bool kSimulatePurchases = kDebugMode;
+
+/// Result of a purchase attempt.
+enum PurchaseResult { success, cancelled, failed }
 
 /// RevenueCat product and entitlement identifiers.
 /// PLACEHOLDER values: replace with your RevenueCat dashboard configuration.
@@ -24,6 +29,18 @@ class RevenueCatConfig {
   static const String cityInsiderMonthly =
       'com.vouch.app.city_insider.monthly';
   static const String cityInsiderYearly = 'com.vouch.app.city_insider.yearly';
+
+  /// Returns the store product ID for a given tier and billing cycle.
+  static String productIdFor(MembershipTier tier, {required bool yearly}) {
+    switch (tier) {
+      case MembershipTier.free:
+        return '';
+      case MembershipTier.localsPass:
+        return yearly ? localsPassYearly : localsPassMonthly;
+      case MembershipTier.cityInsider:
+        return yearly ? cityInsiderYearly : cityInsiderMonthly;
+    }
+  }
 }
 
 /// Wraps RevenueCat SDK interactions.
@@ -111,8 +128,35 @@ class RevenueCatService {
     }
   }
 
+  /// Returns a map of product ID to localized price string from the
+  /// current offering. Returns an empty map if offerings cannot be loaded.
+  static Future<Map<String, String>> getLocalizedPrices() async {
+    if (kSimulatePurchases) {
+      return {
+        RevenueCatConfig.localsPassMonthly: r'$4.99',
+        RevenueCatConfig.localsPassYearly: r'$29.99',
+        RevenueCatConfig.cityInsiderMonthly: r'$9.99',
+        RevenueCatConfig.cityInsiderYearly: r'$79.99',
+      };
+    }
+
+    try {
+      final offerings = await Purchases.getOfferings();
+      final packages = offerings.current?.availablePackages ?? [];
+      final prices = <String, String>{};
+      for (final pkg in packages) {
+        prices[pkg.storeProduct.identifier] =
+            pkg.storeProduct.priceString;
+      }
+      return prices;
+    } on Exception catch (e) {
+      debugPrint('RevenueCatService: getLocalizedPrices failed: $e');
+      return {};
+    }
+  }
+
   /// Purchase a specific product by its store product ID.
-  static Future<bool> purchase(String productId) async {
+  static Future<PurchaseResult> purchase(String productId) async {
     if (kSimulatePurchases) {
       await Future<void>.delayed(const Duration(seconds: 1));
       if (productId.contains('city_insider')) {
@@ -122,7 +166,7 @@ class RevenueCatService {
       } else if (productId.contains('locals_pass')) {
         _simulatedEntitlements.add(RevenueCatConfig.localsPassEntitlement);
       }
-      return true;
+      return PurchaseResult.success;
     }
 
     try {
@@ -130,17 +174,23 @@ class RevenueCatService {
       final packages = offerings.current?.availablePackages ?? [];
       for (final pkg in packages) {
         if (pkg.storeProduct.identifier == productId) {
-          final result = await Purchases.purchase(
-            PurchaseParams.package(pkg),
-          );
-          return result.customerInfo.entitlements.active.isNotEmpty;
+          await Purchases.purchase(PurchaseParams.package(pkg));
+          return PurchaseResult.success;
         }
       }
-      debugPrint('RevenueCatService: product $productId not found');
-      return false;
+      debugPrint('RevenueCatService: product $productId not found in '
+          'offerings (${packages.length} packages available)');
+      return PurchaseResult.failed;
+    } on PlatformException catch (e) {
+      final errorCode = PurchasesErrorHelper.getErrorCode(e);
+      if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+        return PurchaseResult.cancelled;
+      }
+      debugPrint('RevenueCatService: purchase failed: $e');
+      return PurchaseResult.failed;
     } on Exception catch (e) {
       debugPrint('RevenueCatService: purchase failed: $e');
-      return false;
+      return PurchaseResult.failed;
     }
   }
 

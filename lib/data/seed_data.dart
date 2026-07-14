@@ -71,7 +71,7 @@ class SeedData {
           ' shop. Michelin-recognized, known for a'
           ' wagyu-meets-Texas-BBQ bowl.',
       rank: 1,
-      voteCount: 2847,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Chinatown',
@@ -89,58 +89,98 @@ class SeedData {
       vibeTags: ['Quick Bite', 'Cozy', 'Neighborhood Favorite'],
     ),
     Restaurant(
-      id: 'hou-2',
+      id: 'hou-11',
       cityId: 'houston',
-      name: 'Cool Runnings',
-      cuisine: 'Jamaican',
+      name: 'Tacos Los Brothers',
+      cuisine: 'Mexican (Tacos)',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Authentic Jamaican and Caribbean cooking from'
-          ' a Jamaica-native chef. The brown stew chicken'
-          ' and oxtail are the move.',
+          'Dollar tacos from a gas-station truck that'
+          ' somehow became the best late-night move in'
+          ' Houston. Carne asada, al pastor, fresh'
+          ' tortillas.',
       rank: 2,
-      voteCount: 2534,
+      voteCount: 0,
+      priceLevel: 1,
       locations: [
         RestaurantLocation(
-          name: 'Southwest Houston',
-          address:
-              '8270 W Bellfort Ave, Houston, TX 77071',
+          name: 'South Main',
+          address: '9365 S Main St, Houston, TX 77025',
         ),
       ],
-      insiderTip:
-          'They do not take phone orders. Order ahead'
-          ' on DoorDash or come in.',
-      whatToOrder:
-          'Brown stew chicken, oxtail, and ackee and'
-          ' saltfish.',
-      vibeTags: ['Flavor Bomb', 'Casual', 'Hidden Gem'],
+      vibeTags: ['Late Night', 'Cash Friendly', 'No Frills'],
+      isMobileVenue: true,
     ),
     Restaurant(
-      id: 'hou-3',
+      id: 'hou-12',
       cityId: 'houston',
-      name: 'The Puddery',
-      cuisine: 'Dessert',
+      name: 'Crave Suya',
+      cuisine: 'West African',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Banana pudding in 30-plus flavors, served in a'
-          ' cup, plus the famous Oreo Croffle. The spot'
-          ' Keith Lee called the best dessert of his life.',
+          'Nigerian suya done right, from a food truck'
+          ' that draws lines across Houston. Spicy'
+          ' grilled beef skewers with yaji seasoning.',
       rank: 3,
-      voteCount: 2298,
+      voteCount: 0,
+      priceLevel: 1,
       locations: [
         RestaurantLocation(
-          name: 'Pearland',
+          name: 'Richmond Ave',
           address:
-              '5517 Broadway St, Ste M, Pearland, TX 77581',
+              '8633 Richmond Ave, Houston, TX 77063',
+        ),
+      ],
+      vibeTags: ['Flavor Bomb', 'Hidden Gem', 'Cash Friendly'],
+      isMobileVenue: true,
+    ),
+    Restaurant(
+      id: 'hou-13',
+      cityId: 'houston',
+      name: 'The Peri Peri Factory',
+      cuisine: 'Portuguese-African (Peri Peri Chicken)',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'Flame-grilled peri peri chicken with sauces'
+          ' from mild to extra hot. Houston first.'
+          ' Halal-certified.',
+      rank: 4,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Westheimer',
+          address:
+              '6375 Westheimer Rd, Houston, TX 77057',
+        ),
+      ],
+      vibeTags: ['Spicy', 'Halal', 'Casual'],
+    ),
+    Restaurant(
+      id: 'hou-9',
+      cityId: 'houston',
+      name: 'Corkscrew BBQ',
+      cuisine: 'BBQ',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'Pitmaster Will Buckman cooks over all-wood'
+          ' fires. Michelin-starred in 2024. Get there'
+          ' early or eat somewhere else.',
+      rank: 5,
+      voteCount: 0,
+      locations: [
+        RestaurantLocation(
+          name: 'Spring',
+          address: '26608 Keith St, Spring, TX 77373',
         ),
       ],
       insiderTip:
-          'Weekend lines wrap the building. Go early or'
-          ' on a weeknight.',
+          'Arrive by 10 AM on weekends or the brisket'
+          ' is gone.',
       whatToOrder:
-          'Banana pudding (any flavor) and the Oreo'
-          ' Croffle.',
-      vibeTags: ['Sweet Tooth', 'Worth the Wait', 'Date Night'],
+          'Brisket, beef ribs, and the garlic sausage'
+          ' links.',
+      vibeTags: ['Worth the Drive', 'No Frills', 'Cash Friendly'],
     ),
     Restaurant(
       id: 'hou-4',
@@ -152,8 +192,8 @@ class SeedData {
           'A lively Midtown bar with colorful craft'
           ' cocktails, a downtown-view patio, and a famous'
           ' Travis Scott mural.',
-      rank: 4,
-      voteCount: 2087,
+      rank: 6,
+      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -170,170 +210,95 @@ class SeedData {
       vibeTags: ['Good Drinks', 'Lively', 'Patio Views'],
     ),
     Restaurant(
-      id: 'hou-5',
+      id: 'hou-14',
       cityId: 'houston',
-      name: 'Le Jardinier',
-      cuisine: 'French',
+      name: 'Top Sushi',
+      cuisine: 'Japanese (Sushi)',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Vegetable-forward modern French inside the'
-          ' MFAH. Michelin-starred, from chef Alain'
-          ' Verzeroli.',
-      rank: 5,
-      voteCount: 1876,
-      priceLevel: 4,
-      locations: [
-        RestaurantLocation(
-          name: 'Museum District',
-          address:
-              'Museum of Fine Arts (Kinder Building),'
-              ' 5500 Main St, Ste 122, Houston, TX 77004',
-        ),
-      ],
-      insiderTip:
-          'Pair lunch with the museum. Patio seats'
-          ' overlook the sculpture garden.',
-      whatToOrder:
-          'The seasonal tasting menu; the burrata and'
-          ' Ora King salmon are standouts.',
-      vibeTags: ['Date Night', 'Chef-Driven', 'Clean Vibes'],
-    ),
-    Restaurant(
-      id: 'hou-6',
-      cityId: 'houston',
-      name: "Dona Leti's",
-      cuisine: 'Mexican',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'H-Mex done big. Family-owned, named for the'
-          " owners' late mother, famous for quesabirria"
-          ' tacos and massive portions.',
-      rank: 6,
-      voteCount: 1654,
-      locations: [
-        RestaurantLocation(
-          name: 'Southwest Houston',
-          address:
-              '10425 S Post Oak Rd, Houston, TX 77053',
-        ),
-      ],
-      insiderTip:
-          'Portions are huge. Come hungry or plan to'
-          ' share.',
-      whatToOrder:
-          'Quesabirria tacos with consome, and a'
-          ' strawberry horchata.',
-      vibeTags: ['Big Portions', 'Family-Owned', 'Flavor Bomb'],
-    ),
-    Restaurant(
-      id: 'hou-7',
-      cityId: 'houston',
-      name: 'Hidden Omakase',
-      cuisine: 'Japanese',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'A hidden, dark 18-seat sushi counter sealed off'
-          ' from the strip mall outside. Chef-led omakase,'
-          ' BYOB.',
+          'Creative sushi rolls and fresh-cut fish on'
+          ' Westheimer. Known for signature rolls with'
+          ' bold flavor combos.',
       rank: 7,
-      voteCount: 1432,
-      priceLevel: 4,
+      voteCount: 0,
+      priceLevel: 2,
+      locations: [
+        RestaurantLocation(
+          name: 'Westheimer',
+          address:
+              '8401 Westheimer Rd, Ste 160,'
+              ' Houston, TX 77063',
+        ),
+      ],
+      vibeTags: ['Date Night', 'Group Friendly', 'Good Drinks'],
+    ),
+    Restaurant(
+      id: 'hou-15',
+      cityId: 'houston',
+      name: 'The Better Box',
+      cuisine: 'Comfort Food (Food Truck)',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'A food truck turning out loaded comfort-food'
+          ' boxes that punch above their price point.',
+      rank: 8,
+      voteCount: 0,
+      priceLevel: 1,
+      locations: [
+        RestaurantLocation(
+          name: 'Cypress Creek',
+          address:
+              '6560 Cypress Creek Pkwy,'
+              ' Houston, TX 77069',
+        ),
+      ],
+      vibeTags: ['Comfort Food', 'Cash Friendly', 'Hidden Gem'],
+      isMobileVenue: true,
+    ),
+    Restaurant(
+      id: 'hou-16',
+      cityId: 'houston',
+      name: 'Joey Uptown',
+      cuisine: 'Globally-Inspired New American',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'A 10,000-square-foot Galleria restaurant with'
+          ' fire-torched sushi, steaks, and a temperature-'
+          'controlled patio. Part of the JOEY chain.',
+      rank: 9,
+      voteCount: 0,
+      priceLevel: 3,
       locations: [
         RestaurantLocation(
           name: 'Galleria / Uptown',
           address:
-              '5353 W Alabama St, Ste 102,'
+              '5045 Westheimer Rd, Ste X01,'
               ' Houston, TX 77056',
         ),
       ],
-      insiderTip:
-          'Reservations are Resy-only and go fast.'
-          r' BYOB with a $20 corkage.',
-      whatToOrder:
-          'The omakase. The uni and the wagyu larb hand'
-          ' roll are standouts.',
-      vibeTags: ['Special Occasion', 'Omakase', 'Hidden Gem'],
+      vibeTags: ['Date Night', 'Group Friendly', 'Trendy'],
     ),
     Restaurant(
-      id: 'hou-8',
+      id: 'hou-17',
       cityId: 'houston',
-      name: 'Tatemo',
-      cuisine: 'Modern Mexican (Masa Tasting Menu)',
+      name: 'Lotus Seafood',
+      cuisine: 'Cajun Seafood',
       imageUrl: 'placeholder://restaurant',
       description:
-          "Houston's Michelin-starred Mexican tasting-menu"
-          ' spot, built entirely around heirloom corn and'
-          ' house-nixtamalized masa. Chef Emmanuel Chavez.',
-      rank: 8,
-      voteCount: 1298,
-      priceLevel: 4,
-      locations: [
-        RestaurantLocation(
-          name: 'Spring Branch',
-          address: '4740 Dacoma St, Houston, TX 77092',
-        ),
-      ],
-      insiderTip:
-          'Tasting-menu only, around 13 seats, Thursday'
-          ' to Saturday. Reservations release a few weeks'
-          ' out and vanish fast.',
-      whatToOrder:
-          'The multi-course masa tasting menu'
-          ' (tasting-menu only). BYOB.',
-      vibeTags: ['Hidden Gem', 'Date Night', 'Chef-Driven'],
-    ),
-    Restaurant(
-      id: 'hou-9',
-      cityId: 'houston',
-      name: 'Corkscrew BBQ',
-      cuisine: 'BBQ',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Pitmaster Will Buckman cooks over all-wood'
-          ' fires. Michelin-starred in 2024. Get there'
-          ' early or eat somewhere else.',
-      rank: 9,
-      voteCount: 1156,
-      locations: [
-        RestaurantLocation(
-          name: 'Spring',
-          address: '26608 Keith St, Spring, TX 77373',
-        ),
-      ],
-      insiderTip:
-          'Arrive by 10 AM on weekends or the brisket'
-          ' is gone.',
-      whatToOrder:
-          'Brisket, beef ribs, and the garlic sausage'
-          ' links.',
-      vibeTags: ['Worth the Drive', 'No Frills', 'Cash Friendly'],
-    ),
-    Restaurant(
-      id: 'hou-10',
-      cityId: 'houston',
-      name: 'Taste Bar + Kitchen',
-      cuisine: 'Southern Comfort + Cocktails',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Globally-spun Southern comfort from chef Don'
-          ' Bowie. An over-the-top chicken-and-waffles'
-          ' menu, craft cocktails, and live entertainment.',
+          'Houston-born Cajun seafood by the pound since'
+          ' 2006. Five locations. Famous for the Crack'
+          ' Sauce.',
       rank: 10,
-      voteCount: 1087,
-      priceLevel: 3,
+      voteCount: 0,
+      priceLevel: 2,
       locations: [
         RestaurantLocation(
-          name: 'Midtown',
-          address: '3015 Bagby St, Houston, TX 77006',
+          name: 'Southwest Freeway',
+          address:
+              '9531 SW Fwy, Houston, TX 77074',
         ),
       ],
-      insiderTip:
-          'Live music, comedy, and karaoke through the'
-          ' week. Reserve, it gets busy.',
-      whatToOrder:
-          'Chicken and waffles (try the chicken-fried'
-          ' lobster version) and a craft cocktail.',
-      vibeTags: ['Lively', 'Group Friendly', 'Comfort Food'],
+      vibeTags: ['Flavor Bomb', 'Group Friendly', 'Casual'],
     ),
 
     // Atlanta

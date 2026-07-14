@@ -159,7 +159,7 @@ void main() {
     });
 
     test('cross-user isolation: B never sees A saves', () async {
-      repo.seedSaves('user-a', ['hou-1', 'hou-2']);
+      repo.seedSaves('user-a', ['hou-1', 'hou-11']);
       repo.seedSaves('user-b', ['nyc-1']);
 
       final provider = SavedProvider(
@@ -184,7 +184,7 @@ void main() {
 
       expect(provider.isSaved('nyc-1'), isTrue);
       expect(provider.isSaved('hou-1'), isFalse);
-      expect(provider.isSaved('hou-2'), isFalse);
+      expect(provider.isSaved('hou-11'), isFalse);
       expect(provider.savedCount, 1);
 
       provider.dispose();
@@ -321,7 +321,7 @@ void main() {
 
       expect(provider.savedCount, 2);
       expect(
-        provider.savedCountFor({'hou-1', 'hou-2'}),
+        provider.savedCountFor({'hou-1', 'hou-11'}),
         1,
       );
 
@@ -340,7 +340,7 @@ void main() {
       await _settle();
       expect(provider.savedCount, 3);
 
-      provider.pruneOrphans({'hou-1', 'hou-2', 'nyc-1'});
+      provider.pruneOrphans({'hou-1', 'hou-11', 'nyc-1'});
 
       expect(provider.savedCount, 1);
       expect(provider.isSaved('hou-1'), isTrue);
