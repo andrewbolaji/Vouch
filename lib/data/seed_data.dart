@@ -694,7 +694,7 @@ class SeedData {
           'Cash only, no menu needed.'
           ' Porterhouse for two since 1887.',
       rank: 1,
-      voteCount: 3241,
+      voteCount: 0,
       priceLevel: 4,
       locations: [
         RestaurantLocation(
@@ -726,7 +726,7 @@ class SeedData {
           'Dom DeMarco has been hand-cutting basil on'
           ' every slice since 1965.',
       rank: 2,
-      voteCount: 2876,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Midwood',
@@ -754,7 +754,7 @@ class SeedData {
           'Proof that a taco stand in a food hall can'
           ' be world-class.',
       rank: 3,
-      voteCount: 2654,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -786,7 +786,7 @@ class SeedData {
           'Do not lose your ticket. The pastrami has'
           ' been perfect since 1888.',
       rank: 4,
-      voteCount: 2432,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Lower East Side',
@@ -816,7 +816,7 @@ class SeedData {
           'Hand-pulled noodles and cumin lamb that built'
           ' an empire from a basement.',
       rank: 5,
-      voteCount: 2198,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -845,7 +845,7 @@ class SeedData {
       description:
           'The quintessential New York slice.',
       rank: 6,
-      voteCount: 1987,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -871,7 +871,7 @@ class SeedData {
           'Smoked fish and bagels, family-run'
           ' since 1914.',
       rank: 7,
-      voteCount: 1765,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Lower East Side',
@@ -902,7 +902,7 @@ class SeedData {
           'Jiro Dreams of Sushi graduate.'
           ' Omakase perfection.',
       rank: 8,
-      voteCount: 1543,
+      voteCount: 0,
       priceLevel: 4,
       locations: [
         RestaurantLocation(
@@ -932,7 +932,7 @@ class SeedData {
           'BYOB, cash only, no slices.'
           ' The pizza speaks for itself.',
       rank: 9,
-      voteCount: 1321,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Carroll Gardens',
@@ -961,7 +961,7 @@ class SeedData {
           'Cookies the size of your fist.'
           ' Gooey center, crispy outside.',
       rank: 10,
-      voteCount: 1198,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -994,7 +994,7 @@ class SeedData {
           'Chef Wes Avila turned a taco cart into an'
           ' LA institution.',
       rank: 1,
-      voteCount: 2567,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Arts District',
@@ -1024,7 +1024,7 @@ class SeedData {
           'Nashville hot chicken that makes Angelenos'
           ' wait 3 hours happily.',
       rank: 2,
-      voteCount: 2345,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Chinatown',
@@ -1054,7 +1054,7 @@ class SeedData {
           'Industrial-chic Italian that still requires'
           ' booking weeks out.',
       rank: 3,
-      voteCount: 2123,
+      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1086,7 +1086,7 @@ class SeedData {
           'Southern Thai food that does not compromise'
           ' on spice. Jonathan Gold approved.',
       rank: 4,
-      voteCount: 1876,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Thai Town',
@@ -1117,7 +1117,7 @@ class SeedData {
           "Kazunori Nozawa's approachable omakase."
           ' "Trust Me" is the only order.',
       rank: 5,
-      voteCount: 1654,
+      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1146,7 +1146,7 @@ class SeedData {
           'The #19 pastrami sandwich might be better'
           " than Katz's. We said it.",
       rank: 6,
-      voteCount: 1432,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Westlake',
@@ -1175,7 +1175,7 @@ class SeedData {
           'A taco truck that won a James Beard Award.'
           ' Crispy shrimp tacos.',
       rank: 7,
-      voteCount: 1298,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1207,7 +1207,7 @@ class SeedData {
           "Ludo Lefebvre's no-reservations French"
           ' bistro. 25 seats.',
       rank: 8,
-      voteCount: 1156,
+      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1240,7 +1240,7 @@ class SeedData {
           'Silver Lake Taiwanese that makes dan dan'
           ' noodles worth crossing town for.',
       rank: 9,
-      voteCount: 1034,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Silver Lake',
@@ -1271,7 +1271,7 @@ class SeedData {
           'Cuban bakery chain where the cheese rolls'
           ' cause actual stampedes.',
       rank: 10,
-      voteCount: 987,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1304,7 +1304,7 @@ class SeedData {
           "Grant Achatz's three-Michelin-star temple of"
           ' creativity. Dining as performance art.',
       rank: 1,
-      voteCount: 2987,
+      voteCount: 0,
       priceLevel: 4,
       locations: [
         RestaurantLocation(
@@ -1336,7 +1336,7 @@ class SeedData {
           'Chicago institution. Italian beef and hot'
           ' dogs that define the city.',
       rank: 2,
-      voteCount: 2765,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1367,7 +1367,7 @@ class SeedData {
           'Deep dish done right. Butter crust, sausage'
           ' patty, chunky tomato.',
       rank: 3,
-      voteCount: 2543,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Multiple locations',
@@ -1396,7 +1396,7 @@ class SeedData {
           "Stephanie Izard's flagship. Bold flavors,"
           ' every dish fights for your attention.',
       rank: 4,
-      voteCount: 2321,
+      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1428,7 +1428,7 @@ class SeedData {
           'Texas-style BBQ in Chicago that Texans'
           ' actually respect.',
       rank: 5,
-      voteCount: 2098,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Irving Park',
@@ -1459,7 +1459,7 @@ class SeedData {
           'The burger that launched a thousand wait'
           ' lists. Single or double, both legendary.',
       rank: 6,
-      voteCount: 1876,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'West Loop',
@@ -1489,7 +1489,7 @@ class SeedData {
           'Retro Tex-Mex diner with vinyl playing'
           ' and mezcal flowing.',
       rank: 7,
-      voteCount: 1654,
+      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Wicker Park',
@@ -1520,7 +1520,7 @@ class SeedData {
           'Maxwell Street Polish sausage stand, open'
           ' since 1939. Cash, no frills.',
       rank: 8,
-      voteCount: 1432,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1551,7 +1551,7 @@ class SeedData {
           'First Filipino restaurant to earn a Michelin'
           ' star. Bakery by day, tasting menu by night.',
       rank: 9,
-      voteCount: 1287,
+      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1584,7 +1584,7 @@ class SeedData {
           'Old-school Chicago diner. Greek owners,'
           ' massive portions, bottomless coffee.',
       rank: 10,
-      voteCount: 1098,
+      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(

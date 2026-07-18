@@ -47,7 +47,7 @@ Key deferrals:
 
 - **The writeup must not do work the diff didn't.** A confident, well-organized writeup can make work look more thorough than it was. Senior reviewers spot this immediately. Audits should report counts and file references, not assertions. Silence on a deliverable is read as "didn't run."
 
-- **Planning enumerates deliverables; adversarial passes catch edge cases.** When MembershipProvider tests were missed in initial planning and caught only in the adversarial pass, that was a planning failure, not a process success. Adversarial passes are the safety net, not the primary detector.
+- **Planning lists deliverables; review passes catch edge cases.** When MembershipProvider tests were missed in initial planning and caught only in the review pass, that was a planning failure, not a process success. Review passes are the safety net, not the primary detector.
 
 - **Frame diversity is the technique, not pass count.** One taste-frame pass plus one operational-frame pass catches different bugs than two taste-frame passes. The pre-launch security audit on Vouch's paywall added the third frame. All three frames are now part of the standard process.
 

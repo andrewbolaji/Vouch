@@ -40,7 +40,7 @@ Architectural and product decisions with reasoning. Future-you reads this file a
 | 2026-05-01 | Suggestion rate limit: counter doc + transaction, not Cloud Function gate | Faster (no HTTP call latency). Atomic read-check-write in standard Firestore transaction. Server-enforced. Client-side cap is UX only. |
 | 2026-05-01 | MembershipProvider.initialTier constructor parameter for testability | Avoids mock purchase delays in tests. Defaults to MembershipTier.free. Zero production behavior change. Used by test helper buildTestApp. |
 | 2026-05-01 | Comment ID via millisecondsSinceEpoch (seed data only) | Acceptable for local seed data. Firestore will use auto-generated IDs when wired. |
-| 2026-05-07 | Framework files stored in docs/ | AI_BUILD_FRAMEWORK.md, BLOCK_TEMPLATES.md, REVIEW_FRAMEWORK.md, DECISIONS_AND_WISHLIST_DISCIPLINE.md organized under docs/ for separation from source. |
+| 2026-05-07 | Internal planning notes stored in docs/ | Planning, review, and process notes organized under docs/ for separation from source. |
 | 2026-05-07 | Concurrent sessions: allow | Standard consumer-app expectation. Firebase handles natively. No work needed. |
 | 2026-05-07 | Password reset: defer to Firebase default web handler for v1 | In-app deep link handling requires go_router, which is itself deferred. Pinned in WISHLIST.md v1.1 with trigger: "When go_router ships." |
 | 2026-05-07 | Account deletion: v1 scope, non-negotiable | Apple App Store guideline 5.1.1(v) requires it. Initial milestone ships auth-level deletion (FirebaseAuth.currentUser.delete()). Cloud Function for Firestore user data cleanup ships when Firestore data exists. Profile menu entry with confirmation modal. |

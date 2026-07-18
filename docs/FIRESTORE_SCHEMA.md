@@ -654,7 +654,7 @@ is final:
 
 ---
 
-## Security adversarial review
+## Security review
 
 *"You are a security auditor reviewing this schema
 before launch. What's exploitable through reads or
