@@ -49,21 +49,21 @@ class AuthService extends ChangeNotifier {
     fb.FirebaseAuth? firebaseAuth,
     SecureStorageService? secureStorage,
     AnalyticsService? analyticsService,
-  })  : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
-        _secureStorage = secureStorage ?? SecureStorageService(),
-        _analyticsService = analyticsService,
-        _authSub = (firebaseAuth ?? fb.FirebaseAuth.instance)
-            .authStateChanges()
-            .listen(null) {
+  }) : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
+       _secureStorage = secureStorage ?? SecureStorageService(),
+       _analyticsService = analyticsService,
+       _authSub = (firebaseAuth ?? fb.FirebaseAuth.instance)
+           .authStateChanges()
+           .listen(null) {
     _authSub?.onData(_onAuthStateChanged);
   }
 
   /// Test-only constructor: skips Firebase, sets initial state directly.
   AuthService.mock({AuthUser? initialUser})
-      : _firebaseAuth = null,
-        _secureStorage = null,
-        _analyticsService = null,
-        _authSub = null {
+    : _firebaseAuth = null,
+      _secureStorage = null,
+      _analyticsService = null,
+      _authSub = null {
     _currentUser = initialUser;
   }
 
@@ -187,8 +187,11 @@ class AuthService extends ChangeNotifier {
           .timeout(_authTimeout, onTimeout: _onTimeout);
       _analyticsService?.logSignIn(method: 'email');
     } on fb.FirebaseAuthException catch (e) {
-      _log('email', 'FirebaseAuthException: '
-          'code=${e.code}, message=${e.message}');
+      _log(
+        'email',
+        'FirebaseAuthException: '
+            'code=${e.code}, message=${e.message}',
+      );
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
@@ -226,8 +229,11 @@ class AuthService extends ChangeNotifier {
       }
       _analyticsService?.logSignUp(method: 'email');
     } on fb.FirebaseAuthException catch (e) {
-      _log('signup', 'FirebaseAuthException: '
-          'code=${e.code}, message=${e.message}');
+      _log(
+        'signup',
+        'FirebaseAuthException: '
+            'code=${e.code}, message=${e.message}',
+      );
       _setLoading(false);
       throw _mapAuthException(e);
     } on TimeoutException {
@@ -250,22 +256,26 @@ class AuthService extends ChangeNotifier {
   Future<void> signInWithGoogle() async {
     _setLoading(true);
     try {
-      final googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
+          .authenticate();
       if (googleUser == null) {
         // User cancelled the native picker.
         _setLoading(false);
         return;
       }
-      final googleAuth = await googleUser.authentication;
+      final googleAuth = googleUser.authentication;
       final credential = fb.GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
-        accessToken: googleAuth.accessToken,
+        accessToken: googleAuth.idToken,
       );
       await _firebaseAuth!.signInWithCredential(credential);
       _analyticsService?.logSignIn(method: 'google');
     } on fb.FirebaseAuthException catch (e) {
-      _log('google', 'FirebaseAuthException: '
-          'code=${e.code}, message=${e.message}');
+      _log(
+        'google',
+        'FirebaseAuthException: '
+            'code=${e.code}, message=${e.message}',
+      );
       _setLoading(false);
       throw _mapAuthException(e);
     } on Exception catch (e) {
@@ -301,12 +311,18 @@ class AuthService extends ChangeNotifier {
         // User cancelled the native sheet.
         return;
       }
-      _log('apple', 'AppleAuthException: code=${e.code}, '
-          'message=${e.message}');
+      _log(
+        'apple',
+        'AppleAuthException: code=${e.code}, '
+            'message=${e.message}',
+      );
       throw AuthException.unknown;
     } on fb.FirebaseAuthException catch (e) {
-      _log('apple', 'FirebaseAuthException: '
-          'code=${e.code}, message=${e.message}');
+      _log(
+        'apple',
+        'FirebaseAuthException: '
+            'code=${e.code}, message=${e.message}',
+      );
       _setLoading(false);
       throw _mapAuthException(e);
     } on Exception catch (e) {
@@ -362,9 +378,10 @@ class AuthService extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      await _firebaseAuth.currentUser!
-          .delete()
-          .timeout(_authTimeout, onTimeout: _onTimeout);
+      await _firebaseAuth.currentUser!.delete().timeout(
+        _authTimeout,
+        onTimeout: _onTimeout,
+      );
       _analyticsService?.logAccountDelete();
       await _clearPersistedData();
     } on fb.FirebaseAuthException catch (e) {
@@ -415,19 +432,20 @@ class AuthService extends ChangeNotifier {
     final user = _firebaseAuth!.currentUser;
     if (user == null) throw AuthException.accountDeletionFailed;
 
-    final isGoogle =
-        user.providerData.any((p) => p.providerId == 'google.com');
-    final isApple =
-        user.providerData.any((p) => p.providerId == 'apple.com');
+    final isGoogle = user.providerData.any((p) => p.providerId == 'google.com');
+    final isApple = user.providerData.any((p) => p.providerId == 'apple.com');
 
     try {
       if (isGoogle) {
-        final googleUser = await GoogleSignIn().signIn();
+        final googleSignIn = await GoogleSignIn.instance.initialize();
+
+        final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
+            .authenticate();
         if (googleUser == null) throw AuthException.accountDeletionFailed;
         final googleAuth = await googleUser.authentication;
         final credential = fb.GoogleAuthProvider.credential(
           idToken: googleAuth.idToken,
-          accessToken: googleAuth.accessToken,
+          accessToken: googleAuth.idToken,
         );
         await user.reauthenticateWithCredential(credential);
       } else if (isApple) {
@@ -469,9 +487,10 @@ class AuthService extends ChangeNotifier {
   /// Sends a verification email to the current user.
   Future<void> sendVerificationEmail() async {
     try {
-      await _firebaseAuth!.currentUser
-          ?.sendEmailVerification()
-          .timeout(_authTimeout, onTimeout: _onTimeout);
+      await _firebaseAuth!.currentUser?.sendEmailVerification().timeout(
+        _authTimeout,
+        onTimeout: _onTimeout,
+      );
     } on fb.FirebaseAuthException catch (e) {
       throw _mapAuthException(e);
     } on TimeoutException {
@@ -483,9 +502,10 @@ class AuthService extends ChangeNotifier {
   /// Returns true if the user's email is now verified.
   Future<bool> reloadAndCheckVerified() async {
     try {
-      await _firebaseAuth!.currentUser
-          ?.reload()
-          .timeout(_authTimeout, onTimeout: _onTimeout);
+      await _firebaseAuth!.currentUser?.reload().timeout(
+        _authTimeout,
+        onTimeout: _onTimeout,
+      );
       final user = _firebaseAuth.currentUser;
       if (user != null) {
         _currentUser = _mapFirebaseUser(user);
@@ -516,8 +536,7 @@ class AuthService extends ChangeNotifier {
   Future<String?> getMembershipTierClaim() async {
     if (_firebaseAuth == null) return null;
     try {
-      final result =
-          await _firebaseAuth.currentUser?.getIdTokenResult(true);
+      final result = await _firebaseAuth.currentUser?.getIdTokenResult(true);
       return result?.claims?['membershipTier'] as String?;
     } on Exception catch (e, stack) {
       _log('claims', 'failed to get membership claim: $e');
@@ -574,8 +593,8 @@ class AuthService extends ChangeNotifier {
 
   AppException _mapAuthException(fb.FirebaseAuthException e) {
     return switch (e.code) {
-      'wrong-password' || 'invalid-credential' =>
-        AuthException.invalidCredentials,
+      'wrong-password' ||
+      'invalid-credential' => AuthException.invalidCredentials,
       'user-not-found' => AuthException.userNotFound,
       'email-already-in-use' => AuthException.emailAlreadyInUse,
       'weak-password' => AuthException.weakPassword,

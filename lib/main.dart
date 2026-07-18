@@ -26,11 +26,10 @@ void main() async {
 
   // App Check: monitor-only (enforcement is a separate console step).
   await FirebaseAppCheck.instance.activate(
-    // ignore: deprecated_member_use, providerApple not yet available
     appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
-    // ignore: deprecated_member_use, providerAndroid not yet available
-    androidProvider:
-        kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    androidProvider: kDebugMode
+        ? AndroidProvider.debug
+        : AndroidProvider.playIntegrity,
   );
 
   // Crashlytics
