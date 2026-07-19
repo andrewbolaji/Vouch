@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vouch/models/models.dart';
@@ -9,7 +10,12 @@ import 'package:vouch/services/revenue_cat_service.dart';
 import 'package:vouch/theme/app_theme.dart';
 
 class UpgradeScreen extends StatefulWidget {
-  const UpgradeScreen({super.key});
+  const UpgradeScreen({
+    super.key,
+    @visibleForTesting this.priceLoader,
+  });
+
+  final Future<Map<String, String>> Function()? priceLoader;
 
   @override
   State<UpgradeScreen> createState() => _UpgradeScreenState();
@@ -18,6 +24,7 @@ class UpgradeScreen extends StatefulWidget {
 class _UpgradeScreenState extends State<UpgradeScreen> {
   Map<String, String>? _prices;
   bool _loading = true;
+  bool _priceError = false;
   bool _purchasing = false;
 
   @override
@@ -27,19 +34,55 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   }
 
   Future<void> _loadPrices() async {
-    final prices = await RevenueCatService.getLocalizedPrices();
-    if (mounted) {
+    setState(() {
+      _loading = true;
+      _priceError = false;
+    });
+
+    try {
+      final loader =
+          widget.priceLoader ?? RevenueCatService.getLocalizedPrices;
+      final prices = await loader();
+      if (!mounted) return;
+
+      if (prices.isEmpty) {
+        setState(() {
+          _priceError = true;
+          _loading = false;
+        });
+        return;
+      }
+
       setState(() {
         _prices = prices;
+        _loading = false;
+      });
+    } on Exception catch (e, stack) {
+      if (!mounted) return;
+      _recordError('getLocalizedPrices', e, stack);
+      setState(() {
+        _priceError = true;
         _loading = false;
       });
     }
   }
 
-  String _priceFor(MembershipTier tier, {required bool yearly}) {
-    if (_prices == null || _prices!.isEmpty) return '...';
+  static void _recordError(String reason, Object error, StackTrace stack) {
+    try {
+      unawaited(FirebaseCrashlytics.instance.recordError(
+        error,
+        stack,
+        reason: 'UpgradeScreen: $reason',
+      ));
+    } on Exception catch (_) {
+      // Crashlytics unavailable (unit tests without Firebase).
+    }
+  }
+
+  String? _priceFor(MembershipTier tier, {required bool yearly}) {
+    if (_prices == null || _prices!.isEmpty) return null;
     final productId = RevenueCatConfig.productIdFor(tier, yearly: yearly);
-    return _prices![productId] ?? '...';
+    return _prices![productId];
   }
 
   @override
@@ -123,6 +166,40 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
               ),
             ),
             const SizedBox(height: AppTheme.spacingLg),
+            if (_priceError) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppTheme.spacingMd),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBackground,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  border: Border.all(
+                    color: AppTheme.borderColor,
+                    width: AppTheme.borderInkWidth,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Could not load prices. Check your '
+                      'connection and try again.',
+                      style: AppTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppTheme.spacingSm),
+                    TextButton(
+                      onPressed: _loadPrices,
+                      child: Text(
+                        'Retry',
+                        style: AppTheme.buttonText.copyWith(
+                          color: AppTheme.accent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else
             // Tier cards
             ...membershipTiers.skip(1).map((tier) {
               final isCurrentTier = membership.currentTier == tier.tier;
@@ -154,12 +231,22 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                         Expanded(
                           child: Text(tier.name, style: AppTheme.headlineLarge),
                         ),
-                        Text(
-                          '$price$period',
-                          style: AppTheme.headlineMedium.copyWith(
-                            color: AppTheme.goldInk,
+                        if (_loading)
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppTheme.goldInk,
+                            ),
+                          )
+                        else if (price != null)
+                          Text(
+                            '$price$period',
+                            style: AppTheme.headlineMedium.copyWith(
+                              color: AppTheme.goldInk,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: AppTheme.spacingMd),
