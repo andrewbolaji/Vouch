@@ -44,6 +44,14 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 
+// Tear the shared Firebase app down exactly once, after every describe
+// block has finished. A root-level afterAll runs after all describe-level
+// afterAll hooks, so no single block's teardown can delete the app that
+// later blocks (e.g. the membership webhook suite) still depend on.
+afterAll(async () => {
+  await Promise.all(getApps().map((app) => deleteApp(app)));
+});
+
 /** Clears all Firestore data between tests. */
 async function clearFirestore() {
   const collections = await db.listCollections();
@@ -83,10 +91,6 @@ describe("Vote aggregation (real function bodies)", () => {
 
   afterAll(async () => {
     await clearFirestore();
-    const apps = getApps();
-    for (const app of apps) {
-      await deleteApp(app);
-    }
   });
 
   test("applyVoteCreated increments voteCount", async () => {

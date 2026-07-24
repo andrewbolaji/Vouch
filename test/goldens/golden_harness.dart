@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
@@ -24,6 +28,26 @@ import 'package:vouch/theme/app_theme.dart';
 Future<void> setUpGoldens() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
+
+  // flutter_cache_manager (used by CachedNetworkImage in RestaurantImage)
+  // calls path_provider to find a cache directory. That platform channel
+  // has no implementation in a headless `flutter test`, so it throws
+  // MissingPluginException. Answer the channel with a real temp directory
+  // so the widget tree renders instead of crashing.
+  final cacheDir = Directory.systemTemp.createTempSync('vouch_goldens');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/path_provider'),
+    (methodCall) async => cacheDir.path,
+  );
+
+  // flutter_cache_manager keeps cache metadata in a sqflite database, whose
+  // platform channel is absent headless. Back it with the FFI factory (real
+  // SQLite, no plugin) so the cache layer initializes instead of throwing
+  // "databaseFactory not initialized". The cache starts empty, so the network
+  // fetch returns headless and RestaurantImage renders its placeholder.
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
 }
 
 /// Fixed surface size for deterministic golden renders (iPhone 14 Pro).
