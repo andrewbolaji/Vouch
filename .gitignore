@@ -50,8 +50,12 @@ macos/Pods/
 
 # Firebase config (contains project-specific keys)
 lib/firebase_options.dart
-.claude/
 .agents/
+
+# Claude Code project scaffolding is tracked on purpose (CLAUDE.md, settings,
+# agents, commands, hooks). Only per-developer local overrides stay ignored.
+.claude/settings.local.json
+.claude/*.local.json
 
 # Node modules (Cloud Functions, test-rules, scripts)
 **/node_modules/
