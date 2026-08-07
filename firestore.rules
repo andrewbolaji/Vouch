@@ -134,11 +134,19 @@ service cloud.firestore {
       //
       // Client increments after each report submission.
       // Rate-limited to kDailyReportCap (5) per day.
+      //
+      // count must start at 1 and increase by exactly 1 per write,
+      // so a client cannot reset or bank its own daily counter.
       // ---------------------------------------------------
       match /reportCounts/{dateKey} {
         allow read: if isOwner(uid);
-        allow create: if isOwner(uid);
-        allow update: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.date == dateKey
+          && request.resource.data.count == 1;
+        allow update: if isOwner(uid)
+          && request.resource.data.date == dateKey
+          && request.resource.data.count == resource.data.count + 1;
+        allow delete: if false;
       }
     }
 
