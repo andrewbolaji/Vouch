@@ -45,8 +45,6 @@ const List<MembershipInfo> membershipTiers = [
       'Top 10 rankings',
       'Vote and comment',
       'Save restaurants',
-      'Trending tab',
-      'Ad-free',
     ],
   ),
   MembershipInfo(
@@ -58,8 +56,6 @@ const List<MembershipInfo> membershipTiers = [
       'Everything in Locals Pass',
       'Insider "what to order" tips',
       'Insider badge on comments',
-      'Verified visits (2x vote weight)',
-      'Early access to new cities',
     ],
   ),
 ];

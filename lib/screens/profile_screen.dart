@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vouch/config/brand_config.dart';
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/providers/app_state.dart';
@@ -22,7 +23,14 @@ import 'package:vouch/widgets/premium_badge.dart';
 import 'package:vouch/widgets/suggestion_box.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({
+    super.key,
+    @visibleForTesting this.urlLauncher,
+  });
+
+  /// Test only: overrides how the support email link is opened, so
+  /// tests do not need a real platform channel for url_launcher.
+  final Future<bool> Function(Uri url)? urlLauncher;
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +157,7 @@ class ProfileScreen extends StatelessWidget {
             _ProfileMenuItem(
               icon: Icons.info_outline,
               label: 'About',
-              onTap: () => _showAboutDialog(context),
+              onTap: () => _showAboutDialog(context, urlLauncher),
             ),
             if (kDebugMode)
               _ProfileMenuItem(
@@ -459,7 +467,10 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
-  static void _showAboutDialog(BuildContext context) {
+  static void _showAboutDialog(
+    BuildContext context,
+    Future<bool> Function(Uri url)? urlLauncher,
+  ) {
     unawaited(showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -492,7 +503,16 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: AppTheme.spacingLg),
             Text('Version 1.0.0', style: AppTheme.bodySmall),
             const SizedBox(height: AppTheme.spacingSm),
-            Text(BrandConfig.supportEmail, style: AppTheme.bodySmall),
+            InkWell(
+              onTap: () => _openSupportEmail(urlLauncher),
+              child: Text(
+                BrandConfig.supportEmail,
+                style: AppTheme.bodySmall.copyWith(
+                  color: AppTheme.accent,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
           ],
         ),
         actions: [
@@ -506,6 +526,19 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
     ));
+  }
+
+  static Future<void> _openSupportEmail(
+    Future<bool> Function(Uri url)? urlLauncher,
+  ) async {
+    final uri = Uri(scheme: 'mailto', path: BrandConfig.supportEmail);
+    final launcher = urlLauncher ??
+        (u) => launchUrl(u, mode: LaunchMode.externalApplication);
+    try {
+      await launcher(uri);
+    } on Exception catch (_) {
+      // Best effort: nothing to recover to if no mail client can open.
+    }
   }
 }
 

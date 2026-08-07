@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vouch/config/brand_config.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
@@ -164,6 +165,39 @@ void main() {
         expect(find.text('No Email User'), findsOneWidget);
         // No email line should be rendered
         expect(find.textContaining('@'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the support email in About opens a mailto link',
+      (tester) async {
+        final launchedUrls = <Uri>[];
+
+        await tester.pumpWidget(
+          buildTestApp(
+            ProfileScreen(
+              urlLauncher: (uri) async {
+                launchedUrls.add(uri);
+                return true;
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle(
+          const Duration(milliseconds: 700),
+        );
+
+        await tester.tap(find.text('About'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(BrandConfig.supportEmail), findsOneWidget);
+
+        await tester.tap(find.text(BrandConfig.supportEmail));
+        await tester.pumpAndSettle();
+
+        expect(launchedUrls, [
+          Uri(scheme: 'mailto', path: BrandConfig.supportEmail),
+        ]);
       },
     );
   });

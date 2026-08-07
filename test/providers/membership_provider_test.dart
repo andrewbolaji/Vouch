@@ -25,7 +25,6 @@ void main() {
       expect(provider.canSaveRestaurants, isFalse);
       expect(provider.canViewInsiderTips, isFalse);
       expect(provider.hasInsiderBadge, isFalse);
-      expect(provider.isAdFree, isFalse);
     });
 
     test('localsPass tier permissions', () async {
@@ -36,7 +35,6 @@ void main() {
       expect(provider.canSaveRestaurants, isTrue);
       expect(provider.canViewInsiderTips, isFalse);
       expect(provider.hasInsiderBadge, isFalse);
-      expect(provider.isAdFree, isTrue);
       expect(provider.tierName, 'Locals Pass');
     });
 
@@ -50,7 +48,6 @@ void main() {
       expect(provider.canSaveRestaurants, isTrue);
       expect(provider.canViewInsiderTips, isTrue);
       expect(provider.hasInsiderBadge, isTrue);
-      expect(provider.isAdFree, isTrue);
       expect(provider.tierName, 'City Insider');
     });
 

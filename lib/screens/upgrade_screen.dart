@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vouch/config/brand_config.dart';
 import 'package:vouch/models/models.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/services/analytics_service.dart';
@@ -13,9 +15,14 @@ class UpgradeScreen extends StatefulWidget {
   const UpgradeScreen({
     super.key,
     @visibleForTesting this.priceLoader,
+    @visibleForTesting this.urlLauncher,
   });
 
   final Future<Map<String, String>> Function()? priceLoader;
+
+  /// Test only: overrides how legal links are opened, so tests do not
+  /// need a real platform channel for url_launcher.
+  final Future<bool> Function(Uri url)? urlLauncher;
 
   @override
   State<UpgradeScreen> createState() => _UpgradeScreenState();
@@ -83,6 +90,19 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
     if (_prices == null || _prices!.isEmpty) return null;
     final productId = RevenueCatConfig.productIdFor(tier, yearly: yearly);
     return _prices![productId];
+  }
+
+  static String _durationLabel({required bool yearly}) =>
+      yearly ? '1 year' : '1 month';
+
+  Future<void> _openLink(Uri uri) async {
+    final launcher = widget.urlLauncher ??
+        (u) => launchUrl(u, mode: LaunchMode.externalApplication);
+    try {
+      await launcher(uri);
+    } on Exception catch (e, stack) {
+      _recordError('openLink', e, stack);
+    }
   }
 
   @override
@@ -207,7 +227,8 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 tier.tier,
                 yearly: membership.isYearlyBilling,
               );
-              final period = membership.isYearlyBilling ? '/year' : '/month';
+              final durationLabel =
+                  _durationLabel(yearly: membership.isYearlyBilling);
 
               return Container(
                 margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
@@ -242,7 +263,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                           )
                         else if (price != null)
                           Text(
-                            '$price$period',
+                            '$price for $durationLabel',
                             style: AppTheme.headlineMedium.copyWith(
                               color: AppTheme.goldInk,
                             ),
@@ -274,7 +295,10 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: isCurrentTier || _loading || _purchasing
+                        onPressed: isCurrentTier ||
+                                _loading ||
+                                _purchasing ||
+                                price == null
                             ? null
                             : () => _handlePurchase(context, tier.tier),
                         style: isCurrentTier
@@ -292,10 +316,61 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                         ),
                       ),
                     ),
+                    if (!isCurrentTier && !_loading && price != null) ...[
+                      const SizedBox(height: AppTheme.spacingXsSm),
+                      Text(
+                        'Free for 7 days. After that, you pay '
+                        '$price for $durationLabel.',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ],
                 ),
               );
             }),
+            const SizedBox(height: AppTheme.spacingSm),
+            Text(
+              'Your subscription renews automatically until you cancel '
+              'it. You can cancel anytime in App Store settings on your '
+              'iPhone.',
+              style: AppTheme.bodySmall.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppTheme.spacingSm),
+            Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () =>
+                        _openLink(Uri.parse(BrandConfig.eulaUrl)),
+                    child: Text(
+                      'Terms of Use',
+                      style: AppTheme.bodySmall.copyWith(
+                        color: AppTheme.accent,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        _openLink(Uri.parse(BrandConfig.privacyPolicyUrl)),
+                    child: Text(
+                      'Privacy Policy',
+                      style: AppTheme.bodySmall.copyWith(
+                        color: AppTheme.accent,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: AppTheme.spacingSm),
             Center(
               child: TextButton(

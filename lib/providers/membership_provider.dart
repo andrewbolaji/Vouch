@@ -62,10 +62,6 @@ class MembershipProvider extends ChangeNotifier {
 
   bool get hasInsiderBadge => _currentTier == MembershipTier.cityInsider;
 
-  bool get isAdFree =>
-      _currentTier == MembershipTier.localsPass ||
-      _currentTier == MembershipTier.cityInsider;
-
   String get tierName {
     switch (_currentTier) {
       case MembershipTier.free:
