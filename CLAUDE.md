@@ -55,6 +55,7 @@ flutter run
 - `flutter analyze` baseline is **0 issues**. Any new issue is a regression. (Before `flutterfire configure` has been run, it reports 4 errors instead, from the missing `firebase_options.dart`.)
 - Goldens are CI-authoritative: baselines are generated on ubuntu-latest by `.github/workflows/update-goldens.yml`, not on a developer machine. Run `flutter test --exclude-tags=golden` locally. macOS renders fonts differently than Linux, so running the golden tests on a Mac produces pixel diffs against the Linux baselines. That diff is expected and is not a regression, it just means the golden run is not meaningful outside CI. `golden_harness.dart` mocks `path_provider` and swaps sqflite for FFI, without which `CachedNetworkImage` widgets crash headless.
 - `functions/package.json` pins `engines.node: 22`, local Node v20. Only `firebase deploy` cares.
+- Swift Package Manager and the UIScene lifecycle migration are declined on purpose (`pubspec.yaml`'s `flutter: config:` block). Both are Flutter tool defaults now, and the first `flutter build ios` after a working Xcode install will migrate the Xcode project to both if nothing stops it, dirtying tracked files and switching build systems the week we ship. CocoaPods works, every plugin supports it, and the UIScene migration is real but not due yet. Don't re-enable either without a deliberate commit and device testing.
 
 ## Definition of done
 

@@ -52,6 +52,12 @@ flutter_launcher_icons:
   remove_alpha_ios: true
 
 flutter:
+  # Declined for now, see CLAUDE.md gotchas. Set here (not just via
+  # `flutter config`) so the decision survives a fresh clone on any
+  # machine, not just this one.
+  config:
+    enable-swift-package-manager: false
+    enable-uiscene-migration: false
   uses-material-design: true
   assets:
     - assets/demo/
