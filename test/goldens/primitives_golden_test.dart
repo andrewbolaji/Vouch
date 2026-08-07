@@ -9,147 +9,161 @@ import 'golden_harness.dart';
 void main() {
   setUpAll(setUpGoldens);
 
-  testWidgets('Golden: rank chips (1 crowned, 2 flame, 4 muted)',
-      (tester) async {
-    await pumpForGolden(
-      tester,
-      Scaffold(
-        backgroundColor: AppTheme.background,
-        body: const Padding(
-          padding: EdgeInsets.all(32),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              RatingPill(rank: 1),
-              RatingPill(rank: 2),
-              RatingPill(rank: 4),
-            ],
+  testWidgets(
+    'Golden: rank chips (1 crowned, 2 flame, 4 muted)',
+    (tester) async {
+      await pumpForGolden(
+        tester,
+        Scaffold(
+          backgroundColor: AppTheme.background,
+          body: const Padding(
+            padding: EdgeInsets.all(32),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                RatingPill(rank: 1),
+                RatingPill(rank: 2),
+                RatingPill(rank: 4),
+              ],
+            ),
           ),
         ),
-      ),
-      size: const Size(400, 120),
-    );
+        size: const Size(400, 120),
+      );
 
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('baselines/rank_chips.png'),
-    );
-  });
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('baselines/rank_chips.png'),
+      );
+    },
+    tags: ['golden'],
+  );
 
-  testWidgets('Golden: rank chips large (detail view)', (tester) async {
-    await pumpForGolden(
-      tester,
-      Scaffold(
-        backgroundColor: AppTheme.background,
-        body: const Padding(
-          padding: EdgeInsets.all(32),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              RatingPill(rank: 1, isLarge: true),
-              RatingPill(rank: 3, isLarge: true),
-              RatingPill(rank: 5, isLarge: true),
-            ],
+  testWidgets(
+    'Golden: rank chips large (detail view)',
+    (tester) async {
+      await pumpForGolden(
+        tester,
+        Scaffold(
+          backgroundColor: AppTheme.background,
+          body: const Padding(
+            padding: EdgeInsets.all(32),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                RatingPill(rank: 1, isLarge: true),
+                RatingPill(rank: 3, isLarge: true),
+                RatingPill(rank: 5, isLarge: true),
+              ],
+            ),
           ),
         ),
-      ),
-      size: const Size(400, 120),
-    );
+        size: const Size(400, 120),
+      );
 
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('baselines/rank_chips_large.png'),
-    );
-  });
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('baselines/rank_chips_large.png'),
+      );
+    },
+    tags: ['golden'],
+  );
 
-  testWidgets('Golden: buttons and premium badge', (tester) async {
-    await pumpForGolden(
-      tester,
-      Scaffold(
-        backgroundColor: AppTheme.background,
-        body: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ElevatedButton(
-                onPressed: () {},
-                style: AppTheme.accentButtonStyle,
-                child: Text(
-                  'Primary button',
-                  style: AppTheme.buttonText.copyWith(
-                    color: AppTheme.onAccent,
+  testWidgets(
+    'Golden: buttons and premium badge',
+    (tester) async {
+      await pumpForGolden(
+        tester,
+        Scaffold(
+          backgroundColor: AppTheme.background,
+          body: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton(
+                  onPressed: () {},
+                  style: AppTheme.accentButtonStyle,
+                  child: Text(
+                    'Primary button',
+                    style: AppTheme.buttonText.copyWith(
+                      color: AppTheme.onAccent,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {},
-                style: AppTheme.secondaryButtonStyle,
-                child: Text('Secondary button', style: AppTheme.buttonText),
-              ),
-              const SizedBox(height: 16),
-              const Row(
-                children: [
-                  PremiumBadge(),
-                  SizedBox(width: 12),
-                  PremiumBadge(label: 'Insider'),
-                  SizedBox(width: 12),
-                  PremiumBadge(label: 'Free'),
-                ],
-              ),
-            ],
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: AppTheme.secondaryButtonStyle,
+                  child: Text('Secondary button', style: AppTheme.buttonText),
+                ),
+                const SizedBox(height: 16),
+                const Row(
+                  children: [
+                    PremiumBadge(),
+                    SizedBox(width: 12),
+                    PremiumBadge(label: 'Insider'),
+                    SizedBox(width: 12),
+                    PremiumBadge(label: 'Free'),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      size: const Size(390, 260),
-    );
+        size: const Size(390, 260),
+      );
 
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('baselines/buttons_and_badges.png'),
-    );
-  });
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('baselines/buttons_and_badges.png'),
+      );
+    },
+    tags: ['golden'],
+  );
 
-  testWidgets('Golden: toggle buttons (Top 5 active, Top 10 active)',
-      (tester) async {
-    await pumpForGolden(
-      tester,
-      Scaffold(
-        backgroundColor: AppTheme.background,
-        body: const Padding(
-          padding: EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  _TogglePill(label: 'Top 5', isActive: true),
-                  SizedBox(width: 8),
-                  _TogglePill(label: 'Top 10', isActive: false),
-                ],
-              ),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  _TogglePill(label: 'Top 5', isActive: false),
-                  SizedBox(width: 8),
-                  _TogglePill(label: 'Top 10', isActive: true),
-                ],
-              ),
-            ],
+  testWidgets(
+    'Golden: toggle buttons (Top 5 active, Top 10 active)',
+    (tester) async {
+      await pumpForGolden(
+        tester,
+        Scaffold(
+          backgroundColor: AppTheme.background,
+          body: const Padding(
+            padding: EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    _TogglePill(label: 'Top 5', isActive: true),
+                    SizedBox(width: 8),
+                    _TogglePill(label: 'Top 10', isActive: false),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    _TogglePill(label: 'Top 5', isActive: false),
+                    SizedBox(width: 8),
+                    _TogglePill(label: 'Top 10', isActive: true),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      size: const Size(390, 180),
-    );
+        size: const Size(390, 180),
+      );
 
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('baselines/toggle_states.png'),
-    );
-  });
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('baselines/toggle_states.png'),
+      );
+    },
+    tags: ['golden'],
+  );
 }
 
 class _TogglePill extends StatelessWidget {

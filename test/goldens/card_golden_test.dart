@@ -30,50 +30,52 @@ void main() {
   setUpAll(setUpGoldens);
 
   testWidgets(
-      'Golden: restaurant cards (rank 1 crowned, rank 2 flame, rank 5 muted)',
-      (tester) async {
-    await pumpForGolden(
-      tester,
-      Scaffold(
-        backgroundColor: AppTheme.background,
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              RestaurantCard(
-                restaurant: _makeRestaurant(
-                  rank: 1,
-                  name: 'Mensho',
-                  voteCount: 2847,
+    'Golden: restaurant cards (rank 1 crowned, rank 2 flame, rank 5 muted)',
+    (tester) async {
+      await pumpForGolden(
+        tester,
+        Scaffold(
+          backgroundColor: AppTheme.background,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                RestaurantCard(
+                  restaurant: _makeRestaurant(
+                    rank: 1,
+                    name: 'Mensho',
+                    voteCount: 2847,
+                  ),
+                  onTap: () {},
                 ),
-                onTap: () {},
-              ),
-              RestaurantCard(
-                restaurant: _makeRestaurant(
-                  rank: 2,
-                  name: 'Tacos Los Brothers',
-                  voteCount: 0,
+                RestaurantCard(
+                  restaurant: _makeRestaurant(
+                    rank: 2,
+                    name: 'Tacos Los Brothers',
+                    voteCount: 0,
+                  ),
+                  onTap: () {},
                 ),
-                onTap: () {},
-              ),
-              RestaurantCard(
-                restaurant: _makeRestaurant(
-                  rank: 5,
-                  name: 'Corkscrew BBQ',
-                  voteCount: 0,
+                RestaurantCard(
+                  restaurant: _makeRestaurant(
+                    rank: 5,
+                    name: 'Corkscrew BBQ',
+                    voteCount: 0,
+                  ),
+                  onTap: () {},
                 ),
-                onTap: () {},
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      size: const Size(420, 480),
-    );
+        size: const Size(420, 480),
+      );
 
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('baselines/restaurant_cards.png'),
-    );
-  });
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('baselines/restaurant_cards.png'),
+      );
+    },
+    tags: ['golden'],
+  );
 }
