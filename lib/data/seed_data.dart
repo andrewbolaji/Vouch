@@ -252,9 +252,9 @@ class SeedData {
       cuisine: 'Globally-Inspired New American',
       imageUrl: 'placeholder://restaurant',
       description:
-          'A 10,000-square-foot Galleria restaurant with'
-          ' fire-torched sushi, steaks, and a temperature-'
-          'controlled patio. Part of the JOEY chain.',
+          'A 10,000-square-foot Galleria restaurant with fire-torched '
+          'sushi, steaks, and a temperature-controlled patio. Part of '
+          'the JOEY chain.',
       rank: 9,
       priceLevel: 3,
       locations: [
