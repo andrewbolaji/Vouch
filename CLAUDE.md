@@ -10,7 +10,7 @@ Every command below was run here, except the last block (needs a Firebase login 
 
 ```bash
 flutter pub get
-flutter test                     # 310 tests, ~40s, no emulator needed
+flutter test --exclude-tags=golden   # 312 tests, ~40s, no emulator needed
 ```
 
 The other suites need the Firestore emulator, hence Java on PATH:
@@ -52,8 +52,8 @@ flutter run
 - `cd functions && npm test` **hangs forever** instead of failing: bare jest blocks connecting to an emulator at `127.0.0.1:8080`. Always use `firebase emulators:exec`.
 - Homebrew's `openjdk` is keg-only, so Java is off PATH. Without the `export PATH` line above, emulator commands die with "Unable to locate a Java Runtime."
 - `lib/firebase_options.dart` is gitignored and generated. Until you run `flutterfire configure`, `flutter analyze` reports 4 errors and the app will not build. `flutter test` still passes, no test imports it.
-- `flutter analyze` baseline is **4 errors, 89 infos** (88 `avoid_redundant_argument_values`). Clean means no new issues above it, not zero.
-- Golden baselines are architecture-specific (regenerated on x86_64, commit `36190cf`), so they can fail on another CPU or Flutter version. `golden_harness.dart` mocks `path_provider` and swaps sqflite for FFI, without which `CachedNetworkImage` widgets crash headless.
+- `flutter analyze` baseline is **0 issues**. Any new issue is a regression. (Before `flutterfire configure` has been run, it reports 4 errors instead, from the missing `firebase_options.dart`.)
+- Goldens are CI-authoritative: baselines are generated on ubuntu-latest by `.github/workflows/update-goldens.yml`, not on a developer machine. Run `flutter test --exclude-tags=golden` locally. macOS renders fonts differently than Linux, so running the golden tests on a Mac produces pixel diffs against the Linux baselines. That diff is expected and is not a regression, it just means the golden run is not meaningful outside CI. `golden_harness.dart` mocks `path_provider` and swaps sqflite for FFI, without which `CachedNetworkImage` widgets crash headless.
 - `functions/package.json` pins `engines.node: 22`, local Node v20. Only `firebase deploy` cares.
 
 ## Definition of done
