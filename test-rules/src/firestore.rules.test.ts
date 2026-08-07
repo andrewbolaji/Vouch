@@ -19,6 +19,7 @@ import {
   getDocs,
   serverTimestamp,
   setLogLevel,
+  Timestamp,
 } from "firebase/firestore";
 
 const PROJECT_ID = "vouch-rules-test";
@@ -377,6 +378,117 @@ describe("votes", () => {
     const db = unauthenticated().firestore();
     await assertFails(
       getDoc(doc(db, "restaurants/hou-1/votes/alice"))
+    );
+  });
+});
+
+// ================================================================
+// VOTE INTEGRITY: one vote per user per restaurant, at server time,
+// never reassigned, spoofed, backdated, or mutated.
+//
+// createdAt == request.time was missing from the votes create rule
+// until this suite exposed it: a client could write any createdAt it
+// wanted, and rank_engine.computeScore trusts that field for decay.
+// Every case below must be DENIED.
+// ================================================================
+
+describe("vote integrity: no double votes, spoofing, backdating, or tampering", () => {
+  beforeEach(async () => {
+    await seedAsAdmin("restaurants/hou-1", {
+      id: "hou-1",
+      rank: 1,
+      voteCount: 100,
+    });
+  });
+
+  test("DENIED: voting twice as the same user on the same restaurant", async () => {
+    await seedAsAdmin("restaurants/hou-1/votes/alice", {
+      createdAt: new Date(),
+      weight: 1,
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        createdAt: serverTimestamp(),
+        weight: 1,
+      })
+    );
+  });
+
+  test("DENIED: writing any weight other than 1", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        createdAt: serverTimestamp(),
+        weight: 5,
+      })
+    );
+  });
+
+  test("DENIED: writing a vote with someone else's userId (their UID)", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/bob"), {
+        createdAt: serverTimestamp(),
+        weight: 1,
+      })
+    );
+  });
+
+  test("DENIED: a past client timestamp instead of request.time", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        createdAt: Timestamp.fromDate(new Date("2020-01-01T00:00:00Z")),
+        weight: 1,
+      })
+    );
+  });
+
+  test("DENIED: a future client timestamp instead of request.time", async () => {
+    const oneYearFromNow = new Date(
+      Date.now() + 365 * 24 * 60 * 60 * 1000
+    );
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        createdAt: Timestamp.fromDate(oneYearFromNow),
+        weight: 1,
+      })
+    );
+  });
+
+  test("DENIED: updating or mutating an existing vote document", async () => {
+    await seedAsAdmin("restaurants/hou-1/votes/alice", {
+      createdAt: new Date(),
+      weight: 1,
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      updateDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        weight: 2,
+      })
+    );
+  });
+
+  test("DENIED: deleting another user's vote", async () => {
+    await seedAsAdmin("restaurants/hou-1/votes/bob", {
+      createdAt: new Date(),
+      weight: 1,
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      deleteDoc(doc(db, "restaurants/hou-1/votes/bob"))
+    );
+  });
+
+  test("DENIED: voting with an unverified email", async () => {
+    const db = unverifiedUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "restaurants/hou-1/votes/alice"), {
+        createdAt: serverTimestamp(),
+        weight: 1,
+      })
     );
   });
 });

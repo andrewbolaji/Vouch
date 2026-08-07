@@ -80,4 +80,30 @@ describe("Rank engine golden set", () => {
 
     expect(actualOrder).toEqual(expectedOrder);
   });
+
+  test("a future-dated vote cannot outrank a fresh vote", () => {
+    // The rule now rejects a client-supplied createdAt at write time
+    // (createdAt == request.time), but this is the second layer: even
+    // a bad row already in the database cannot blow up a score. A
+    // vote dated a year in the future has negative age; without a
+    // clamp, exp(-decayRate * negativeAge) exceeds 1 and the vote is
+    // worth more than a real one cast today.
+    const scored: ScoredRestaurant[] = [
+      {
+        id: "future-vote",
+        name: "Future Vote",
+        voteCount: 1,
+        score: computeScore(votesAtAge(1, -365), now, DEFAULT_HALF_LIFE_DAYS),
+      },
+      {
+        id: "fresh-vote",
+        name: "Fresh Vote",
+        voteCount: 2,
+        score: computeScore(votesAtAge(2, 0), now, DEFAULT_HALF_LIFE_DAYS),
+      },
+    ];
+
+    const actualOrder = assignRanks(scored).map((r) => r.id);
+    expect(actualOrder).toEqual(["fresh-vote", "future-vote"]);
+  });
 });
