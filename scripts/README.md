@@ -50,6 +50,23 @@ created, flagging anything that disagrees. The 163 documents above are
 exactly what this script would have caught, had anyone run it sooner. If it
 reports zero mismatches, believe the script, not this paragraph.
 
+Verified on 2026-08-07: run for real against `majorcitymusteats` (ADC via
+`gcloud auth application-default login`, project explicitly pinned since
+ambient project detection printed `(unknown)` and could not be trusted until
+that was fixed), confirmed it correctly flags a mismatch by seeding one test
+vote with a deliberately wrong `createdAt` and watching the script catch it,
+then confirmed it reports zero against the real, now-empty `votes`
+collection group. Output:
+
+```
+Checking vote document timestamps
+Target project: majorcitymusteats
+
+Total vote documents: 0
+
+Mismatched (missing or drifted more than 60000ms): 0
+```
+
 If you are reviewing git history and find non-zero vote counts or the retired
 seeder, they are synthetic development fixtures, not production data as of
 this writing. Verify that against a live query, not against this document.

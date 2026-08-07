@@ -24,7 +24,18 @@
 
 const admin = require("firebase-admin");
 
-admin.initializeApp();
+// Pinned explicitly rather than left to ambient project detection
+// (GCLOUD_PROJECT, gcloud config, metadata server). An earlier version
+// of this script relied on that detection, printed "(unknown)" for the
+// project, and appeared to succeed with a result of zero documents
+// when it may not have reached any project at all. Trust the number
+// this script prints only if the project name above it is not "(unknown)".
+const PROJECT_ID = "majorcitymusteats";
+
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+  projectId: PROJECT_ID,
+});
 const db = admin.firestore();
 
 const DRIFT_THRESHOLD_MS = 60 * 1000;
