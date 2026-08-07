@@ -10,6 +10,9 @@ analyzer:
     # Cannot be edited; regenerated on every build.
     - '**/*.g.dart'
     - '**/*.freezed.dart'
+    # Build output, including vendored plugin sources pulled in by
+    # Xcode's Swift Package Manager resolution. Not source we own.
+    - 'build/**'
 
 linter:
   rules:
