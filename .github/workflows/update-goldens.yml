@@ -1,0 +1,37 @@
+name: Update goldens
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-goldens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: subosito/flutter-action@v2.23.0
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Regenerate golden baselines
+        run: flutter test --update-goldens --tags=golden
+
+      - name: Commit updated baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add test/goldens/baselines
+          if git diff --staged --quiet; then
+            echo "No golden changes to commit"
+          else
+            git commit -m "Update golden baselines"
+            git push
+          fi
