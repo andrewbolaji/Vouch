@@ -20,6 +20,7 @@ import {
   serverTimestamp,
   setLogLevel,
   Timestamp,
+  increment,
 } from "firebase/firestore";
 
 const PROJECT_ID = "vouch-rules-test";
@@ -1097,6 +1098,115 @@ describe("reports", () => {
     const db = unauthenticated().firestore();
     await assertFails(
       addDoc(collection(db, "reports"), validReport)
+    );
+  });
+});
+
+// ================================================================
+// REPORT COUNTS INTEGRITY: a client can move its own daily counter
+// forward by exactly 1 per report, and cannot reset or bank it.
+//
+// count and date had no validation at all until this suite found
+// it: a user could set count to 0 to reset their own report rate
+// limit, or to a large negative number to bank unlimited future
+// reports. Every adversarial case below must be DENIED; the
+// legitimate increment path (the one report_repository.dart
+// actually uses) must still succeed.
+// ================================================================
+
+describe("reportCounts integrity: no resetting or banking your own rate limit", () => {
+  test("user can create today's counter at count 1", async () => {
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(db, "users/alice/reportCounts/2026-05-26"),
+        {count: increment(1), date: "2026-05-26"},
+        {merge: true}
+      )
+    );
+  });
+
+  test("user can increment an existing counter by exactly 1", async () => {
+    await seedAsAdmin("users/alice/reportCounts/2026-05-26", {
+      count: 1,
+      date: "2026-05-26",
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(db, "users/alice/reportCounts/2026-05-26"),
+        {count: increment(1), date: "2026-05-26"},
+        {merge: true}
+      )
+    );
+  });
+
+  test("DENIED: resetting your own counter to 0", async () => {
+    await seedAsAdmin("users/alice/reportCounts/2026-05-26", {
+      count: 5,
+      date: "2026-05-26",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "users/alice/reportCounts/2026-05-26"), {
+        count: 0,
+        date: "2026-05-26",
+      })
+    );
+  });
+
+  test("DENIED: banking your own counter with a large negative value", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "users/alice/reportCounts/2026-05-26"), {
+        count: -999999,
+        date: "2026-05-26",
+      })
+    );
+  });
+
+  test("DENIED: jumping the counter by more than 1", async () => {
+    await seedAsAdmin("users/alice/reportCounts/2026-05-26", {
+      count: 1,
+      date: "2026-05-26",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "users/alice/reportCounts/2026-05-26"), {
+        count: 10,
+        date: "2026-05-26",
+      })
+    );
+  });
+
+  test("DENIED: a date that does not match the document's dateKey", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "users/alice/reportCounts/2026-05-26"), {
+        count: 1,
+        date: "2020-01-01",
+      })
+    );
+  });
+
+  test("DENIED: writing another user's reportCounts", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "users/bob/reportCounts/2026-05-26"), {
+        count: 1,
+        date: "2026-05-26",
+      })
+    );
+  });
+
+  test("DENIED: deleting your own reportCounts document", async () => {
+    await seedAsAdmin("users/alice/reportCounts/2026-05-26", {
+      count: 1,
+      date: "2026-05-26",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      deleteDoc(doc(db, "users/alice/reportCounts/2026-05-26"))
     );
   });
 });
