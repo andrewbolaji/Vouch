@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +6,7 @@ import 'package:vouch/models/models.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/repositories/city_repository.dart';
+import 'package:vouch/repositories/comment_repository.dart';
 import 'package:vouch/repositories/restaurant_repository.dart';
 import 'package:vouch/services/auth_service.dart';
 
@@ -38,6 +40,93 @@ class SpyRestaurantRepository extends RestaurantRepository {
     canViewTop10Calls.add(canViewTop10);
     return [];
   }
+}
+
+/// Stub RestaurantRepository that returns one fixed restaurant, for
+/// testing the online comment read path against a real restaurantId.
+class StubRestaurantRepository extends RestaurantRepository {
+  StubRestaurantRepository(this.restaurant)
+      : super(firestore: FakeFirebaseFirestore());
+
+  final Restaurant restaurant;
+
+  @override
+  Future<List<Restaurant>> getForCity(
+    String cityId, {
+    required bool canViewTop10,
+  }) async =>
+      [restaurant];
+}
+
+/// Wraps a real, FakeFirebaseFirestore-backed CommentRepository and
+/// counts getPage calls, so a test can assert a re-entered screen did
+/// not refetch an already-loaded page.
+class CountingCommentRepository extends CommentRepository {
+  CountingCommentRepository(this._firestore) : super(firestore: _firestore);
+
+  final FirebaseFirestore _firestore;
+  int getPageCallCount = 0;
+
+  @override
+  Future<({List<Comment> comments, String? nextCursor})> getPage(
+    String restaurantId, {
+    String? cursor,
+    int pageSize = 20,
+  }) {
+    getPageCallCount++;
+    return CommentRepository(firestore: _firestore).getPage(
+      restaurantId,
+      cursor: cursor,
+      pageSize: pageSize,
+    );
+  }
+}
+
+/// CommentRepository whose getPage always fails, for testing the
+/// error state.
+class ThrowingCommentRepository extends CommentRepository {
+  ThrowingCommentRepository() : super(firestore: FakeFirebaseFirestore());
+
+  @override
+  Future<({List<Comment> comments, String? nextCursor})> getPage(
+    String restaurantId, {
+    String? cursor,
+    int pageSize = 20,
+  }) =>
+      throw Exception('Simulated network failure');
+}
+
+/// CommentRepository that returns pre-programmed pages in sequence
+/// and records the cursor it was called with each time. Used instead
+/// of a real cursor round-trip against FakeFirebaseFirestore, whose
+/// startAfterDocument does not return a second page for this query
+/// shape (where + orderBy + limit): the point of this fake is to
+/// verify AppState's pagination orchestration (does it pass the
+/// previous nextCursor forward, does it stop when nextCursor is
+/// null), not to re-prove Firestore's own cursor semantics.
+class SequencedCommentRepository extends CommentRepository {
+  SequencedCommentRepository(this._pages)
+      : super(firestore: FakeFirebaseFirestore());
+
+  final List<({List<Comment> comments, String? nextCursor})> _pages;
+  final List<String?> cursorsReceived = [];
+
+  @override
+  Future<({List<Comment> comments, String? nextCursor})> getPage(
+    String restaurantId, {
+    String? cursor,
+    int pageSize = 20,
+  }) async {
+    cursorsReceived.add(cursor);
+    return _pages[cursorsReceived.length - 1];
+  }
+
+  @override
+  Future<List<Comment>> getReplies(
+    String restaurantId,
+    String commentId,
+  ) async =>
+      const [];
 }
 
 void main() {
@@ -408,6 +497,249 @@ void main() {
 
         expect(membership.canViewTop10, isFalse);
         expect(spyRepo.canViewTop10Calls, [true, false]);
+      },
+    );
+  });
+
+  group('AppState online comment loading', () {
+    late FakeFirebaseFirestore fakeFirestore;
+
+    const restaurant = Restaurant(
+      id: 'online-r1',
+      cityId: 'test-city',
+      name: 'Online Test Restaurant',
+      cuisine: 'Test',
+      imageUrl: '',
+      description: '',
+      rank: 1,
+      commentCount: 5,
+    );
+
+    CollectionReference<Map<String, dynamic>> commentsRef() => fakeFirestore
+        .collection('restaurants')
+        .doc(restaurant.id)
+        .collection('comments');
+
+    Future<void> seedComment(
+      String id, {
+      required String text,
+      required DateTime createdAt,
+      String? parentId,
+    }) async {
+      await commentsRef().doc(id).set({
+        'userId': 'user-$id',
+        'userName': 'User $id',
+        'text': text,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'parentId': parentId,
+        'isInsider': false,
+      });
+    }
+
+    AppState buildState({CommentRepository? commentRepo}) {
+      return AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurant),
+        commentRepo:
+            commentRepo ?? CommentRepository(firestore: fakeFirestore),
+      );
+    }
+
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      fakeFirestore = FakeFirebaseFirestore();
+    });
+
+    test(
+      'loadCommentsForRestaurant transitions notLoaded -> loading -> loaded',
+      () async {
+        await seedComment(
+          'c1',
+          text: 'First',
+          createdAt: DateTime(2026),
+        );
+        final state = buildState();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          state.commentsStatus('online-r1'),
+          CommentLoadStatus.notLoaded,
+        );
+
+        final future = state.loadCommentsForRestaurant('online-r1');
+        expect(state.commentsStatus('online-r1'), CommentLoadStatus.loading);
+
+        await future;
+        expect(state.commentsStatus('online-r1'), CommentLoadStatus.loaded);
+        expect(state.commentsForRestaurant('online-r1'), hasLength(1));
+      },
+    );
+
+    test(
+      'loadCommentsForRestaurant does not refetch once already loaded',
+      () async {
+        await seedComment(
+          'c1',
+          text: 'First',
+          createdAt: DateTime(2026),
+        );
+        final countingRepo = CountingCommentRepository(fakeFirestore);
+        final state = buildState(commentRepo: countingRepo);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        await state.loadCommentsForRestaurant('online-r1');
+        await state.loadCommentsForRestaurant('online-r1');
+        await state.loadCommentsForRestaurant('online-r1');
+
+        expect(countingRepo.getPageCallCount, 1);
+      },
+    );
+
+    test(
+      'loadCommentsForRestaurant sets status error on failure',
+      () async {
+        final state = buildState(commentRepo: ThrowingCommentRepository());
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        await state.loadCommentsForRestaurant('online-r1');
+
+        expect(state.commentsStatus('online-r1'), CommentLoadStatus.error);
+        expect(state.commentsError('online-r1'), isNotNull);
+      },
+    );
+
+    test(
+      'loadMoreComments appends next page and clears cursor when exhausted',
+      () async {
+        Comment fakeComment(String id, String text) => Comment(
+              id: id,
+              restaurantId: 'online-r1',
+              userId: 'u-$id',
+              userName: 'User $id',
+              text: text,
+              createdAt: DateTime(2026),
+            );
+
+        final repo = SequencedCommentRepository([
+          (
+            comments: [
+              fakeComment('p1-a', 'Page 1 comment A'),
+              fakeComment('p1-b', 'Page 1 comment B'),
+            ],
+            nextCursor: 'cursor-after-page-1',
+          ),
+          (
+            comments: [fakeComment('p2-a', 'Page 2 comment A')],
+            nextCursor: null,
+          ),
+        ]);
+        final state = buildState(commentRepo: repo);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        await state.loadCommentsForRestaurant('online-r1');
+        expect(state.commentsForRestaurant('online-r1'), hasLength(2));
+        expect(state.hasMoreComments('online-r1'), isTrue);
+
+        await state.loadMoreComments('online-r1');
+        expect(state.commentsForRestaurant('online-r1'), hasLength(3));
+        expect(state.hasMoreComments('online-r1'), isFalse);
+
+        // The second call must carry the cursor the first page returned.
+        expect(repo.cursorsReceived, [null, 'cursor-after-page-1']);
+      },
+    );
+
+    test(
+      'loadMoreComments does nothing when there is no next page',
+      () async {
+        await seedComment(
+          'c1',
+          text: 'Only one',
+          createdAt: DateTime(2026),
+        );
+        final countingRepo = CountingCommentRepository(fakeFirestore);
+        final state = buildState(commentRepo: countingRepo);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        await state.loadCommentsForRestaurant('online-r1');
+        expect(state.hasMoreComments('online-r1'), isFalse);
+        final callsBefore = countingRepo.getPageCallCount;
+
+        await state.loadMoreComments('online-r1');
+        expect(countingRepo.getPageCallCount, callsBefore);
+      },
+    );
+
+    test(
+      'loadCommentsForRestaurant loads replies for each top-level comment',
+      () async {
+        await seedComment(
+          'c1',
+          text: 'Parent',
+          createdAt: DateTime(2026),
+        );
+        await seedComment(
+          'r1',
+          text: 'A reply',
+          createdAt: DateTime(2026, 1, 2),
+          parentId: 'c1',
+        );
+
+        final state = buildState();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        await state.loadCommentsForRestaurant('online-r1');
+
+        final replies = state.repliesForComment('c1', 'online-r1');
+        expect(replies, hasLength(1));
+        expect(replies.first.text, 'A reply');
+      },
+    );
+
+    test(
+      'addComment inserts the new comment at index 0, not the end',
+      () async {
+        await seedComment(
+          'c1',
+          text: 'Old comment',
+          createdAt: DateTime(2026),
+        );
+        final state = buildState();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await state.loadCommentsForRestaurant('online-r1');
+
+        state.addComment(restaurantId: 'online-r1', text: 'New comment');
+
+        final comments = state.commentsForRestaurant('online-r1');
+        expect(comments.first.text, 'New comment');
+        expect(comments.last.text, 'Old comment');
+      },
+    );
+
+    test(
+      'addComment bumps restaurant.commentCount locally',
+      () async {
+        final state = buildState();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await state.loadCommentsForRestaurant('online-r1');
+
+        final before = state.restaurantById('online-r1')!.commentCount;
+        state.addComment(restaurantId: 'online-r1', text: 'New comment');
+
+        expect(
+          state.restaurantById('online-r1')!.commentCount,
+          before + 1,
+        );
       },
     );
   });

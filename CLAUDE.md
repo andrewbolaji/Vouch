@@ -10,7 +10,7 @@ Every command below was run here, except the last block (needs a Firebase login 
 
 ```bash
 flutter pub get
-flutter test --exclude-tags=golden   # 312 tests, ~40s, no emulator needed
+flutter test --exclude-tags=golden   # 328 tests, ~40s, no emulator needed
 ```
 
 The other suites need the Firestore emulator, hence Java on PATH:
@@ -56,6 +56,7 @@ flutter run
 - Goldens are CI-authoritative: baselines are generated on ubuntu-latest by `.github/workflows/update-goldens.yml`, not on a developer machine. Run `flutter test --exclude-tags=golden` locally. macOS renders fonts differently than Linux, so running the golden tests on a Mac produces pixel diffs against the Linux baselines. That diff is expected and is not a regression, it just means the golden run is not meaningful outside CI. `golden_harness.dart` mocks `path_provider` and swaps sqflite for FFI, without which `CachedNetworkImage` widgets crash headless.
 - `functions/package.json` pins `engines.node: 22`, local Node v20. Only `firebase deploy` cares.
 - Swift Package Manager and the UIScene lifecycle migration are declined on purpose (`pubspec.yaml`'s `flutter: config:` block). Both are Flutter tool defaults now, and the first `flutter build ios` after a working Xcode install will migrate the Xcode project to both if nothing stops it, dirtying tracked files and switching build systems the week we ship. CocoaPods works, every plugin supports it, and the UIScene migration is real but not due yet. Don't re-enable either without a deliberate commit and device testing.
+- Comments load per restaurant, on demand: `AppState.loadCommentsForRestaurant` fetches one page via `CommentRepository.getPage`, then fetches every one of that page's replies in parallel via `getReplies`. At the default page size (20) that is up to 20 extra small queries per screen open, fine at launch volume but not free. v1.1: a `replyCount` field maintained by `onCommentCreated` would let the client skip the `getReplies` call entirely for any comment with `replyCount == 0`, which is most of them.
 
 ## Definition of done
 

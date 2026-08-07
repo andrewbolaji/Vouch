@@ -57,6 +57,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   void initState() {
     super.initState();
     unawaited(_loadBlockedUsers());
+    // loadCommentsForRestaurant notifies listeners synchronously (so the
+    // loading state is visible immediately, not just after the first
+    // await), which is unsafe to do from initState: the provider is
+    // still an ancestor mid-build. Deferring to the post-frame callback
+    // runs it once this build has finished.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        context.read<AppState>().loadCommentsForRestaurant(
+              widget.restaurantId,
+            ),
+      );
+    });
   }
 
   Future<void> _loadBlockedUsers() async {
@@ -101,6 +114,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     final currentUid = auth.currentUser?.uid;
     final allComments = appState.commentsForRestaurant(widget.restaurantId);
     final comments = filterBlockedComments(allComments, _blockedUserIds);
+    final commentsStatus = appState.commentsStatus(widget.restaurantId);
+    final commentsErrorMessage = appState.commentsError(widget.restaurantId);
+    final hasMoreComments = appState.hasMoreComments(widget.restaurantId);
+    final isLoadingMoreComments = appState.isLoadingMoreComments(
+      widget.restaurantId,
+    );
     final hasVoted = appState.hasVoted(widget.restaurantId);
     final isSaved = savedProvider.isSaved(widget.restaurantId);
 
@@ -242,7 +261,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       ),
                       const SizedBox(width: AppTheme.spacingSm),
                       _CommentActionButton(
-                        count: comments.length,
+                        count: restaurant.commentCount,
                         onTap: _scrollToComments,
                       ),
                       const Spacer(),
@@ -333,7 +352,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       Text('Comments', style: AppTheme.headlineMedium),
                       const SizedBox(width: AppTheme.spacingSm),
                       Text(
-                        formatCount(comments.length),
+                        formatCount(restaurant.commentCount),
                         style: AppTheme.labelLarge.copyWith(
                           color: AppTheme.textSecondary,
                         ),
@@ -496,7 +515,41 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   ),
                   const SizedBox(height: AppTheme.spacingMd),
                   ],
-                  if (comments.isEmpty)
+                  if (commentsStatus == CommentLoadStatus.loading ||
+                      commentsStatus == CommentLoadStatus.notLoaded)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: AppTheme.spacingLg,
+                      ),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (commentsStatus == CommentLoadStatus.error)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppTheme.spacingMd,
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: AppTheme.textTertiary,
+                              size: 32,
+                            ),
+                            const SizedBox(height: AppTheme.spacingSm),
+                            Text(
+                              commentsErrorMessage ??
+                                  "Couldn't load comments.",
+                              textAlign: TextAlign.center,
+                              style: AppTheme.bodyMedium.copyWith(
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (comments.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         vertical: AppTheme.spacingMd,
@@ -522,10 +575,13 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         ),
                       ),
                     )
-                  else
+                  else ...[
                     ...comments.map((comment) {
                       final replies = filterBlockedComments(
-                        appState.repliesForComment(comment.id),
+                        appState.repliesForComment(
+                          comment.id,
+                          widget.restaurantId,
+                        ),
                         _blockedUserIds,
                       );
                       final isOwn = currentUid == comment.userId;
@@ -539,6 +595,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         onBlock: () => _blockUser(comment.userId),
                       );
                     }),
+                    if (hasMoreComments)
+                      _LoadMoreCommentsButton(
+                        isLoading: isLoadingMoreComments,
+                        onTap: () => appState.loadMoreComments(
+                          widget.restaurantId,
+                        ),
+                      ),
+                  ],
                   // Insider notes (below comments so conversation is
                   // reachable for free users without passing the paywall)
                   if (restaurant.whatToOrder != null ||
@@ -791,6 +855,57 @@ class _CommentActionButton extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown under the comment list when another page is available.
+/// Hidden entirely once nextCursor runs out, rather than fetching
+/// everything in one shot.
+class _LoadMoreCommentsButton extends StatelessWidget {
+  const _LoadMoreCommentsButton({
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  final bool isLoading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppTheme.spacingSm),
+      child: Center(
+        child: Semantics(
+          button: true,
+          label: 'Load more comments',
+          child: GestureDetector(
+            onTap: isLoading ? null : onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMd,
+                vertical: AppTheme.spacingSm,
+              ),
+              child: isLoading
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.accent,
+                      ),
+                    )
+                  : Text(
+                      'Load more comments',
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
           ),
         ),
       ),

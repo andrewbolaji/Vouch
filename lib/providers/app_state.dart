@@ -11,6 +11,56 @@ import 'package:vouch/repositories/repositories.dart';
 
 const bool kUseFirebase = true;
 
+/// Where a restaurant's comment page is in its load lifecycle.
+///
+/// notLoaded and loading are distinct from loaded-with-zero-comments,
+/// so a restaurant that genuinely has no comments never looks the
+/// same as one that simply has not been fetched yet.
+enum CommentLoadStatus { notLoaded, loading, loaded, error }
+
+/// One restaurant's loaded comment page, replies, and pagination
+/// cursor. Backs the online (Firestore) comment read path only; the
+/// offline/seed comment list is separate, see AppState._usingSeedComments.
+class RestaurantCommentsState {
+  const RestaurantCommentsState.notLoaded()
+      : status = CommentLoadStatus.notLoaded,
+        comments = const [],
+        repliesByCommentId = const {},
+        nextCursor = null,
+        errorMessage = null,
+        isLoadingMore = false;
+
+  const RestaurantCommentsState.loading()
+      : status = CommentLoadStatus.loading,
+        comments = const [],
+        repliesByCommentId = const {},
+        nextCursor = null,
+        errorMessage = null,
+        isLoadingMore = false;
+
+  const RestaurantCommentsState.loaded({
+    required this.comments,
+    required this.repliesByCommentId,
+    this.nextCursor,
+    this.isLoadingMore = false,
+  })  : status = CommentLoadStatus.loaded,
+        errorMessage = null;
+
+  const RestaurantCommentsState.error(this.errorMessage)
+      : status = CommentLoadStatus.error,
+        comments = const [],
+        repliesByCommentId = const {},
+        nextCursor = null,
+        isLoadingMore = false;
+
+  final CommentLoadStatus status;
+  final List<Comment> comments;
+  final Map<String, List<Comment>> repliesByCommentId;
+  final String? nextCursor;
+  final String? errorMessage;
+  final bool isLoadingMore;
+}
+
 class AppState extends ChangeNotifier {
   AppState({
     CityRepository? cityRepo,
@@ -44,7 +94,12 @@ class AppState extends ChangeNotifier {
 
   List<City> _cities = [];
   List<Restaurant> _restaurants = [];
+
+  /// Offline/seed comments only. Populated by _generateSeedComments
+  /// when Firestore is unreachable or useFirebase is false. The
+  /// online read path uses _restaurantComments instead.
   List<Comment> _comments = [];
+  final Map<String, RestaurantCommentsState> _restaurantComments = {};
   final Set<String> _votedRestaurantIds = {};
   bool _isLoading = true;
   bool _isOffline = false;
@@ -86,22 +141,193 @@ class AppState extends ChangeNotifier {
     return matches.isEmpty ? null : matches.first;
   }
 
+  /// True while comments come from the offline/seed fallback rather
+  /// than a real per-restaurant Firestore fetch: either useFirebase
+  /// is false (tests), or the initial cities/restaurants load failed
+  /// and _loadFromFirestore fell back to seed data.
+  bool get _usingSeedComments => !_useFirebase || _isOffline;
+
   List<Comment> commentsForRestaurant(String restaurantId) {
-    return _comments
-        .where(
-          (c) =>
-              c.restaurantId == restaurantId &&
-              c.parentId == null,
-        )
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (_usingSeedComments) {
+      return _comments
+          .where(
+            (c) =>
+                c.restaurantId == restaurantId &&
+                c.parentId == null,
+          )
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+    return List.unmodifiable(
+      _restaurantComments[restaurantId]?.comments ?? const [],
+    );
   }
 
-  List<Comment> repliesForComment(String commentId) {
-    return _comments
-        .where((c) => c.parentId == commentId)
-        .toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  /// [restaurantId] is required for the online path (replies are
+  /// stored per restaurant) but optional for backward compatibility
+  /// with the offline/seed path, which only ever needed the comment id.
+  List<Comment> repliesForComment(String commentId, [String? restaurantId]) {
+    if (_usingSeedComments) {
+      return _comments
+          .where((c) => c.parentId == commentId)
+          .toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
+    if (restaurantId != null) {
+      return List.unmodifiable(
+        _restaurantComments[restaurantId]?.repliesByCommentId[commentId] ??
+            const [],
+      );
+    }
+    for (final state in _restaurantComments.values) {
+      final replies = state.repliesByCommentId[commentId];
+      if (replies != null) return List.unmodifiable(replies);
+    }
+    return const [];
+  }
+
+  /// Where restaurantId's comment page is in its load lifecycle.
+  /// Always "loaded" for the offline/seed fallback, since seed
+  /// comments are already synchronously available.
+  CommentLoadStatus commentsStatus(String restaurantId) {
+    if (_usingSeedComments) return CommentLoadStatus.loaded;
+    return _restaurantComments[restaurantId]?.status ??
+        CommentLoadStatus.notLoaded;
+  }
+
+  /// Message for the last failed comment load, if commentsStatus is error.
+  String? commentsError(String restaurantId) =>
+      _restaurantComments[restaurantId]?.errorMessage;
+
+  /// True if another page of comments is available to load.
+  bool hasMoreComments(String restaurantId) {
+    if (_usingSeedComments) return false;
+    return _restaurantComments[restaurantId]?.nextCursor != null;
+  }
+
+  /// True while a load-more request for restaurantId is in flight.
+  bool isLoadingMoreComments(String restaurantId) =>
+      _restaurantComments[restaurantId]?.isLoadingMore ?? false;
+
+  /// Loads the first page of comments (and their replies) for
+  /// restaurantId. Safe to call every time a screen opens: does
+  /// nothing once a page is already loaded or already loading, so
+  /// re-entering a screen does not refetch what is already there.
+  Future<void> loadCommentsForRestaurant(String restaurantId) async {
+    if (_usingSeedComments) return;
+    final existing = _restaurantComments[restaurantId];
+    if (existing != null &&
+        (existing.status == CommentLoadStatus.loaded ||
+            existing.status == CommentLoadStatus.loading)) {
+      return;
+    }
+
+    _restaurantComments[restaurantId] =
+        const RestaurantCommentsState.loading();
+    notifyListeners();
+
+    try {
+      final repo = _commentRepo ?? CommentRepository();
+      final page = await repo.getPage(restaurantId);
+      final repliesByCommentId = await _fetchRepliesFor(
+        repo,
+        restaurantId,
+        page.comments,
+      );
+
+      _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+        comments: page.comments,
+        repliesByCommentId: repliesByCommentId,
+        nextCursor: page.nextCursor,
+      );
+    } on Exception catch (e, stack) {
+      _recordError('loadCommentsForRestaurant', e, stack);
+      _restaurantComments[restaurantId] = RestaurantCommentsState.error(
+        e.toString(),
+      );
+    }
+    notifyListeners();
+  }
+
+  /// Loads the next page of comments for restaurantId, appending to
+  /// what is already loaded. No-op if there is no next page, if a
+  /// load is already in flight, or if the first page has not loaded.
+  Future<void> loadMoreComments(String restaurantId) async {
+    if (_usingSeedComments) return;
+    final existing = _restaurantComments[restaurantId];
+    if (existing == null ||
+        existing.status != CommentLoadStatus.loaded ||
+        existing.nextCursor == null ||
+        existing.isLoadingMore) {
+      return;
+    }
+
+    _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+      comments: existing.comments,
+      repliesByCommentId: existing.repliesByCommentId,
+      nextCursor: existing.nextCursor,
+      isLoadingMore: true,
+    );
+    notifyListeners();
+
+    try {
+      final repo = _commentRepo ?? CommentRepository();
+      final page = await repo.getPage(
+        restaurantId,
+        cursor: existing.nextCursor,
+      );
+      final newReplies = await _fetchRepliesFor(
+        repo,
+        restaurantId,
+        page.comments,
+      );
+      final current = _restaurantComments[restaurantId]!;
+
+      _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+        comments: [...current.comments, ...page.comments],
+        repliesByCommentId: {...current.repliesByCommentId, ...newReplies},
+        nextCursor: page.nextCursor,
+      );
+    } on Exception catch (e, stack) {
+      _recordError('loadMoreComments', e, stack);
+      final current = _restaurantComments[restaurantId];
+      if (current != null) {
+        _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+          comments: current.comments,
+          repliesByCommentId: current.repliesByCommentId,
+          nextCursor: current.nextCursor,
+        );
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Fetches replies for each of [comments] in parallel. At a page
+  /// size of 20 that is at most 20 small queries per screen open,
+  /// negligible at launch volume. A failed reply fetch for one
+  /// comment does not fail the rest; it just shows that comment with
+  /// no replies rather than erroring the whole page.
+  ///
+  /// v1.1: a replyCount field maintained by onCommentCreated would
+  /// let the client skip this call entirely for comments with none.
+  Future<Map<String, List<Comment>>> _fetchRepliesFor(
+    CommentRepository repo,
+    String restaurantId,
+    List<Comment> comments,
+  ) async {
+    final repliesLists = await Future.wait(
+      comments.map((c) async {
+        try {
+          return await repo.getReplies(restaurantId, c.id);
+        } on Exception {
+          return const <Comment>[];
+        }
+      }),
+    );
+    return {
+      for (var i = 0; i < comments.length; i++)
+        comments[i].id: repliesLists[i],
+    };
   }
 
   bool hasVoted(String restaurantId) =>
@@ -214,7 +440,42 @@ class AppState extends ChangeNotifier {
       parentId: parentId,
       isInsider: isInsider,
     );
-    _comments.add(comment);
+    if (_usingSeedComments) {
+      _comments.add(comment);
+    } else {
+      final existing = _restaurantComments[restaurantId] ??
+          const RestaurantCommentsState.loaded(
+            comments: [],
+            repliesByCommentId: {},
+          );
+      if (parentId == null) {
+        // getPage orders createdAt descending, so the newest comment
+        // goes at index 0, not the end.
+        _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+          comments: [comment, ...existing.comments],
+          repliesByCommentId: existing.repliesByCommentId,
+          nextCursor: existing.nextCursor,
+          isLoadingMore: existing.isLoadingMore,
+        );
+      } else {
+        // getReplies orders createdAt ascending, so the newest reply
+        // goes at the end of its parent's list.
+        final updatedReplies = Map<String, List<Comment>>.from(
+          existing.repliesByCommentId,
+        );
+        updatedReplies[parentId] = [
+          ...(updatedReplies[parentId] ?? const []),
+          comment,
+        ];
+        _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+          comments: existing.comments,
+          repliesByCommentId: updatedReplies,
+          nextCursor: existing.nextCursor,
+          isLoadingMore: existing.isLoadingMore,
+        );
+      }
+    }
+    _bumpCommentCount(restaurantId);
     notifyListeners();
 
     if (_useFirebase && _commentRepo != null) {
@@ -222,6 +483,17 @@ class AppState extends ChangeNotifier {
         _commentRepo.add(restaurantId, comment),
       );
     }
+  }
+
+  /// Bumps commentCount locally so the header does not lag behind
+  /// an optimistically-added comment while waiting for the real
+  /// server aggregate to catch up.
+  void _bumpCommentCount(String restaurantId) {
+    final index = _restaurants.indexWhere((r) => r.id == restaurantId);
+    if (index == -1) return;
+    _restaurants[index] = _restaurants[index].copyWith(
+      commentCount: _restaurants[index].commentCount + 1,
+    );
   }
 
   /// Reload data. Call after sign-in or membership change so the
