@@ -48,8 +48,6 @@ app.*.map.json
 ios/Pods/
 macos/Pods/
 
-# Firebase config (contains project-specific keys)
-lib/firebase_options.dart
 .agents/
 
 # Claude Code project scaffolding is tracked on purpose (CLAUDE.md, settings,
