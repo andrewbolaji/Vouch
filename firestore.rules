@@ -71,7 +71,8 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow create: if isOwner(userId)
           && isEmailVerified()
-          && request.resource.data.weight == 1;
+          && request.resource.data.weight == 1
+          && request.resource.data.createdAt == request.time;
         allow update: if false;
         allow delete: if isOwner(userId);
       }
