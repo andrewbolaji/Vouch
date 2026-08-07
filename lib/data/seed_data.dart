@@ -71,7 +71,6 @@ class SeedData {
           ' shop. Michelin-recognized, known for a'
           ' wagyu-meets-Texas-BBQ bowl.',
       rank: 1,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Chinatown',
@@ -100,7 +99,6 @@ class SeedData {
           ' Houston. Carne asada, al pastor, fresh'
           ' tortillas.',
       rank: 2,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -122,7 +120,6 @@ class SeedData {
           ' that draws lines across Houston. Spicy'
           ' grilled beef skewers with yaji seasoning.',
       rank: 3,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -145,8 +142,6 @@ class SeedData {
           ' from mild to extra hot. Houston first.'
           ' Halal-certified.',
       rank: 4,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Westheimer',
@@ -167,7 +162,6 @@ class SeedData {
           ' fires. Michelin-starred in 2024. Get there'
           ' early or eat somewhere else.',
       rank: 5,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Spring',
@@ -193,7 +187,6 @@ class SeedData {
           ' cocktails, a downtown-view patio, and a famous'
           ' Travis Scott mural.',
       rank: 6,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -220,8 +213,6 @@ class SeedData {
           ' Westheimer. Known for signature rolls with'
           ' bold flavor combos.',
       rank: 7,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Westheimer',
@@ -242,7 +233,6 @@ class SeedData {
           'A food truck turning out loaded comfort-food'
           ' boxes that punch above their price point.',
       rank: 8,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -266,7 +256,6 @@ class SeedData {
           ' fire-torched sushi, steaks, and a temperature-'
           'controlled patio. Part of the JOEY chain.',
       rank: 9,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -289,8 +278,6 @@ class SeedData {
           ' 2006. Five locations. Famous for the Crack'
           ' Sauce.',
       rank: 10,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Southwest Freeway',
@@ -310,8 +297,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 1,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Midtown',
@@ -324,7 +309,6 @@ class SeedData {
           'Tortelli di Mele (round ravioli filled with'
           ' Granny Smith apple, sausage, and parmigiano,'
           ' topped with browned butter and sage)',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-2',
@@ -334,8 +318,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 2,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'East Atlanta Village',
@@ -347,7 +329,6 @@ class SeedData {
       whatToOrder:
           'Whole bird combo, the stewed beans, house'
           ' flour tortillas, churros',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-3',
@@ -357,7 +338,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 3,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -371,7 +351,6 @@ class SeedData {
       whatToOrder:
           'Honey hot wings (ask for the sauce on the'
           ' fries too)',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-4',
@@ -381,7 +360,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 4,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -394,7 +372,6 @@ class SeedData {
       whatToOrder:
           'Red rice, smothered turkey wings, black-eyed'
           ' peas, mac and cheese',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-5',
@@ -404,8 +381,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 5,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Midtown',
@@ -417,7 +392,6 @@ class SeedData {
       whatToOrder:
           'Fried chicken with lobster mac, the Pho'
           ' cocktail',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-6',
@@ -427,8 +401,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 6,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Downtown (Peachtree Center)',
@@ -439,7 +411,6 @@ class SeedData {
       insiderTip: '',
       whatToOrder:
           'Falafel, the lentil soup, fresh garlic bread',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-7',
@@ -449,7 +420,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 7,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -460,7 +430,6 @@ class SeedData {
       ],
       insiderTip: '',
       whatToOrder: 'Oysters, the lobster roll',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-8',
@@ -470,8 +439,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 8,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Downtown',
@@ -483,7 +450,6 @@ class SeedData {
       whatToOrder:
           'Crawfish and crab mac, chef French toast,'
           ' wagyu burger',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-9',
@@ -493,7 +459,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 9,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -505,7 +470,6 @@ class SeedData {
       insiderTip: '',
       whatToOrder:
           'Garlic parmesan wings, lemon pepper fries',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-10',
@@ -515,7 +479,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 10,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -527,7 +490,6 @@ class SeedData {
       insiderTip: '',
       whatToOrder:
           'Oysters at happy hour, Caviar and Middlins',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-11',
@@ -537,8 +499,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 11,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Stone Mountain',
@@ -549,7 +509,6 @@ class SeedData {
       ],
       insiderTip: '',
       whatToOrder: 'Jerk chicken',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-12',
@@ -559,8 +518,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 12,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Mableton',
@@ -571,7 +528,6 @@ class SeedData {
       ],
       insiderTip: '',
       whatToOrder: 'Jerk chicken, oxtail',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-13',
@@ -581,8 +537,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 13,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Fairburn',
@@ -593,7 +547,6 @@ class SeedData {
       ],
       insiderTip: '',
       whatToOrder: '',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-14',
@@ -603,7 +556,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 14,
-      voteCount: 0,
       priceLevel: 4,
       locations: [
         RestaurantLocation(
@@ -614,7 +566,6 @@ class SeedData {
       ],
       insiderTip: '',
       whatToOrder: 'House-made pastas',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-15',
@@ -624,8 +575,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 15,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Buckhead',
@@ -635,7 +584,6 @@ class SeedData {
       ],
       insiderTip: '',
       whatToOrder: 'Shaking beef, spring rolls',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-16',
@@ -645,8 +593,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 16,
-      voteCount: 0,
-      priceLevel: 2,
       locations: [
         RestaurantLocation(
           name: 'Little Five Points',
@@ -657,7 +603,6 @@ class SeedData {
       insiderTip: '',
       whatToOrder:
           'Mussels, beer cheese, the huge beer list',
-      vibeTags: [],
     ),
     Restaurant(
       id: 'atl-17',
@@ -667,7 +612,6 @@ class SeedData {
       imageUrl: 'placeholder://restaurant',
       description: '',
       rank: 17,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -679,7 +623,6 @@ class SeedData {
       ],
       insiderTip: '',
       whatToOrder: 'Paella, breakfast burrito',
-      vibeTags: [],
     ),
 
     // NYC
@@ -694,7 +637,6 @@ class SeedData {
           'Cash only, no menu needed.'
           ' Porterhouse for two since 1887.',
       rank: 1,
-      voteCount: 0,
       priceLevel: 4,
       locations: [
         RestaurantLocation(
@@ -726,7 +668,6 @@ class SeedData {
           'Dom DeMarco has been hand-cutting basil on'
           ' every slice since 1965.',
       rank: 2,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Midwood',
@@ -754,7 +695,6 @@ class SeedData {
           'Proof that a taco stand in a food hall can'
           ' be world-class.',
       rank: 3,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -786,7 +726,6 @@ class SeedData {
           'Do not lose your ticket. The pastrami has'
           ' been perfect since 1888.',
       rank: 4,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Lower East Side',
@@ -816,7 +755,6 @@ class SeedData {
           'Hand-pulled noodles and cumin lamb that built'
           ' an empire from a basement.',
       rank: 5,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -845,7 +783,6 @@ class SeedData {
       description:
           'The quintessential New York slice.',
       rank: 6,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -871,7 +808,6 @@ class SeedData {
           'Smoked fish and bagels, family-run'
           ' since 1914.',
       rank: 7,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Lower East Side',
@@ -902,7 +838,6 @@ class SeedData {
           'Jiro Dreams of Sushi graduate.'
           ' Omakase perfection.',
       rank: 8,
-      voteCount: 0,
       priceLevel: 4,
       locations: [
         RestaurantLocation(
@@ -932,7 +867,6 @@ class SeedData {
           'BYOB, cash only, no slices.'
           ' The pizza speaks for itself.',
       rank: 9,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Carroll Gardens',
@@ -961,7 +895,6 @@ class SeedData {
           'Cookies the size of your fist.'
           ' Gooey center, crispy outside.',
       rank: 10,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -994,7 +927,6 @@ class SeedData {
           'Chef Wes Avila turned a taco cart into an'
           ' LA institution.',
       rank: 1,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Arts District',
@@ -1024,7 +956,6 @@ class SeedData {
           'Nashville hot chicken that makes Angelenos'
           ' wait 3 hours happily.',
       rank: 2,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Chinatown',
@@ -1054,7 +985,6 @@ class SeedData {
           'Industrial-chic Italian that still requires'
           ' booking weeks out.',
       rank: 3,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1086,7 +1016,6 @@ class SeedData {
           'Southern Thai food that does not compromise'
           ' on spice. Jonathan Gold approved.',
       rank: 4,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Thai Town',
@@ -1117,7 +1046,6 @@ class SeedData {
           "Kazunori Nozawa's approachable omakase."
           ' "Trust Me" is the only order.',
       rank: 5,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1146,7 +1074,6 @@ class SeedData {
           'The #19 pastrami sandwich might be better'
           " than Katz's. We said it.",
       rank: 6,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Westlake',
@@ -1175,7 +1102,6 @@ class SeedData {
           'A taco truck that won a James Beard Award.'
           ' Crispy shrimp tacos.',
       rank: 7,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1207,7 +1133,6 @@ class SeedData {
           "Ludo Lefebvre's no-reservations French"
           ' bistro. 25 seats.',
       rank: 8,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1240,7 +1165,6 @@ class SeedData {
           'Silver Lake Taiwanese that makes dan dan'
           ' noodles worth crossing town for.',
       rank: 9,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Silver Lake',
@@ -1271,7 +1195,6 @@ class SeedData {
           'Cuban bakery chain where the cheese rolls'
           ' cause actual stampedes.',
       rank: 10,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1304,7 +1227,6 @@ class SeedData {
           "Grant Achatz's three-Michelin-star temple of"
           ' creativity. Dining as performance art.',
       rank: 1,
-      voteCount: 0,
       priceLevel: 4,
       locations: [
         RestaurantLocation(
@@ -1336,7 +1258,6 @@ class SeedData {
           'Chicago institution. Italian beef and hot'
           ' dogs that define the city.',
       rank: 2,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1367,7 +1288,6 @@ class SeedData {
           'Deep dish done right. Butter crust, sausage'
           ' patty, chunky tomato.',
       rank: 3,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Multiple locations',
@@ -1396,7 +1316,6 @@ class SeedData {
           "Stephanie Izard's flagship. Bold flavors,"
           ' every dish fights for your attention.',
       rank: 4,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1428,7 +1347,6 @@ class SeedData {
           'Texas-style BBQ in Chicago that Texans'
           ' actually respect.',
       rank: 5,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Irving Park',
@@ -1459,7 +1377,6 @@ class SeedData {
           'The burger that launched a thousand wait'
           ' lists. Single or double, both legendary.',
       rank: 6,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'West Loop',
@@ -1489,7 +1406,6 @@ class SeedData {
           'Retro Tex-Mex diner with vinyl playing'
           ' and mezcal flowing.',
       rank: 7,
-      voteCount: 0,
       locations: [
         RestaurantLocation(
           name: 'Wicker Park',
@@ -1520,7 +1436,6 @@ class SeedData {
           'Maxwell Street Polish sausage stand, open'
           ' since 1939. Cash, no frills.',
       rank: 8,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(
@@ -1551,7 +1466,6 @@ class SeedData {
           'First Filipino restaurant to earn a Michelin'
           ' star. Bakery by day, tasting menu by night.',
       rank: 9,
-      voteCount: 0,
       priceLevel: 3,
       locations: [
         RestaurantLocation(
@@ -1584,7 +1498,6 @@ class SeedData {
           'Old-school Chicago diner. Greek owners,'
           ' massive portions, bottomless coffee.',
       rank: 10,
-      voteCount: 0,
       priceLevel: 1,
       locations: [
         RestaurantLocation(

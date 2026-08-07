@@ -126,7 +126,6 @@ void main() {
         imageUrl: 'placeholder://restaurant',
         description: '',
         rank: 2,
-        voteCount: 0,
         // commentCount defaults to 0
       );
 
