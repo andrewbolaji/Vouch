@@ -13,35 +13,62 @@ class UserRepository {
       _firestore.collection('users');
 
   /// Ensures a user doc exists with all required fields.
-  /// Uses set-with-merge so it creates the doc if missing and
-  /// does not overwrite existing list fields on re-sign-in.
+  ///
+  /// Two independent callers can race this for the same uid (the
+  /// reactive sign-in sync in SavedProvider and AuthService.
+  /// updateDisplayName, on Apple sign-in in particular), so the
+  /// exists-check and the write run inside a transaction: Firestore
+  /// retries the whole callback if another write lands in between,
+  /// instead of letting a stale "doc doesn't exist" read from one
+  /// caller produce a full overwrite after the other caller already
+  /// created the doc.
+  ///
+  /// [displayName] and [email] are only written when non-blank. A
+  /// caller with nothing to contribute (an empty string, not null,
+  /// is how both callers represent "no value yet") must never
+  /// overwrite a real value the other caller already set, in either
+  /// direction of the race. On first creation, the initial doc simply
+  /// omits whichever of the two is blank rather than writing "".
   Future<void> ensureUserDoc({
     required String uid,
     required String displayName,
     required String email,
   }) async {
+    final hasName = displayName.trim().isNotEmpty;
+    final hasEmail = email.trim().isNotEmpty;
     try {
-      final doc = await _usersRef.doc(uid).get();
-      if (doc.exists) {
-        // Doc exists; update displayName/email but do not
-        // clobber lists, tier, or timestamps.
-        await _usersRef.doc(uid).set({
-          'displayName': displayName,
-          'email': email,
-        }, SetOptions(merge: true));
-      } else {
-        // First sign-in: write a complete initial doc.
-        await _usersRef.doc(uid).set({
-          'id': uid,
-          'displayName': displayName,
-          'email': email,
-          'membershipTier': 'free',
-          'savedRestaurantIds': <String>[],
-          'blockedUserIds': <String>[],
-          'createdAt': FieldValue.serverTimestamp(),
-          'lastActiveAt': FieldValue.serverTimestamp(),
-        });
-      }
+      await _firestore.runTransaction((transaction) async {
+        final docRef = _usersRef.doc(uid);
+        final doc = await transaction.get(docRef);
+        if (doc.exists) {
+          final update = <String, dynamic>{
+            if (hasName) 'displayName': displayName,
+            if (hasEmail) 'email': email,
+          };
+          if (update.isNotEmpty) {
+            // update(), not set(merge: true): the doc is confirmed to
+            // exist above, and this only touches the given fields,
+            // same as a merge would, without depending on a merge
+            // flag transaction.set() actually respects.
+            transaction.update(docRef, update);
+          }
+        } else {
+          // First sign-in: write a complete initial doc. Not
+          // merge:true here, unlike the branch above: this is a
+          // genuine create, and the transaction (not a merge flag)
+          // is what protects it from a concurrent creator.
+          transaction.set(docRef, {
+            'id': uid,
+            if (hasName) 'displayName': displayName,
+            if (hasEmail) 'email': email,
+            'membershipTier': 'free',
+            'savedRestaurantIds': <String>[],
+            'blockedUserIds': <String>[],
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastActiveAt': FieldValue.serverTimestamp(),
+          });
+        }
+      });
     } on FirebaseException catch (e) {
       throw mapFirestoreException(e);
     }

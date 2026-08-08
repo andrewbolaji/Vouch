@@ -64,6 +64,102 @@ void main() {
       });
     });
 
+    group('ensureUserDoc', () {
+      test('a blank name does not overwrite an existing name', () async {
+        await fakeFirestore.collection('users').doc('uid1').set({
+          'id': 'uid1',
+          'displayName': 'Original Name',
+          'email': 'original@example.com',
+          'membershipTier': 'free',
+          'savedRestaurantIds': <String>[],
+          'blockedUserIds': <String>[],
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
+        });
+
+        await repository.ensureUserDoc(
+          uid: 'uid1',
+          displayName: '',
+          email: 'new@example.com',
+        );
+
+        final doc = await fakeFirestore.collection('users').doc('uid1').get();
+        expect(doc.data()!['displayName'], 'Original Name');
+        expect(doc.data()!['email'], 'new@example.com');
+      });
+
+      test('a blank email does not overwrite an existing email', () async {
+        await fakeFirestore.collection('users').doc('uid1').set({
+          'id': 'uid1',
+          'displayName': 'Original Name',
+          'email': 'original@example.com',
+          'membershipTier': 'free',
+          'savedRestaurantIds': <String>[],
+          'blockedUserIds': <String>[],
+          'createdAt': Timestamp.fromDate(DateTime(2024)),
+          'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
+        });
+
+        await repository.ensureUserDoc(
+          uid: 'uid1',
+          displayName: 'New Name',
+          email: '',
+        );
+
+        final doc = await fakeFirestore.collection('users').doc('uid1').get();
+        expect(doc.data()!['displayName'], 'New Name');
+        expect(doc.data()!['email'], 'original@example.com');
+      });
+
+      test('creates a complete document on a genuine first write', () async {
+        await repository.ensureUserDoc(
+          uid: 'uid1',
+          displayName: 'Alice',
+          email: 'alice@example.com',
+        );
+
+        final doc = await fakeFirestore.collection('users').doc('uid1').get();
+        expect(doc.exists, isTrue);
+        expect(doc.data()!['id'], 'uid1');
+        expect(doc.data()!['displayName'], 'Alice');
+        expect(doc.data()!['email'], 'alice@example.com');
+        expect(doc.data()!['membershipTier'], 'free');
+        expect(doc.data()!['savedRestaurantIds'], isEmpty);
+        expect(doc.data()!['blockedUserIds'], isEmpty);
+        expect(doc.data()!['createdAt'], isNotNull);
+        expect(doc.data()!['lastActiveAt'], isNotNull);
+      });
+
+      test(
+        'an existing document keeps its membershipTier and '
+        'blockedUserIds when ensureUserDoc runs again',
+        () async {
+          await fakeFirestore.collection('users').doc('uid1').set({
+            'id': 'uid1',
+            'displayName': 'Alice',
+            'email': 'alice@example.com',
+            'membershipTier': 'cityInsider',
+            'savedRestaurantIds': ['r1'],
+            'blockedUserIds': ['blocked-1'],
+            'createdAt': Timestamp.fromDate(DateTime(2024)),
+            'lastActiveAt': Timestamp.fromDate(DateTime(2024)),
+          });
+
+          await repository.ensureUserDoc(
+            uid: 'uid1',
+            displayName: 'Alice',
+            email: 'alice@example.com',
+          );
+
+          final doc =
+              await fakeFirestore.collection('users').doc('uid1').get();
+          expect(doc.data()!['membershipTier'], 'cityInsider');
+          expect(doc.data()!['blockedUserIds'], ['blocked-1']);
+          expect(doc.data()!['savedRestaurantIds'], ['r1']);
+        },
+      );
+    });
+
     group('createUser', () {
       test('creates a new user document', () async {
         final profile = UserProfile(
