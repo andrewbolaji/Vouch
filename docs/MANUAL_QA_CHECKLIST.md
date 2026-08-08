@@ -63,6 +63,7 @@ Items that require on-device verification before release. Each entry lists what 
 - [ ] Voting writes to Firestore: vote a restaurant, force-close app, reopen. Vote persists.
 - [ ] Vote count updates: after voting, the restaurant's vote count increments (may take a few seconds for the Cloud Function trigger).
 - [ ] Comments write to Firestore: add a comment, force-close app, reopen. Comment persists.
+- [ ] Comment count updates after a real callable write: post a comment, relaunch, confirm the restaurant's comment count in the Comments header increased by 1. The Firestore emulator used in automated tests does not run the deployed onCommentCreated trigger, so nothing in the test suite verifies this increment; only a real device against the deployed Cloud Function does.
 - [ ] Suggestion submission via Cloud Function: submit a suggestion, confirm it completes. Submit a second suggestion on the same day, confirm "You've hit the limit for today" error appears.
 - [ ] Offline behavior: enable airplane mode, open app. Cached data (if available) shows with "Showing saved data" indicator. Disable airplane mode, pull to refresh, live data loads.
 - [ ] Account deletion cleanup: delete account, confirm user data is removed from Firestore (votes, comments, suggestions, user doc). Requires checking Firestore console or running a query.
