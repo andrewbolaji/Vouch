@@ -16,12 +16,13 @@ import {defineSecret} from "firebase-functions/params";
 import * as auth from "firebase-functions/v1/auth";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
-import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {getFirestore, FieldValue, Timestamp} from "firebase-admin/firestore";
 import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
 import {
   applyCommentCreated,
   applyCommentDeleted,
 } from "./comment_aggregation";
+import {containsBannedContent} from "./moderation";
 import {deleteUserData} from "./user_cleanup";
 import {recomputeAllRanks} from "./rank_recompute";
 import {
@@ -150,6 +151,89 @@ export const submitSuggestion = onCall(async (request) => {
 
   logger.info(`Suggestion ${suggestionRef.id} submitted by user ${uid}`);
   return {suggestionId: suggestionRef.id};
+});
+
+// ---------------------------------------------------------------------------
+// submitComment
+//    HTTPS callable. The only path that can create a comment document;
+//    firestore.rules denies direct client creates outright. Runs the
+//    content filter server-side before writing, so a rejected comment
+//    is never created at all, not created then hidden. userName and
+//    isInsider are resolved server-side, never trusted from the
+//    client. Returns the created comment (id, createdAt, userName,
+//    isInsider) so the client never has to fabricate an id.
+//
+//    onCommentCreated (above) still fires for every comment this
+//    writes, the same as it would for any Firestore document
+//    creation regardless of who created it. It needs no change.
+// ---------------------------------------------------------------------------
+
+export const submitComment = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be signed in to comment."
+    );
+  }
+
+  const uid = request.auth.uid;
+  const {restaurantId, text, parentId} = request.data as {
+    restaurantId: string;
+    text: string;
+    parentId?: string | null;
+  };
+
+  if (!restaurantId || !text) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Both 'restaurantId' and 'text' are required."
+    );
+  }
+  if (text.length === 0 || text.length > 500) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Comment text must be between 1 and 500 characters."
+    );
+  }
+
+  if (containsBannedContent(text)) {
+    logger.warn(`Comment rejected by content filter for user ${uid}`);
+    throw new HttpsError(
+      "failed-precondition",
+      "That comment did not post. See our community guidelines."
+    );
+  }
+
+  const userSnap = await db.collection("users").doc(uid).get();
+  const userName =
+    (userSnap.data()?.displayName as string | undefined) ?? "Vouch user";
+  const isInsider = request.auth.token.membershipTier === "cityInsider";
+
+  const commentRef = db
+    .collection("restaurants")
+    .doc(restaurantId)
+    .collection("comments")
+    .doc();
+  const createdAt = Timestamp.now();
+
+  await commentRef.set({
+    restaurantId,
+    userId: uid,
+    userName,
+    text,
+    createdAt,
+    parentId: parentId ?? null,
+    isInsider,
+  });
+
+  logger.info(`Comment ${commentRef.id} submitted by user ${uid}`);
+
+  return {
+    id: commentRef.id,
+    createdAt: createdAt.toDate().toISOString(),
+    userName,
+    isInsider,
+  };
 });
 
 // ---------------------------------------------------------------------------

@@ -538,96 +538,19 @@ describe("comments", () => {
     );
   });
 
-  test("valid comment create succeeds", async () => {
+  test("DENIED: direct client create, even with a fully valid payload", async () => {
+    // submitComment is the only path that can create a comment now:
+    // it runs the content filter server-side and writes via the
+    // Admin SDK, which bypasses this rule entirely. A payload that
+    // would have passed every field-level check under the old rule
+    // (right userId, right userName, right isInsider, valid text
+    // length, server timestamp) must still be denied, because the
+    // rule denies create outright rather than validating fields.
     const db = freeUser(userUid).firestore();
-    await assertSucceeds(
+    await assertFails(
       addDoc(
         collection(db, "restaurants/hou-1/comments"),
         validComment()
-      )
-    );
-  });
-
-  test("DENIED: comment with mismatched userId (impersonation)", async () => {
-    const db = freeUser(userUid).firestore();
-    await assertFails(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        validComment({ userId: "someone-else" })
-      )
-    );
-  });
-
-  test("DENIED: comment with spoofed userName (not matching user doc)", async () => {
-    const db = freeUser(userUid).firestore();
-    await assertFails(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        validComment({ userName: "FakeNameHacker" })
-      )
-    );
-  });
-
-  test("DENIED: comment with spoofed isInsider=true (free user)", async () => {
-    const db = freeUser(userUid).firestore();
-    await assertFails(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        validComment({ isInsider: true })
-      )
-    );
-  });
-
-  test("cityInsider can create comment with isInsider=true", async () => {
-    const insiderUid = "insider-commenter";
-    await seedAsAdmin(`users/${insiderUid}`, {
-      id: insiderUid,
-      displayName: "InsiderUser",
-      email: "insider@example.com",
-      membershipTier: "cityInsider",
-    });
-    const db = cityInsiderUser(insiderUid).firestore();
-    await assertSucceeds(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        {
-          userId: insiderUid,
-          userName: "InsiderUser",
-          text: "Insider comment",
-          parentId: null,
-          isInsider: true,
-          createdAt: serverTimestamp(),
-        }
-      )
-    );
-  });
-
-  test("DENIED: empty text", async () => {
-    const db = freeUser(userUid).firestore();
-    await assertFails(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        validComment({ text: "" })
-      )
-    );
-  });
-
-  test("DENIED: text over 500 chars", async () => {
-    const db = freeUser(userUid).firestore();
-    await assertFails(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        validComment({ text: "x".repeat(501) })
-      )
-    );
-  });
-
-  test("text at exactly 500 chars succeeds", async () => {
-    const db = freeUser(userUid).firestore();
-    await assertSucceeds(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        validComment({ text: "x".repeat(500) })
       )
     );
   });
@@ -667,42 +590,6 @@ describe("comments", () => {
     );
   });
 
-  test("unauthenticated user DENIED creating comment", async () => {
-    const db = unauthenticated().firestore();
-    await assertFails(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        validComment()
-      )
-    );
-  });
-
-  test("unverified email user DENIED creating comment", async () => {
-    const unvUid = "unverified-commenter";
-    await seedAsAdmin(`users/${unvUid}`, {
-      id: unvUid,
-      displayName: "Unverified",
-      email: "unv@test.com",
-      membershipTier: "free",
-    });
-    const db = testEnv.authenticatedContext(unvUid, {
-      membershipTier: "free",
-      email_verified: false,
-    }).firestore();
-    await assertFails(
-      addDoc(
-        collection(db, "restaurants/hou-1/comments"),
-        {
-          userId: unvUid,
-          userName: "Unverified",
-          text: "Should be blocked",
-          parentId: null,
-          isInsider: false,
-          createdAt: serverTimestamp(),
-        }
-      )
-    );
-  });
 });
 
 // ================================================================

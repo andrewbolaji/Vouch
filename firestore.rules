@@ -85,20 +85,11 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read: if isAuthenticated();
 
-        allow create: if isAuthenticated()
-          && isEmailVerified()
-          // userId must match the authenticated user
-          && request.resource.data.userId == request.auth.uid
-          // text must be a non-empty string, max 500 chars
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 500
-          // userName must match the user's actual displayName
-          && request.resource.data.userName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
-          // isInsider must reflect the real custom claim
-          && request.resource.data.isInsider == (request.auth.token.membershipTier == 'cityInsider')
-          // createdAt must be the server timestamp
-          && request.resource.data.createdAt == request.time;
+        // The submitComment callable is the only way to create a
+        // comment. It runs the content filter server-side before
+        // writing and writes via the Admin SDK, which bypasses this
+        // rule entirely, so a direct client create has no path left.
+        allow create: if false;
 
         // Only the comment author can delete their own comment
         allow delete: if isAuthenticated()
