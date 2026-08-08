@@ -129,6 +129,28 @@ describe("submitComment", () => {
     expect(result.isInsider).toBe(false);
   });
 
+  test("derives userName from the user doc, not client input", async () => {
+    const result = await submitComment.run(
+      request(
+        {
+          restaurantId: "sc-r1",
+          text: "Impersonation attempt",
+          userName: "Admin",
+        },
+        authFor(uid)
+      )
+    );
+    expect(result.userName).toBe("TestUser");
+
+    const doc = await db
+      .collection("restaurants")
+      .doc("sc-r1")
+      .collection("comments")
+      .doc(result.id)
+      .get();
+    expect(doc.data()?.userName).toBe("TestUser");
+  });
+
   test("cityInsider claim produces isInsider true", async () => {
     const result = await submitComment.run(
       request(
