@@ -1,18 +1,40 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/core/error/firestore_exception_mapper.dart';
 import 'package:vouch/models/comment.dart';
+
+/// The deployed Cloud Functions region.
+const String _kFunctionsRegion = 'us-central1';
+
+/// The Firebase project ID.
+const String _kProjectId = 'majorcitymusteats';
 
 /// Repository for reading and writing comments on restaurants.
 ///
 /// Supports cursor-based pagination. Cursors are opaque base64 strings
 /// so that no DocumentSnapshot is ever leaked to callers.
+///
+/// Comments are created via the `submitComment` Cloud Function, not
+/// a direct Firestore write: firestore.rules denies a direct create
+/// outright, since the content filter has to run before anything is
+/// written, not after.
 class CommentRepository {
-  CommentRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  CommentRepository({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    http.Client? httpClient,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        _httpClient = httpClient ?? http.Client();
 
   final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
+  final http.Client _httpClient;
 
   CollectionReference<Map<String, dynamic>> _commentsRef(
     String restaurantId,
@@ -89,13 +111,90 @@ class CommentRepository {
     }
   }
 
-  /// Adds a new comment to the restaurant's comments subcollection.
-  Future<void> add(String restaurantId, Comment comment) async {
-    try {
-      await _commentsRef(restaurantId).add(comment.toJson()..remove('id'));
-    } on FirebaseException catch (e) {
-      throw mapFirestoreException(e);
+  /// Submits a new comment (or, if [parentId] is set, a reply) via the
+  /// `submitComment` Cloud Function.
+  ///
+  /// The function runs the content filter server-side before writing
+  /// anything, resolves userName and isInsider itself rather than
+  /// trusting the client, and returns the created comment. Throws
+  /// [CommentRejected] if the filter rejects the text, [NetworkException]
+  /// if the request never reached the server, [PermissionDenied] if the
+  /// user is not signed in, or [FirestoreWriteException] for anything
+  /// else unexpected.
+  Future<Comment> submitComment({
+    required String restaurantId,
+    required String text,
+    String? parentId,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw const PermissionDenied('You need to sign in to comment.');
     }
+
+    final idToken = await user.getIdToken();
+
+    final url = Uri.parse(
+      'https://$_kFunctionsRegion-$_kProjectId.cloudfunctions.net'
+      '/submitComment',
+    );
+
+    final payload = <String, dynamic>{
+      'restaurantId': restaurantId,
+      'text': text,
+      'parentId': ?parentId,
+    };
+
+    final http.Response response;
+    try {
+      response = await _httpClient.post(
+        url,
+        headers: {
+          HttpHeaders.authorizationHeader: 'Bearer $idToken',
+          HttpHeaders.contentTypeHeader: 'application/json',
+        },
+        body: jsonEncode({'data': payload}),
+      );
+    } on Exception {
+      throw const NetworkException();
+    }
+
+    if (response.statusCode != 200) {
+      _handleErrorResponse(response);
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final result = body['result'] as Map<String, dynamic>;
+
+    return Comment(
+      id: result['id'] as String,
+      restaurantId: restaurantId,
+      userId: user.uid,
+      userName: result['userName'] as String,
+      text: text,
+      createdAt: DateTime.parse(result['createdAt'] as String),
+      parentId: parentId,
+      isInsider: result['isInsider'] as bool,
+    );
+  }
+
+  void _handleErrorResponse(http.Response response) {
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final error = body['error'] as Map<String, dynamic>?;
+      final status = error?['status'] as String? ?? '';
+
+      if (status == 'UNAUTHENTICATED') {
+        throw const PermissionDenied('You need to sign in to comment.');
+      }
+      if (status == 'FAILED_PRECONDITION') {
+        throw const CommentRejected();
+      }
+    } on AppException {
+      rethrow;
+    } on Exception {
+      // JSON parse failure -- fall through to generic error.
+    }
+    throw const FirestoreWriteException();
   }
 
   /// Deletes a comment by ID from the restaurant's comments subcollection.

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vouch/models/models.dart';
@@ -9,6 +10,17 @@ import 'package:vouch/repositories/city_repository.dart';
 import 'package:vouch/repositories/comment_repository.dart';
 import 'package:vouch/repositories/restaurant_repository.dart';
 import 'package:vouch/services/auth_service.dart';
+
+/// Stands in for FirebaseAuth in CommentRepository test doubles that
+/// only exercise getPage/getReplies/submitComment overrides and never
+/// touch FirebaseAuth themselves. Its only job is to let the base
+/// constructor run without FirebaseAuth.instance, which requires a
+/// real initialized Firebase app.
+class _FakeFirebaseAuth implements FirebaseAuth {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
 
 /// Stub CityRepository that returns a fixed list without Firestore.
 class StubCityRepository extends CityRepository {
@@ -62,7 +74,8 @@ class StubRestaurantRepository extends RestaurantRepository {
 /// counts getPage calls, so a test can assert a re-entered screen did
 /// not refetch an already-loaded page.
 class CountingCommentRepository extends CommentRepository {
-  CountingCommentRepository(this._firestore) : super(firestore: _firestore);
+  CountingCommentRepository(this._firestore)
+      : super(firestore: _firestore, auth: _FakeFirebaseAuth());
 
   final FirebaseFirestore _firestore;
   int getPageCallCount = 0;
@@ -74,7 +87,10 @@ class CountingCommentRepository extends CommentRepository {
     int pageSize = 20,
   }) {
     getPageCallCount++;
-    return CommentRepository(firestore: _firestore).getPage(
+    return CommentRepository(
+      firestore: _firestore,
+      auth: _FakeFirebaseAuth(),
+    ).getPage(
       restaurantId,
       cursor: cursor,
       pageSize: pageSize,
@@ -85,7 +101,11 @@ class CountingCommentRepository extends CommentRepository {
 /// CommentRepository whose getPage always fails, for testing the
 /// error state.
 class ThrowingCommentRepository extends CommentRepository {
-  ThrowingCommentRepository() : super(firestore: FakeFirebaseFirestore());
+  ThrowingCommentRepository()
+      : super(
+          firestore: FakeFirebaseFirestore(),
+          auth: _FakeFirebaseAuth(),
+        );
 
   @override
   Future<({List<Comment> comments, String? nextCursor})> getPage(
@@ -106,7 +126,10 @@ class ThrowingCommentRepository extends CommentRepository {
 /// null), not to re-prove Firestore's own cursor semantics.
 class SequencedCommentRepository extends CommentRepository {
   SequencedCommentRepository(this._pages)
-      : super(firestore: FakeFirebaseFirestore());
+      : super(
+          firestore: FakeFirebaseFirestore(),
+          auth: _FakeFirebaseAuth(),
+        );
 
   final List<({List<Comment> comments, String? nextCursor})> _pages;
   final List<String?> cursorsReceived = [];
@@ -127,6 +150,33 @@ class SequencedCommentRepository extends CommentRepository {
     String commentId,
   ) async =>
       const [];
+}
+
+/// CommentRepository whose submitComment returns a synthetic Comment
+/// instead of calling the real submitComment Cloud Function, for
+/// testing AppState.addComment's online path without a network call.
+class FakeSubmitCommentRepository extends CommentRepository {
+  FakeSubmitCommentRepository({FirebaseFirestore? firestore})
+      : super(
+          firestore: firestore ?? FakeFirebaseFirestore(),
+          auth: _FakeFirebaseAuth(),
+        );
+
+  @override
+  Future<Comment> submitComment({
+    required String restaurantId,
+    required String text,
+    String? parentId,
+  }) async =>
+      Comment(
+        id: 'server-generated-id',
+        restaurantId: restaurantId,
+        userId: 'user1',
+        userName: 'Alice',
+        text: text,
+        createdAt: DateTime(2026),
+        parentId: parentId,
+      );
 }
 
 void main() {
@@ -286,7 +336,7 @@ void main() {
       final beforeCount =
           state.commentsForRestaurant('hou-1').length;
 
-      state.addComment(
+      await state.addComment(
         restaurantId: 'hou-1',
         text: 'Test comment',
       );
@@ -303,13 +353,13 @@ void main() {
         const Duration(milliseconds: 600),
       );
 
-      state.addComment(
+      await state.addComment(
         restaurantId: 'hou-1',
         text: 'A reply',
         parentId: 'c1',
       );
 
-      final replies = state.repliesForComment('c1');
+      final replies = state.repliesForComment('c1', restaurantId: 'hou-1');
       expect(replies.last.text, 'A reply');
     });
 
@@ -542,7 +592,11 @@ void main() {
         cityRepo: StubCityRepository(),
         restaurantRepo: StubRestaurantRepository(restaurant),
         commentRepo:
-            commentRepo ?? CommentRepository(firestore: fakeFirestore),
+            commentRepo ??
+                CommentRepository(
+                  firestore: fakeFirestore,
+                  auth: _FakeFirebaseAuth(),
+                ),
       );
     }
 
@@ -698,7 +752,10 @@ void main() {
 
         await state.loadCommentsForRestaurant('online-r1');
 
-        final replies = state.repliesForComment('c1', 'online-r1');
+        final replies = state.repliesForComment(
+          'c1',
+          restaurantId: 'online-r1',
+        );
         expect(replies, hasLength(1));
         expect(replies.first.text, 'A reply');
       },
@@ -712,12 +769,17 @@ void main() {
           text: 'Old comment',
           createdAt: DateTime(2026),
         );
-        final state = buildState();
+        final state = buildState(
+          commentRepo: FakeSubmitCommentRepository(firestore: fakeFirestore),
+        );
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
         await state.loadCommentsForRestaurant('online-r1');
 
-        state.addComment(restaurantId: 'online-r1', text: 'New comment');
+        await state.addComment(
+          restaurantId: 'online-r1',
+          text: 'New comment',
+        );
 
         final comments = state.commentsForRestaurant('online-r1');
         expect(comments.first.text, 'New comment');
@@ -728,18 +790,40 @@ void main() {
     test(
       'addComment bumps restaurant.commentCount locally',
       () async {
-        final state = buildState();
+        final state = buildState(commentRepo: FakeSubmitCommentRepository());
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
         await state.loadCommentsForRestaurant('online-r1');
 
         final before = state.restaurantById('online-r1')!.commentCount;
-        state.addComment(restaurantId: 'online-r1', text: 'New comment');
+        await state.addComment(
+          restaurantId: 'online-r1',
+          text: 'New comment',
+        );
 
         expect(
           state.restaurantById('online-r1')!.commentCount,
           before + 1,
         );
+      },
+    );
+
+    test(
+      'addComment appends only the comment returned by the callable',
+      () async {
+        final state = buildState(commentRepo: FakeSubmitCommentRepository());
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await state.loadCommentsForRestaurant('online-r1');
+
+        await state.addComment(
+          restaurantId: 'online-r1',
+          text: 'New comment',
+        );
+
+        final comment = state.commentsForRestaurant('online-r1').first;
+        expect(comment.id, 'server-generated-id');
+        expect(comment.userName, 'Alice');
       },
     );
   });

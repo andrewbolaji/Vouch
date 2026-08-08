@@ -12,6 +12,7 @@ import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
 import 'package:vouch/screens/blocked_users_screen.dart';
+import 'package:vouch/screens/community_guidelines_screen.dart';
 import 'package:vouch/screens/notification_settings_screen.dart';
 import 'package:vouch/screens/saved_restaurants_screen.dart';
 import 'package:vouch/screens/sign_in_screen.dart';
@@ -153,6 +154,15 @@ class ProfileScreen extends StatelessWidget {
               icon: Icons.share_outlined,
               label: 'Share App',
               onTap: ShareService.shareApp,
+            ),
+            _ProfileMenuItem(
+              icon: Icons.gavel_outlined,
+              label: 'Community Guidelines',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const CommunityGuidelinesScreen(),
+                ),
+              ),
             ),
             _ProfileMenuItem(
               icon: Icons.info_outline,

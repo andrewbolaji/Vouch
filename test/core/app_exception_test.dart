@@ -64,6 +64,7 @@ void main() {
         ServiceUnavailable() => 'unavailable',
         RateLimited() => 'limited',
         FirestoreWriteException() => 'write-error',
+        CommentRejected() => 'rejected',
       };
       expect(result, equals('auth:${AuthErrorKind.invalidCredentials}'));
     });
@@ -76,6 +77,11 @@ void main() {
     test('RateLimited has default message', () {
       const e = RateLimited();
       expect(e.message, contains('limit'));
+    });
+
+    test('CommentRejected has default message', () {
+      const e = CommentRejected();
+      expect(e.message, contains('guidelines'));
     });
   });
 }

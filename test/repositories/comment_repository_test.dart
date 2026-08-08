@@ -1,10 +1,19 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vouch/models/models.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart' as http_testing;
+import 'package:mocktail/mocktail.dart';
+import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/repositories/comment_repository.dart';
+
+class MockFirebaseAuth extends Mock implements FirebaseAuth {}
+
+class MockUser extends Mock implements User {}
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
@@ -12,7 +21,9 @@ void main() {
 
   setUp(() {
     fakeFirestore = FakeFirebaseFirestore();
-    repository = CommentRepository(firestore: fakeFirestore);
+    final auth = MockFirebaseAuth();
+    when(() => auth.currentUser).thenReturn(null);
+    repository = CommentRepository(firestore: fakeFirestore, auth: auth);
   });
 
   CollectionReference<Map<String, dynamic>> commentsRef(String restaurantId) =>
@@ -216,23 +227,204 @@ void main() {
       });
     });
 
-    group('add', () {
-      test('adds a comment to the subcollection', () async {
-        final comment = Comment(
-          id: '',
-          restaurantId: 'r1',
-          userId: 'user1',
-          userName: 'Alice',
-          text: 'Amazing food!',
-          createdAt: DateTime(2024, 5),
+    group('submitComment', () {
+      late MockFirebaseAuth mockAuth;
+      late MockUser mockUser;
+
+      setUp(() {
+        mockAuth = MockFirebaseAuth();
+        mockUser = MockUser();
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.uid).thenReturn('user1');
+        when(() => mockUser.getIdToken()).thenAnswer((_) async => 'tok');
+      });
+
+      test('sends correct HTTPS POST and returns the created comment',
+          () async {
+        Uri? capturedUri;
+        Map<String, String>? capturedHeaders;
+        String? capturedBody;
+
+        final client = http_testing.MockClient((request) async {
+          capturedUri = request.url;
+          capturedHeaders = request.headers;
+          capturedBody = request.body;
+          return http.Response(
+            jsonEncode({
+              'result': {
+                'id': 'c1',
+                'createdAt': '2026-01-01T00:00:00.000Z',
+                'userName': 'Alice',
+                'isInsider': false,
+              },
+            }),
+            200,
+          );
+        });
+
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
         );
 
-        await repository.add('r1', comment);
+        final comment = await repo.submitComment(
+          restaurantId: 'r1',
+          text: 'Amazing food!',
+        );
 
-        final snapshot = await commentsRef('r1').get();
-        expect(snapshot.docs, hasLength(1));
-        expect(snapshot.docs.first.data()['text'], 'Amazing food!');
-        expect(snapshot.docs.first.data()['userId'], 'user1');
+        expect(
+          capturedUri.toString(),
+          'https://us-central1-majorcitymusteats.cloudfunctions.net'
+              '/submitComment',
+        );
+        expect(capturedHeaders!['authorization'], 'Bearer tok');
+        final sentData =
+            (jsonDecode(capturedBody!) as Map<String, dynamic>)['data']
+                as Map<String, dynamic>;
+        expect(sentData['restaurantId'], 'r1');
+        expect(sentData['text'], 'Amazing food!');
+        expect(sentData.containsKey('parentId'), isFalse);
+
+        expect(comment.id, 'c1');
+        expect(comment.restaurantId, 'r1');
+        expect(comment.userId, 'user1');
+        expect(comment.userName, 'Alice');
+        expect(comment.text, 'Amazing food!');
+        expect(comment.isInsider, false);
+        expect(comment.parentId, isNull);
+      });
+
+      test('includes parentId in the payload for a reply', () async {
+        String? capturedBody;
+        final client = http_testing.MockClient((request) async {
+          capturedBody = request.body;
+          return http.Response(
+            jsonEncode({
+              'result': {
+                'id': 'c2',
+                'createdAt': '2026-01-01T00:00:00.000Z',
+                'userName': 'Alice',
+                'isInsider': false,
+              },
+            }),
+            200,
+          );
+        });
+
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
+        );
+
+        final reply = await repo.submitComment(
+          restaurantId: 'r1',
+          text: 'A reply',
+          parentId: 'c1',
+        );
+
+        final sentData =
+            (jsonDecode(capturedBody!) as Map<String, dynamic>)['data']
+                as Map<String, dynamic>;
+        expect(sentData['parentId'], 'c1');
+        expect(reply.parentId, 'c1');
+      });
+
+      test('throws NetworkException when the request never reaches '
+          'the server', () async {
+        final client = http_testing.MockClient((_) async {
+          throw const SocketException('no network');
+        });
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
+        );
+
+        expect(
+          () => repo.submitComment(restaurantId: 'r1', text: 'Hi'),
+          throwsA(isA<NetworkException>()),
+        );
+      });
+
+      test('throws PermissionDenied when user is null', () async {
+        when(() => mockAuth.currentUser).thenReturn(null);
+        final client = http_testing.MockClient((_) async {
+          fail('Should not make HTTP request');
+        });
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
+        );
+
+        expect(
+          () => repo.submitComment(restaurantId: 'r1', text: 'Hi'),
+          throwsA(isA<PermissionDenied>()),
+        );
+      });
+
+      test('throws PermissionDenied on UNAUTHENTICATED error', () async {
+        final client = http_testing.MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'error': {'status': 'UNAUTHENTICATED', 'message': 'Expired.'},
+            }),
+            401,
+          );
+        });
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
+        );
+
+        expect(
+          () => repo.submitComment(restaurantId: 'r1', text: 'Hi'),
+          throwsA(isA<PermissionDenied>()),
+        );
+      });
+
+      test('throws CommentRejected on FAILED_PRECONDITION error', () async {
+        final client = http_testing.MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'error': {
+                'status': 'FAILED_PRECONDITION',
+                'message': 'That comment did not post.',
+              },
+            }),
+            400,
+          );
+        });
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
+        );
+
+        expect(
+          () => repo.submitComment(restaurantId: 'r1', text: 'Bad text'),
+          throwsA(isA<CommentRejected>()),
+        );
+      });
+
+      test('throws FirestoreWriteException on unknown server error',
+          () async {
+        final client = http_testing.MockClient((_) async {
+          return http.Response('Internal Server Error', 500);
+        });
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
+        );
+
+        expect(
+          () => repo.submitComment(restaurantId: 'r1', text: 'Boom'),
+          throwsA(isA<FirestoreWriteException>()),
+        );
       });
     });
 

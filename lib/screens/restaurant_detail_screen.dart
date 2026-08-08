@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/core/utils/block_filter.dart';
 import 'package:vouch/core/utils/format_utils.dart';
 import 'package:vouch/models/comment.dart';
@@ -11,6 +12,7 @@ import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/report_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
 import 'package:vouch/repositories/user_repository.dart';
+import 'package:vouch/screens/community_guidelines_screen.dart';
 import 'package:vouch/screens/sign_in_screen.dart';
 import 'package:vouch/screens/upgrade_screen.dart';
 import 'package:vouch/services/analytics_service.dart';
@@ -43,6 +45,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   final GlobalKey _commentsSectionKey = GlobalKey();
   String? _replyingToId;
   String? _replyingToUserName;
+  bool _isSubmittingComment = false;
   Set<String> _blockedUserIds = {};
 
   UserRepository get _userRepo {
@@ -505,11 +508,23 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       ),
                       const SizedBox(width: AppTheme.spacingSm),
                       IconButton(
-                        onPressed: _submitComment,
+                        onPressed:
+                            _isSubmittingComment ? null : _submitComment,
                         tooltip: _replyingToId != null
                             ? 'Send reply'
                             : 'Send comment',
-                        icon: Icon(Icons.send, color: AppTheme.accent),
+                        icon: _isSubmittingComment
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.accent,
+                                  ),
+                                ),
+                              )
+                            : Icon(Icons.send, color: AppTheme.accent),
                       ),
                     ],
                   ),
@@ -580,7 +595,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       final replies = filterBlockedComments(
                         appState.repliesForComment(
                           comment.id,
-                          widget.restaurantId,
+                          restaurantId: widget.restaurantId,
                         ),
                         _blockedUserIds,
                       );
@@ -669,21 +684,59 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     });
   }
 
-  void _submitComment() {
-    if (_commentController.text.trim().isEmpty) return;
+  Future<void> _submitComment() async {
+    if (_commentController.text.trim().isEmpty || _isSubmittingComment) {
+      return;
+    }
     final appState = context.read<AppState>();
     final membership = context.read<MembershipProvider>();
-    appState.addComment(
-      restaurantId: widget.restaurantId,
-      text: _commentController.text.trim(),
-      parentId: _replyingToId,
-      isInsider: membership.hasInsiderBadge,
-    );
-    context.read<AnalyticsService>().logCommentSubmit(
-      restaurantId: widget.restaurantId,
-    );
-    _commentController.clear();
-    _cancelReply();
+    final text = _commentController.text.trim();
+    final parentId = _replyingToId;
+
+    setState(() => _isSubmittingComment = true);
+    try {
+      await appState.addComment(
+        restaurantId: widget.restaurantId,
+        text: text,
+        parentId: parentId,
+        isInsider: membership.hasInsiderBadge,
+      );
+      if (!mounted) return;
+      context.read<AnalyticsService>().logCommentSubmit(
+        restaurantId: widget.restaurantId,
+      );
+      _commentController.clear();
+      _cancelReply();
+    } on CommentRejected catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppTheme.error,
+          action: SnackBarAction(
+            label: 'Guidelines',
+            textColor: AppTheme.onAccent,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CommunityGuidelinesScreen(),
+              ),
+            ),
+          ),
+        ),
+      );
+    } on Exception catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Could not send. Check your connection and try again.',
+          ),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmittingComment = false);
+    }
   }
 
   Future<void> _reportComment(Comment comment) async {

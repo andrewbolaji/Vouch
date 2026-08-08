@@ -121,6 +121,11 @@ void main() {
         );
         await tester.pumpAndSettle(seedLoadDuration);
 
+        await tester.scrollUntilVisible(
+          find.text('About'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
         await tester.tap(find.text('About'));
         await tester.pumpAndSettle();
 

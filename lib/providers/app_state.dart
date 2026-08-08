@@ -163,27 +163,20 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  /// [restaurantId] is required for the online path (replies are
-  /// stored per restaurant) but optional for backward compatibility
-  /// with the offline/seed path, which only ever needed the comment id.
-  List<Comment> repliesForComment(String commentId, [String? restaurantId]) {
+  List<Comment> repliesForComment(
+    String commentId, {
+    required String restaurantId,
+  }) {
     if (_usingSeedComments) {
       return _comments
           .where((c) => c.parentId == commentId)
           .toList()
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     }
-    if (restaurantId != null) {
-      return List.unmodifiable(
-        _restaurantComments[restaurantId]?.repliesByCommentId[commentId] ??
-            const [],
-      );
-    }
-    for (final state in _restaurantComments.values) {
-      final replies = state.repliesByCommentId[commentId];
-      if (replies != null) return List.unmodifiable(replies);
-    }
-    return const [];
+    return List.unmodifiable(
+      _restaurantComments[restaurantId]?.repliesByCommentId[commentId] ??
+          const [],
+    );
   }
 
   /// Where restaurantId's comment page is in its load lifecycle.
@@ -424,65 +417,77 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void addComment({
+  /// Submits a comment (or, if [parentId] is set, a reply).
+  ///
+  /// In the offline/seed fallback, the comment is fabricated locally
+  /// since there is no server to ask. Otherwise this awaits the
+  /// `submitComment` callable and only appends the comment it
+  /// returns: unlike a direct Firestore write, a callable cannot
+  /// queue while offline, so a failure here is a real failure and is
+  /// left for the caller to catch and show.
+  Future<void> addComment({
     required String restaurantId,
     required String text,
     String? parentId,
     bool isInsider = false,
-  }) {
-    final comment = Comment(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      restaurantId: restaurantId,
-      userId: 'anonymous',
-      userName: 'Local',
-      text: text,
-      createdAt: DateTime.now(),
-      parentId: parentId,
-      isInsider: isInsider,
-    );
+  }) async {
     if (_usingSeedComments) {
+      final comment = Comment(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        restaurantId: restaurantId,
+        userId: 'anonymous',
+        userName: 'Local',
+        text: text,
+        createdAt: DateTime.now(),
+        parentId: parentId,
+        isInsider: isInsider,
+      );
       _comments.add(comment);
+      _bumpCommentCount(restaurantId);
+      notifyListeners();
+      return;
+    }
+
+    final repo = _commentRepo ?? CommentRepository();
+    final comment = await repo.submitComment(
+      restaurantId: restaurantId,
+      text: text,
+      parentId: parentId,
+    );
+
+    final existing = _restaurantComments[restaurantId] ??
+        const RestaurantCommentsState.loaded(
+          comments: [],
+          repliesByCommentId: {},
+        );
+    if (parentId == null) {
+      // getPage orders createdAt descending, so the newest comment
+      // goes at index 0, not the end.
+      _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+        comments: [comment, ...existing.comments],
+        repliesByCommentId: existing.repliesByCommentId,
+        nextCursor: existing.nextCursor,
+        isLoadingMore: existing.isLoadingMore,
+      );
     } else {
-      final existing = _restaurantComments[restaurantId] ??
-          const RestaurantCommentsState.loaded(
-            comments: [],
-            repliesByCommentId: {},
-          );
-      if (parentId == null) {
-        // getPage orders createdAt descending, so the newest comment
-        // goes at index 0, not the end.
-        _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
-          comments: [comment, ...existing.comments],
-          repliesByCommentId: existing.repliesByCommentId,
-          nextCursor: existing.nextCursor,
-          isLoadingMore: existing.isLoadingMore,
-        );
-      } else {
-        // getReplies orders createdAt ascending, so the newest reply
-        // goes at the end of its parent's list.
-        final updatedReplies = Map<String, List<Comment>>.from(
-          existing.repliesByCommentId,
-        );
-        updatedReplies[parentId] = [
-          ...(updatedReplies[parentId] ?? const []),
-          comment,
-        ];
-        _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
-          comments: existing.comments,
-          repliesByCommentId: updatedReplies,
-          nextCursor: existing.nextCursor,
-          isLoadingMore: existing.isLoadingMore,
-        );
-      }
+      // getReplies orders createdAt ascending, so the newest reply
+      // goes at the end of its parent's list.
+      final updatedReplies = Map<String, List<Comment>>.from(
+        existing.repliesByCommentId,
+      );
+      updatedReplies[parentId] = [
+        ...(updatedReplies[parentId] ?? const []),
+        comment,
+      ];
+      _restaurantComments[restaurantId] = RestaurantCommentsState.loaded(
+        comments: existing.comments,
+        repliesByCommentId: updatedReplies,
+        nextCursor: existing.nextCursor,
+        isLoadingMore: existing.isLoadingMore,
+      );
     }
     _bumpCommentCount(restaurantId);
     notifyListeners();
-
-    if (_useFirebase && _commentRepo != null) {
-      unawaited(
-        _commentRepo.add(restaurantId, comment),
-      );
-    }
   }
 
   /// Bumps commentCount locally so the header does not lag behind

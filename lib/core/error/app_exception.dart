@@ -121,3 +121,13 @@ class FirestoreWriteException extends AppException {
         'Check your connection and try again.',
   ]);
 }
+
+/// The content filter rejected a comment or reply before it was ever
+/// written. Deliberately neutral: it answers the question the user
+/// is about to ask without being accusatory.
+class CommentRejected extends AppException {
+  const CommentRejected([
+    super.message = 'That comment did not post. '
+        'See our community guidelines.',
+  ]);
+}
