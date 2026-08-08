@@ -6,7 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:vouch/core/error/app_exception.dart';
+import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/secure_storage_service.dart';
 
@@ -25,6 +27,27 @@ class MockUserInfo extends Mock implements fb.UserInfo {}
 class FakeAuthProvider extends Fake implements fb.AuthProvider {}
 
 class FakeAuthCredential extends Fake implements fb.AuthCredential {}
+
+/// Records ensureUserDoc calls instead of touching Firestore, so the
+/// Apple sign-in test can assert what would have been written without
+/// needing a real or fake Firestore instance.
+class _RecordingUserRepository implements UserRepository {
+  final List<({String uid, String displayName, String email})>
+      ensureUserDocCalls = [];
+
+  @override
+  Future<void> ensureUserDoc({
+    required String uid,
+    required String displayName,
+    required String email,
+  }) async {
+    ensureUserDocCalls.add((uid: uid, displayName: displayName, email: email));
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
 
 void main() {
   setUpAll(() {
@@ -83,6 +106,7 @@ void main() {
     return AuthService(
       firebaseAuth: mockAuth,
       secureStorage: mockStorage,
+      userRepository: _RecordingUserRepository(),
     );
   }
 
@@ -435,11 +459,108 @@ void main() {
       expect(service.isLoading, isFalse);
     });
 
-    // Note: signInWithGoogle and signInWithApple now use native SDK
-    // classes (GoogleSignIn, SignInWithApple) that require platform
-    // channels. Those flows are tested via integration tests on
-    // device. The credential handoff to signInWithCredential is
-    // verified by the signInWithEmail tests which exercise the same
-    // Firebase Auth pipeline.
+    // Note: signInWithGoogle still uses the GoogleSignIn native SDK
+    // class directly, so that flow is tested via integration tests on
+    // device only. signInWithApple's native credential fetch is
+    // injectable (appleCredentialFetcher), so the post-credential
+    // logic below is unit tested; only the native call itself is
+    // left to device testing.
+
+    test(
+      'signInWithApple sets the display name from the Apple credential '
+      'when Firebase has none',
+      () async {
+        final mockUser = MockFirebaseUser();
+        final mockCred = MockUserCredential();
+        final providerInfo = MockUserInfo();
+        final userRepo = _RecordingUserRepository();
+
+        when(() => providerInfo.providerId).thenReturn('apple.com');
+        when(() => mockUser.uid).thenReturn('uid-apple');
+        when(() => mockUser.email).thenReturn('a@icloud.com');
+        when(() => mockUser.displayName).thenReturn(null);
+        when(() => mockUser.photoURL).thenReturn(null);
+        when(() => mockUser.providerData).thenReturn([providerInfo]);
+        when(() => mockUser.emailVerified).thenReturn(true);
+        when(() => mockUser.getIdToken()).thenAnswer((_) async => 'token');
+        when(() => mockUser.reload()).thenAnswer((_) async {});
+        when(() => mockUser.updateDisplayName(any())).thenAnswer(
+          (invocation) async {
+            final name = invocation.positionalArguments[0] as String?;
+            when(() => mockUser.displayName).thenReturn(name);
+          },
+        );
+        when(() => mockCred.user).thenReturn(mockUser);
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockAuth.signInWithCredential(any()))
+            .thenAnswer((_) async => mockCred);
+
+        final service = AuthService(
+          firebaseAuth: mockAuth,
+          secureStorage: mockStorage,
+          userRepository: userRepo,
+          appleCredentialFetcher: ({required scopes}) async =>
+              const AuthorizationCredentialAppleID(
+                userIdentifier: 'apple-user-id',
+                givenName: 'Ada',
+                familyName: 'Lovelace',
+                authorizationCode: 'auth-code',
+                email: 'a@icloud.com',
+                identityToken: 'identity-token',
+                state: null,
+              ),
+        );
+
+        await service.signInWithApple();
+
+        verify(() => mockUser.updateDisplayName('Ada Lovelace')).called(1);
+        expect(service.currentUser?.displayName, 'Ada Lovelace');
+        expect(userRepo.ensureUserDocCalls, hasLength(1));
+        expect(userRepo.ensureUserDocCalls.single.displayName, 'Ada Lovelace');
+        expect(userRepo.ensureUserDocCalls.single.uid, 'uid-apple');
+      },
+    );
+
+    test(
+      'signInWithApple does not overwrite an existing display name',
+      () async {
+        final mockUser = MockFirebaseUser();
+        final mockCred = MockUserCredential();
+        final userRepo = _RecordingUserRepository();
+
+        when(() => mockUser.uid).thenReturn('uid-apple-2');
+        when(() => mockUser.email).thenReturn('a@icloud.com');
+        when(() => mockUser.displayName).thenReturn('Already Set');
+        when(() => mockUser.photoURL).thenReturn(null);
+        when(() => mockUser.providerData).thenReturn([]);
+        when(() => mockUser.emailVerified).thenReturn(true);
+        when(() => mockUser.getIdToken()).thenAnswer((_) async => 'token');
+        when(() => mockCred.user).thenReturn(mockUser);
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockAuth.signInWithCredential(any()))
+            .thenAnswer((_) async => mockCred);
+
+        final service = AuthService(
+          firebaseAuth: mockAuth,
+          secureStorage: mockStorage,
+          userRepository: userRepo,
+          appleCredentialFetcher: ({required scopes}) async =>
+              const AuthorizationCredentialAppleID(
+                userIdentifier: 'apple-user-id-2',
+                givenName: 'Ada',
+                familyName: 'Lovelace',
+                authorizationCode: 'auth-code',
+                email: 'a@icloud.com',
+                identityToken: 'identity-token',
+                state: null,
+              ),
+        );
+
+        await service.signInWithApple();
+
+        verifyNever(() => mockUser.updateDisplayName(any()));
+        expect(userRepo.ensureUserDocCalls, isEmpty);
+      },
+    );
   });
 }

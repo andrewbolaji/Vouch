@@ -205,8 +205,18 @@ export const submitComment = onCall(async (request) => {
   }
 
   const userSnap = await db.collection("users").doc(uid).get();
-  const userName =
-    (userSnap.data()?.displayName as string | undefined) ?? "Vouch user";
+  const userName = (userSnap.data()?.displayName as string | undefined) ?? "";
+  if (userName.trim().length === 0) {
+    // Distinct from "invalid-argument" (bad text) and
+    // "failed-precondition" (content filter): this is neither, it is
+    // an account that is not ready to comment yet. The client needs
+    // to tell these apart so it can offer the right fix (collect a
+    // name) instead of a generic error.
+    throw new HttpsError(
+      "aborted",
+      "Add a display name before commenting."
+    );
+  }
   const isInsider = request.auth.token.membershipTier === "cityInsider";
 
   const commentRef = db

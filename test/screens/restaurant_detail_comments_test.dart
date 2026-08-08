@@ -202,6 +202,41 @@ class _RejectingCommentRepository extends CommentRepository {
       throw const CommentRejected();
 }
 
+/// submitComment throws [DisplayNameRequired] on the first call
+/// (simulating a user with no display name on file), then succeeds
+/// on every call after that, so a retry after setting a name can be
+/// verified end to end.
+class _DisplayNameRequiredThenSucceedsRepository extends CommentRepository {
+  _DisplayNameRequiredThenSucceedsRepository()
+      : super(
+          firestore: FakeFirebaseFirestore(),
+          auth: _FakeFirebaseAuth(),
+        );
+
+  int callCount = 0;
+
+  @override
+  Future<Comment> submitComment({
+    required String restaurantId,
+    required String text,
+    String? parentId,
+  }) async {
+    callCount++;
+    if (callCount == 1) {
+      throw const DisplayNameRequired();
+    }
+    return Comment(
+      id: 'server-id',
+      restaurantId: restaurantId,
+      userId: 'test-uid',
+      userName: 'Newly Named',
+      text: text,
+      createdAt: DateTime(2026),
+      parentId: parentId,
+    );
+  }
+}
+
 /// submitComment throws [NetworkException], simulating the request
 /// never reaching the server.
 class _NetworkFailingCommentRepository extends CommentRepository {
@@ -587,6 +622,73 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Community guidelines'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'DisplayNameRequired shows a set-name dialog and retries '
+      'successfully after saving a name',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildApp(
+            commentRepo: _DisplayNameRequiredThenSucceedsRepository(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await _scrollToComments(tester);
+
+        await tester.enterText(find.byType(TextField), 'My first comment');
+        await tester.pump();
+        await tester.tap(find.byIcon(Icons.send));
+        // Not pumpAndSettle: _isSubmittingComment stays true (and its
+        // indeterminate CircularProgressIndicator keeps animating)
+        // for the whole dialog-and-retry flow, which would never let
+        // pumpAndSettle's frame-quiet check succeed.
+        await _pumpFrames(tester, 10);
+
+        // The rejection itself never surfaces as a snackbar: the
+        // dialog appears in its place.
+        expect(find.text('Add your name'), findsOneWidget);
+        expect(
+          find.text('Could not send. Check your connection and try again.'),
+          findsNothing,
+        );
+
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Your name'),
+          'Newly Named',
+        );
+        await tester.tap(find.text('Save'));
+        await _pumpFrames(tester, 10);
+
+        // The dialog is gone, the submission finished (the spinner
+        // stopped), and the original comment was retried and posted
+        // under the name just set.
+        expect(find.text('Add your name'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('My first comment'), findsOneWidget);
+        expect(find.text('Newly Named'), findsOneWidget);
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.controller!.text, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'CommentRejected does not show the set-name dialog',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildApp(commentRepo: _RejectingCommentRepository()),
+        );
+        await tester.pumpAndSettle();
+        await _scrollToComments(tester);
+
+        await tester.enterText(find.byType(TextField), 'A bad comment');
+        await tester.pump();
+        await tester.tap(find.byIcon(Icons.send));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Add your name'), findsNothing);
       },
     );
 

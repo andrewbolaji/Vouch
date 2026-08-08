@@ -119,6 +119,44 @@ describe("submitComment", () => {
       expect(doc.data()?.userId).toBe(uid);
     });
 
+  test("rejects with a distinct code when the user has no displayName",
+    async () => {
+      await db.collection("users").doc(uid).set({
+        id: uid,
+        email: "test@example.com",
+        membershipTier: "free",
+      });
+
+      await expect(
+        submitComment.run(
+          request({restaurantId: "sc-r1", text: "Hello"}, authFor(uid))
+        )
+      ).rejects.toMatchObject({code: "aborted"});
+
+      const comments = await db
+        .collection("restaurants")
+        .doc("sc-r1")
+        .collection("comments")
+        .get();
+      expect(comments.size).toBe(0);
+    });
+
+  test("rejects with a distinct code when displayName is empty after " +
+    "trimming", async () => {
+    await db.collection("users").doc(uid).set({
+      id: uid,
+      displayName: "   ",
+      email: "test@example.com",
+      membershipTier: "free",
+    });
+
+    await expect(
+      submitComment.run(
+        request({restaurantId: "sc-r1", text: "Hello"}, authFor(uid))
+      )
+    ).rejects.toMatchObject({code: "aborted"});
+  });
+
   test("derives isInsider from the token claim, not client input", async () => {
     const result = await submitComment.run(
       request(

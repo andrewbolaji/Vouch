@@ -7,11 +7,18 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:vouch/core/error/app_exception.dart';
+import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/revenue_cat_service.dart';
 import 'package:vouch/services/secure_storage_service.dart';
 
 enum AuthMethod { anonymous, email, google, apple }
+
+/// Fetches an Apple ID credential. Matches the subset of
+/// [SignInWithApple.getAppleIDCredential]'s signature this service
+/// uses, so a fake can stand in for the native SDK call in tests.
+typedef AppleCredentialFetcher = Future<AuthorizationCredentialAppleID>
+    Function({required List<AppleIDAuthorizationScopes> scopes});
 
 class AuthUser {
   const AuthUser({
@@ -49,9 +56,14 @@ class AuthService extends ChangeNotifier {
     fb.FirebaseAuth? firebaseAuth,
     SecureStorageService? secureStorage,
     AnalyticsService? analyticsService,
+    UserRepository? userRepository,
+    AppleCredentialFetcher? appleCredentialFetcher,
   })  : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
         _secureStorage = secureStorage ?? SecureStorageService(),
         _analyticsService = analyticsService,
+        _userRepo = userRepository ?? UserRepository(),
+        _appleCredentialFetcher =
+            appleCredentialFetcher ?? SignInWithApple.getAppleIDCredential,
         _authSub = (firebaseAuth ?? fb.FirebaseAuth.instance)
             .authStateChanges()
             .listen(null) {
@@ -63,6 +75,8 @@ class AuthService extends ChangeNotifier {
       : _firebaseAuth = null,
         _secureStorage = null,
         _analyticsService = null,
+        _userRepo = null,
+        _appleCredentialFetcher = null,
         _authSub = null {
     _currentUser = initialUser;
   }
@@ -70,6 +84,8 @@ class AuthService extends ChangeNotifier {
   final fb.FirebaseAuth? _firebaseAuth;
   final SecureStorageService? _secureStorage;
   final AnalyticsService? _analyticsService;
+  final UserRepository? _userRepo;
+  final AppleCredentialFetcher? _appleCredentialFetcher;
   final StreamSubscription<fb.User?>? _authSub;
 
   AuthUser? _currentUser;
@@ -283,7 +299,7 @@ class AuthService extends ChangeNotifier {
   Future<void> signInWithApple() async {
     _setLoading(true);
     try {
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
+      final appleCredential = await _appleCredentialFetcher!(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
@@ -294,6 +310,7 @@ class AuthService extends ChangeNotifier {
         accessToken: appleCredential.authorizationCode,
       );
       await _firebaseAuth!.signInWithCredential(oauthCredential);
+      await _applyAppleDisplayNameIfNeeded(appleCredential);
       _analyticsService?.logSignIn(method: 'apple');
     } on SignInWithAppleAuthorizationException catch (e) {
       _setLoading(false);
@@ -317,6 +334,36 @@ class AuthService extends ChangeNotifier {
     _setLoading(false);
   }
 
+  /// Apple only returns [AuthorizationCredentialAppleID.givenName] and
+  /// [AuthorizationCredentialAppleID.familyName] on the very first
+  /// authorization between this app and the user's Apple ID; every
+  /// later sign-in gets neither. Firebase Auth never populates
+  /// [fb.User.displayName] from an Apple credential on its own, so
+  /// this is the only chance to capture a name at all. Best-effort:
+  /// failing to set a name here does not fail the sign-in, since the
+  /// user is already signed in by the time this runs.
+  Future<void> _applyAppleDisplayNameIfNeeded(
+    AuthorizationCredentialAppleID credential,
+  ) async {
+    final user = _firebaseAuth!.currentUser;
+    if (user == null) return;
+    if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
+      return;
+    }
+
+    final fullName = [credential.givenName, credential.familyName]
+        .where((part) => part != null && part.trim().isNotEmpty)
+        .join(' ')
+        .trim();
+    if (fullName.isEmpty) return;
+
+    try {
+      await updateDisplayName(fullName);
+    } on Exception catch (e) {
+      _log('apple', 'failed to set display name from Apple credential: $e');
+    }
+  }
+
   /// Sign out the current user.
   Future<void> signOut() async {
     _setLoading(true);
@@ -329,20 +376,50 @@ class AuthService extends ChangeNotifier {
     _setLoading(false);
   }
 
-  /// Update the current user's display name.
+  /// Update the current user's display name, in both Firebase Auth
+  /// and the Firestore user doc, so a comment posted immediately
+  /// after does not race a reactive sync elsewhere.
+  ///
+  /// Unlike most methods on this service, failures are not swallowed:
+  /// a caller unblocking a specific action (posting a comment after
+  /// setting a missing name) needs to know whether the name actually
+  /// took before retrying that action.
   Future<void> updateDisplayName(String name) async {
-    try {
-      await _firebaseAuth!.currentUser?.updateDisplayName(name);
-      await _firebaseAuth.currentUser?.reload();
-      final user = _firebaseAuth.currentUser;
-      if (user != null) {
-        _currentUser = _mapFirebaseUser(user);
-        await _cacheDisplayInfo(user);
+    if (_firebaseAuth == null) {
+      // Mock/test instance: no real Firebase Auth or Firestore behind
+      // this service, so simulate the resulting state directly,
+      // matching what setMockUser does for other test setup.
+      final current = _currentUser;
+      if (current != null) {
+        _currentUser = AuthUser(
+          uid: current.uid,
+          email: current.email,
+          displayName: name,
+          photoUrl: current.photoUrl,
+          method: current.method,
+          emailVerified: current.emailVerified,
+        );
         notifyListeners();
       }
-    } on Exception catch (e) {
-      _log('profile', 'failed to update display name: $e');
+      return;
     }
+
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return;
+    await user.updateDisplayName(name);
+    await user.reload();
+    final refreshed = _firebaseAuth.currentUser;
+    if (refreshed == null) return;
+    _currentUser = _mapFirebaseUser(refreshed);
+    await _cacheDisplayInfo(refreshed);
+    if (_userRepo != null) {
+      await _userRepo.ensureUserDoc(
+        uid: refreshed.uid,
+        displayName: name,
+        email: refreshed.email ?? '',
+      );
+    }
+    notifyListeners();
   }
 
   /// Delete the current user's account.

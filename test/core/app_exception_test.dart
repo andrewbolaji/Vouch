@@ -65,6 +65,7 @@ void main() {
         RateLimited() => 'limited',
         FirestoreWriteException() => 'write-error',
         CommentRejected() => 'rejected',
+        DisplayNameRequired() => 'name-required',
       };
       expect(result, equals('auth:${AuthErrorKind.invalidCredentials}'));
     });
@@ -82,6 +83,11 @@ void main() {
     test('CommentRejected has default message', () {
       const e = CommentRejected();
       expect(e.message, contains('guidelines'));
+    });
+
+    test('DisplayNameRequired has default message', () {
+      const e = DisplayNameRequired();
+      expect(e.message, contains('display name'));
     });
   });
 }

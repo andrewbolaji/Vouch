@@ -117,10 +117,11 @@ class CommentRepository {
   /// The function runs the content filter server-side before writing
   /// anything, resolves userName and isInsider itself rather than
   /// trusting the client, and returns the created comment. Throws
-  /// [CommentRejected] if the filter rejects the text, [NetworkException]
-  /// if the request never reached the server, [PermissionDenied] if the
-  /// user is not signed in, or [FirestoreWriteException] for anything
-  /// else unexpected.
+  /// [CommentRejected] if the filter rejects the text,
+  /// [DisplayNameRequired] if the user has no display name on file,
+  /// [NetworkException] if the request never reached the server,
+  /// [PermissionDenied] if the user is not signed in, or
+  /// [FirestoreWriteException] for anything else unexpected.
   Future<Comment> submitComment({
     required String restaurantId,
     required String text,
@@ -188,6 +189,9 @@ class CommentRepository {
       }
       if (status == 'FAILED_PRECONDITION') {
         throw const CommentRejected();
+      }
+      if (status == 'ABORTED') {
+        throw const DisplayNameRequired();
       }
     } on AppException {
       rethrow;

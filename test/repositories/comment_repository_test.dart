@@ -410,6 +410,30 @@ void main() {
         );
       });
 
+      test('throws DisplayNameRequired on ABORTED error', () async {
+        final client = http_testing.MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'error': {
+                'status': 'ABORTED',
+                'message': 'Add a display name before commenting.',
+              },
+            }),
+            400,
+          );
+        });
+        final repo = CommentRepository(
+          firestore: fakeFirestore,
+          auth: mockAuth,
+          httpClient: client,
+        );
+
+        expect(
+          () => repo.submitComment(restaurantId: 'r1', text: 'Hi'),
+          throwsA(isA<DisplayNameRequired>()),
+        );
+      });
+
       test('throws FirestoreWriteException on unknown server error',
           () async {
         final client = http_testing.MockClient((_) async {

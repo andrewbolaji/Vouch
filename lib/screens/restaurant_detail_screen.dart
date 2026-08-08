@@ -688,12 +688,24 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     if (_commentController.text.trim().isEmpty || _isSubmittingComment) {
       return;
     }
-    final appState = context.read<AppState>();
-    final membership = context.read<MembershipProvider>();
     final text = _commentController.text.trim();
     final parentId = _replyingToId;
 
     setState(() => _isSubmittingComment = true);
+    try {
+      await _attemptSubmit(text, parentId);
+    } finally {
+      if (mounted) setState(() => _isSubmittingComment = false);
+    }
+  }
+
+  /// Does the actual submit-and-react work. Broken out from
+  /// [_submitComment] so the DisplayNameRequired branch can retry it
+  /// directly once a name is set, without re-entering the
+  /// _isSubmittingComment guard (which would just bounce the retry).
+  Future<void> _attemptSubmit(String text, String? parentId) async {
+    final appState = context.read<AppState>();
+    final membership = context.read<MembershipProvider>();
     try {
       await appState.addComment(
         restaurantId: widget.restaurantId,
@@ -707,6 +719,24 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       );
       _commentController.clear();
       _cancelReply();
+    } on DisplayNameRequired catch (_) {
+      if (!mounted) return;
+      final name = await _showSetDisplayNameDialog();
+      if (name == null || !mounted) return;
+      try {
+        await context.read<AuthService>().updateDisplayName(name);
+      } on Exception catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not save your name. Try again.'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+        return;
+      }
+      if (!mounted) return;
+      await _attemptSubmit(text, parentId);
     } on CommentRejected catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -734,9 +764,65 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           backgroundColor: AppTheme.error,
         ),
       );
-    } finally {
-      if (mounted) setState(() => _isSubmittingComment = false);
     }
+  }
+
+  /// Prompts for a display name. Returns the trimmed name, or null if
+  /// the user cancelled.
+  Future<String?> _showSetDisplayNameDialog() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        title: Text('Add your name', style: AppTheme.headlineLarge),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "So other diners know who's commenting.",
+              style: AppTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 50,
+              style: AppTheme.bodyMedium.copyWith(
+                color: AppTheme.textPrimary,
+              ),
+              decoration: const InputDecoration(hintText: 'Your name'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Cancel',
+              style: AppTheme.buttonText.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              Navigator.of(dialogContext).pop(name);
+            },
+            child: Text(
+              'Save',
+              style: AppTheme.buttonText.copyWith(color: AppTheme.accent),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _reportComment(Comment comment) async {

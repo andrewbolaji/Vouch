@@ -131,3 +131,13 @@ class CommentRejected extends AppException {
         'See our community guidelines.',
   ]);
 }
+
+/// The signed-in user has no display name (or a blank one) on file.
+/// The server refuses to create a comment under a missing or blank
+/// name, so the client needs to collect one and retry, rather than
+/// showing a generic error with no way forward.
+class DisplayNameRequired extends AppException {
+  const DisplayNameRequired([
+    super.message = 'Add a display name before commenting.',
+  ]);
+}
