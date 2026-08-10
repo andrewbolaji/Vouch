@@ -7,6 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..420&display=swap" rel="stylesheet">
+<meta name="description" content="The Top 10 restaurants in your city, voted on by the people who live there. Houston first. No ads and no paid placement.">
+<link rel="canonical" href="https://vouchfood.com/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Vouch: where locals actually eat">
+<meta property="og:description" content="Critics have their list. Locals have another one.">
+<meta property="og:image" content="https://vouchfood.com/og-image.png">
+<meta property="og:url" content="https://vouchfood.com/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
   :root{
     --bg:#100D0B; --bg-2:#181410; --bg-3:#211B15;
@@ -113,6 +123,35 @@
   .brand .logo-img{width:118px;height:32px}
   .fb .logo-img{width:150px;height:41px;margin-bottom:14px}
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* DOC BODY: shared prose styling, reused by /privacy, /support and long-form sections here */
+  .doc-body{max-width:640px}
+  .doc-body h3{font-family:var(--disp);font-weight:400;font-size:24px;letter-spacing:-.2px;margin:40px 0 12px}
+  .doc-body h3:first-of-type{margin-top:0}
+  .doc-body p{font-family:var(--text);color:var(--dim);font-size:16px;line-height:1.7;margin-bottom:16px}
+  .doc-body strong{color:var(--cream);font-weight:600}
+
+  .lede{font-family:var(--text);font-style:italic;color:var(--dim);font-size:16px;line-height:1.6}
+  .micro.under{display:block;margin:14px 0 0}
+
+  /* TOP 10 rows: numeral, thumbnail, body */
+  .chart li{display:flex;align-items:center;gap:18px;padding:22px 4px}
+  .chart .r{font-size:clamp(28px,3.6vw,40px);width:40px;flex-shrink:0}
+  .chart .thumb{width:52px;height:52px;border-radius:6px;flex-shrink:0}
+  .chart .thumb.needs-photo{background:var(--bg-3);border:1px dashed var(--hair)}
+  .chart .thumb.blurred{background:linear-gradient(135deg,var(--bg-3),var(--bg-2))}
+  .chart .row-body{flex:1;min-width:0}
+  .chart .why{font-family:var(--text);font-style:italic;color:var(--gold);font-size:13px;margin-top:6px;opacity:.85;border:1px dashed rgba(201,154,75,.4);padding:6px 10px;border-radius:4px;display:inline-block}
+  @media(max-width:600px){.chart li{gap:12px}.chart .r{width:32px}.chart .thumb{width:40px;height:40px}}
+
+  /* PHONE FRAMES */
+  .phones{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;justify-content:center;padding-top:10px}
+  .phone{width:220px;border-radius:30px;background:var(--bg-2);border:1px solid var(--hair);padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.35)}
+  .phone img{width:100%;border-radius:20px;display:block}
+  .phone .ph-slot{width:100%;aspect-ratio:9/19.5;border-radius:20px;background:var(--bg-3);border:1px dashed var(--hair);display:flex;align-items:center;justify-content:center;text-align:center}
+  .phone .ph-slot span{font-family:var(--disp);font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--dim-2);padding:0 16px}
+  .phone.raised{transform:translateY(-18px)}
+  .phone-cap{text-align:center;font-family:var(--text);font-style:italic;color:var(--dim);font-size:14px;margin-top:14px;max-width:220px;margin-left:auto;margin-right:auto}
 </style>
 </head>
 <body>
@@ -123,13 +162,11 @@
 <header class="cover" id="top">
   <div class="cover-mast">
     <a class="brand" href="#top" aria-label="Vouch home"><span class="logo-img" role="img" aria-label="Vouch"></span></a>
-    <a class="mini" href="#join">Get early access</a>
   </div>
   <div class="cover-copy">
-    <span class="kick dateline">Houston and Atlanta first</span>
     <h1 class="disp">Where locals <em>actually</em> eat.</h1>
-    <p class="lede">The Top 10 in your city, ranked by the people who live there.</p>
-    <a class="btn" href="#join">Get early access</a><span class="micro">Coming soon to iPhone</span>
+    <p class="lede">Critics have their list. Locals have another one. This is the second one, voted on by the people who eat there every week. Houston first.</p>
+    <a class="btn" href="#join">Get early access</a><span class="micro under">Coming to iPhone</span>
   </div>
 </header>
 
@@ -137,43 +174,120 @@
 <section class="list">
   <div class="wrap">
     <div class="list-head">
-      <div><span class="kick">Starting in Houston</span><h2 class="disp">The opening <em>Top 10</em>.</h2></div>
-      <span class="note">Our opening lineup. Locals rank it at launch.</span>
+      <div><span class="kick">Houston</span><h2 class="disp">The opening <em>Top 10</em>.</h2></div>
+      <span class="note">Our opening lineup, built from public reviews and a lot of eating. Locals rank it at launch.</span>
     </div>
     <ol class="chart">
       <li class="top" data-reveal>
         <span class="r">1</span>
-        <div><div class="nm">Mensho</div><div class="desc">Ramen, Chinatown</div></div>
+        <span class="thumb needs-photo" role="img" aria-label="Photo needed: Mensho"></span>
+        <div class="row-body">
+          <div class="nm">Mensho</div>
+          <div class="desc">Ramen, Chinatown</div>
+          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+        </div>
       </li>
       <li data-reveal>
         <span class="r">2</span>
-        <div><div class="nm">CorkScrew BBQ</div><div class="desc">Barbecue, Old Town Spring</div></div>
+        <span class="thumb needs-photo" role="img" aria-label="Photo needed: CorkScrew BBQ"></span>
+        <div class="row-body">
+          <div class="nm">CorkScrew BBQ</div>
+          <div class="desc">Barbecue, Old Town Spring</div>
+          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+        </div>
       </li>
       <li data-reveal>
         <span class="r">3</span>
-        <div><div class="nm">Tacos Los Brothers</div><div class="desc">Tacos, South Main</div></div>
+        <span class="thumb needs-photo" role="img" aria-label="Photo needed: Tacos Los Brothers"></span>
+        <div class="row-body">
+          <div class="nm">Tacos Los Brothers</div>
+          <div class="desc">Tacos, South Main</div>
+          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+        </div>
       </li>
       <li data-reveal>
         <span class="r">4</span>
-        <div><div class="nm">The Peri Peri Factory</div><div class="desc">Portuguese, Galleria</div></div>
+        <span class="thumb needs-photo" role="img" aria-label="Photo needed: The Peri Peri Factory"></span>
+        <div class="row-body">
+          <div class="nm">The Peri Peri Factory</div>
+          <div class="desc">Portuguese, Galleria</div>
+          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+        </div>
       </li>
       <li data-reveal>
         <span class="r">5</span>
-        <div><div class="nm">The Better Box</div><div class="desc">Philly-Chinese, Northwest</div></div>
+        <span class="thumb needs-photo" role="img" aria-label="Photo needed: The Better Box"></span>
+        <div class="row-body">
+          <div class="nm">The Better Box</div>
+          <div class="desc">Philly-Chinese, Northwest</div>
+          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+        </div>
+      </li>
+      <li class="locked-row" data-reveal>
+        <span class="r">6</span>
+        <span class="thumb blurred" aria-hidden="true"></span>
+        <div class="row-body"><span class="tag">Inside the app</span></div>
+      </li>
+      <li class="locked-row" data-reveal>
+        <span class="r">7</span>
+        <span class="thumb blurred" aria-hidden="true"></span>
+        <div class="row-body"><span class="tag">Inside the app</span></div>
+      </li>
+      <li class="locked-row" data-reveal>
+        <span class="r">8</span>
+        <span class="thumb blurred" aria-hidden="true"></span>
+        <div class="row-body"><span class="tag">Inside the app</span></div>
+      </li>
+      <li class="locked-row" data-reveal>
+        <span class="r">9</span>
+        <span class="thumb blurred" aria-hidden="true"></span>
+        <div class="row-body"><span class="tag">Inside the app</span></div>
+      </li>
+      <li class="locked-row" data-reveal>
+        <span class="r">10</span>
+        <span class="thumb blurred" aria-hidden="true"></span>
+        <div class="row-body"><span class="tag">Inside the app</span></div>
       </li>
     </ol>
-    <div class="locked"><span>Ranks six through ten are inside the app.</span><b>The full Top 10 lives in Vouch.</b></div>
   </div>
 </section>
 
-<!-- HOW -->
+<!-- INTEGRITY -->
 <section id="how">
   <div class="wrap">
-    <div class="sec-head"><span class="kick">How it works</span><h2 class="disp">Ranked by locals. Kept <em>honest</em>.</h2><div class="rule"></div></div>
+    <div class="sec-head"><span class="kick">Integrity</span><h2 class="disp">How the ranking stays clean.</h2><div class="rule"></div></div>
     <div class="beats">
-      <div class="beat" data-reveal><div class="n">1</div><div><h3 class="disp">Locals vote</h3><p>People who live in the city rank the spots. Every vote is a local putting their name on it.</p></div></div>
-      <div class="beat" data-reveal><div class="n">2</div><div><h3 class="disp">You get the real list</h3><p>Open your city and see the full Top 10, in the order locals rank it.</p></div></div>
-      <div class="beat" data-reveal><div class="n">3</div><div><h3 class="disp">Always up to date</h3><p>Rankings move with every vote. What is good rises, and what coasts on hype drops.</p></div></div>
+      <div class="beat" data-reveal><div class="n">1</div><div><h3 class="disp">Nobody can buy a spot.</h3><p>Restaurants cannot pay to be on this list, move up it, or stay on it. Free food is fine. Free rank is not.</p></div></div>
+      <div class="beat" data-reveal><div class="n">2</div><div><h3 class="disp">One account, one vote.</h3><p>Tied to your account, not your phone. You cannot vote twice for the same place, and a new phone does not get you another one.</p></div></div>
+      <div class="beat" data-reveal><div class="n">3</div><div><h3 class="disp">Old votes fade.</h3><p>A vote counts full weight today and about half as much three months later. A place that stops earning votes drifts down on its own.</p></div></div>
+      <div class="beat" data-reveal><div class="n">4</div><div><h3 class="disp">It settles overnight.</h3><p>Votes land right away. The order recalculates every morning, so the list holds still while you read it instead of jumping around.</p></div></div>
+    </div>
+    <div class="doc-body" style="max-width:640px;margin-top:20px">
+      <p class="lede">Every list like this one is owned by somebody. We are not, and that is on purpose. There is nobody upstairs asking why we have not sold the top spot yet.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOR RESTAURANTS -->
+<section id="restaurants" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><span class="kick">For restaurants</span><h2 class="disp">You cannot buy your way onto this list.</h2><div class="rule"></div></div>
+    <div class="doc-body">
+      <p>Neither can the place across the street. That is the point. A spot in a Vouch Top 10 means the people who eat in this city put you there, and nobody sold it to you.</p>
+      <p>We tag you every time we post your food. Send us a better photo and we will use it instead of ours. And tell us where you eat on your day off, because we will take a cook's pick over a review site every time.</p>
+      <p><strong>support@vouchfood.com</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app-preview" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><span class="kick">The app</span><h2 class="disp">It is one tap.</h2><div class="rule"></div></div>
+    <div class="phones">
+      <div class="phone" data-reveal><div class="ph-slot" role="img" aria-label="Screenshot needed"><span>Screenshot needed</span></div><p class="phone-cap">Pick your city. See what the locals picked.</p></div>
+      <div class="phone raised" data-reveal><div class="ph-slot" role="img" aria-label="Screenshot needed"><span>Screenshot needed</span></div><p class="phone-cap">One tap to vote. The list moves overnight.</p></div>
+      <div class="phone" data-reveal><div class="ph-slot" role="img" aria-label="Screenshot needed"><span>Screenshot needed</span></div><p class="phone-cap">Argue in the comments. Tell people what to order.</p></div>
     </div>
   </div>
 </section>
@@ -181,15 +295,13 @@
 <!-- CITIES -->
 <section id="cities" style="padding-top:0">
   <div class="wrap">
-    <div class="sec-head"><span class="kick">City by city</span><h2 class="disp">One city at a time, <em>built by locals</em>.</h2><div class="rule"></div></div>
+    <div class="sec-head"><span class="kick">Cities</span><h2 class="disp">Houston first.</h2><div class="rule"></div></div>
+    <div class="doc-body">
+      <p>Houston opens first. Atlanta is next. After that we will believe the inbox over our own guesses, so tell us where you want it.</p>
+    </div>
     <div class="cities">
       <span class="cty live"><span class="d"></span>Houston</span>
       <span class="cty live"><span class="d"></span>Atlanta</span>
-      <span class="cty"><span class="d"></span>Detroit <span class="s">soon</span></span>
-      <span class="cty"><span class="d"></span>Nashville <span class="s">soon</span></span>
-      <span class="cty"><span class="d"></span>Charlotte <span class="s">soon</span></span>
-      <span class="cty"><span class="d"></span>Indianapolis <span class="s">soon</span></span>
-      <span class="cty"><span class="d"></span>Washington DC <span class="s">soon</span></span>
     </div>
   </div>
 </section>
@@ -198,12 +310,13 @@
 <section id="join" style="padding-top:0">
   <div class="wrap join">
     <span class="kick">Get in early</span>
-    <h2 class="disp">Be first in <em>your</em> city.</h2>
-    <p>We open cities one at a time. Leave your email and we'll tell you the day yours goes live.</p>
+    <h2 class="disp">Tell me when <em>Houston</em> opens.</h2>
+    <p>Leave your email and the city you want. We will email you the day it opens, and not for anything else.</p>
     <form class="form" onsubmit="return joinList(event)">
       <input id="wemail" type="email" placeholder="you@email.com" required aria-label="Email address" autocomplete="email">
+      <input id="wcity" type="text" placeholder="Your city" aria-label="City you want">
       <input id="wwebsite" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-      <button id="wbtn" class="btn" type="submit">Get early access</button>
+      <button id="wbtn" class="btn" type="submit">Tell me when it opens</button>
     </form>
     <div class="ok" id="ok"></div>
   </div>
@@ -223,22 +336,24 @@
     e.preventDefault();
     var form=e.target, ok=document.getElementById('ok'), btn=document.getElementById('wbtn');
     var email=document.getElementById('wemail').value.trim();
+    var city=document.getElementById('wcity').value.trim();
     var website=document.getElementById('wwebsite').value;
     if(!email){return false;}
     ok.style.color=''; ok.textContent='Sending...'; btn.disabled=true;
     fetch('https://us-central1-majorcitymusteats.cloudfunctions.net/waitlistSignup',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:email,source:'landing',website:website})
+      body:JSON.stringify({email:email,city:city,source:'landing',website:website})
     }).then(function(r){return r.json().then(function(d){return {status:r.status,body:d};});})
     .then(function(res){
       var d=res.body||{};
-      if(res.status===200&&d.ok&&d.duplicate){ok.textContent="You're already on the list. We'll be in touch.";form.reset();}
-      else if(res.status===200&&d.ok){ok.textContent="You're on the list. We'll tell you the day your city goes live.";form.reset();}
-      else if(res.status===400){ok.style.color='var(--flame)';ok.textContent="That email doesn't look right. Mind checking it?";}
-      else{ok.style.color='var(--flame)';ok.textContent="Something went wrong. Please try again in a moment.";}
+      var cityLabel=city?city:'your city';
+      if(res.status===200&&d.ok&&d.duplicate){ok.textContent='You are already on the list. We will keep you posted.';form.reset();}
+      else if(res.status===200&&d.ok){ok.textContent='You are on the list for '+cityLabel+'. We will email you the day it opens.';form.reset();}
+      else if(res.status===400){ok.style.color='var(--flame)';ok.textContent='That email does not look right. Check it and try again.';}
+      else{ok.style.color='var(--flame)';ok.textContent='Something went wrong. Please try again in a moment.';}
     }).catch(function(){
-      ok.style.color='var(--flame)';ok.textContent="Something went wrong. Please try again in a moment.";
+      ok.style.color='var(--flame)';ok.textContent='Something went wrong. Please try again in a moment.';
     }).then(function(){btn.disabled=false;});
     return false;
   }
