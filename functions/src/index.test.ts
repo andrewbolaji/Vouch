@@ -1018,6 +1018,28 @@ describe("Waitlist signup logic", () => {
     expect(snap.data()?.source).toBe("landing");
   });
 
+  test("city is stored when provided, null when omitted", async () => {
+    const withCity = "city@example.com";
+    await db.collection("waitlist").doc(withCity).set({
+      email: withCity,
+      city: "Houston",
+      source: "landing",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    const withCitySnap = await db.collection("waitlist").doc(withCity).get();
+    expect(withCitySnap.data()?.city).toBe("Houston");
+
+    const noCity = "nocity@example.com";
+    await db.collection("waitlist").doc(noCity).set({
+      email: noCity,
+      city: null,
+      source: "landing",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    const noCitySnap = await db.collection("waitlist").doc(noCity).get();
+    expect(noCitySnap.data()?.city).toBeNull();
+  });
+
   test("duplicate email returns existing doc, no overwrite", async () => {
     const normalized = "dupe@example.com";
     const docId = normalized.replace(/\//g, "__");

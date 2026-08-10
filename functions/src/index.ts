@@ -291,8 +291,9 @@ export const waitlistSignup = onRequest(
     }
 
     try {
-      const {email, source, website} = req.body as {
+      const {email, city, source, website} = req.body as {
         email?: string;
+        city?: string;
         source?: string;
         website?: string;
       };
@@ -321,6 +322,7 @@ export const waitlistSignup = onRequest(
 
       await docRef.set({
         email: normalized,
+        city: city?.trim() || null,
         source: source || "landing",
         createdAt: FieldValue.serverTimestamp(),
       });
