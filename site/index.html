@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Vouch: where locals actually eat">
 <meta property="og:description" content="Critics have their list. Locals have another one.">
-<meta property="og:image" content="https://vouchfood.com/og-image.png">
+<meta property="og:image" content="https://vouchfood.com/og-image.jpg">
 <meta property="og:url" content="https://vouchfood.com/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="/favicon.png">
@@ -138,20 +138,11 @@
   .chart li{display:flex;align-items:center;gap:18px;padding:22px 4px}
   .chart .r{font-size:clamp(28px,3.6vw,40px);width:40px;flex-shrink:0}
   .chart .thumb{width:52px;height:52px;border-radius:6px;flex-shrink:0}
-  .chart .thumb.needs-photo{background:var(--bg-3);border:1px dashed var(--hair)}
   .chart .thumb.blurred{background:linear-gradient(135deg,var(--bg-3),var(--bg-2))}
   .chart .row-body{flex:1;min-width:0}
   .chart .why{font-family:var(--text);font-style:italic;color:var(--gold);font-size:13px;margin-top:6px;opacity:.85;border:1px dashed rgba(201,154,75,.4);padding:6px 10px;border-radius:4px;display:inline-block}
   @media(max-width:600px){.chart li{gap:12px}.chart .r{width:32px}.chart .thumb{width:40px;height:40px}}
-
-  /* PHONE FRAMES */
-  .phones{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;justify-content:center;padding-top:10px}
-  .phone{width:220px;border-radius:30px;background:var(--bg-2);border:1px solid var(--hair);padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.35)}
-  .phone img{width:100%;border-radius:20px;display:block}
-  .phone .ph-slot{width:100%;aspect-ratio:9/19.5;border-radius:20px;background:var(--bg-3);border:1px dashed var(--hair);display:flex;align-items:center;justify-content:center;text-align:center}
-  .phone .ph-slot span{font-family:var(--disp);font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--dim-2);padding:0 16px}
-  .phone.raised{transform:translateY(-18px)}
-  .phone-cap{text-align:center;font-family:var(--text);font-style:italic;color:var(--dim);font-size:14px;margin-top:14px;max-width:220px;margin-left:auto;margin-right:auto}
+  .chart img.thumb{object-fit:cover;display:block}
 </style>
 </head>
 <body>
@@ -180,7 +171,7 @@
     <ol class="chart">
       <li class="top" data-reveal>
         <span class="r">1</span>
-        <span class="thumb needs-photo" role="img" aria-label="Photo needed: Mensho"></span>
+        <img class="thumb" src="/img/mensho.jpg" alt="Mensho">
         <div class="row-body">
           <div class="nm">Mensho</div>
           <div class="desc">Ramen, Chinatown</div>
@@ -189,7 +180,6 @@
       </li>
       <li data-reveal>
         <span class="r">2</span>
-        <span class="thumb needs-photo" role="img" aria-label="Photo needed: CorkScrew BBQ"></span>
         <div class="row-body">
           <div class="nm">CorkScrew BBQ</div>
           <div class="desc">Barbecue, Old Town Spring</div>
@@ -198,7 +188,6 @@
       </li>
       <li data-reveal>
         <span class="r">3</span>
-        <span class="thumb needs-photo" role="img" aria-label="Photo needed: Tacos Los Brothers"></span>
         <div class="row-body">
           <div class="nm">Tacos Los Brothers</div>
           <div class="desc">Tacos, South Main</div>
@@ -207,7 +196,6 @@
       </li>
       <li data-reveal>
         <span class="r">4</span>
-        <span class="thumb needs-photo" role="img" aria-label="Photo needed: The Peri Peri Factory"></span>
         <div class="row-body">
           <div class="nm">The Peri Peri Factory</div>
           <div class="desc">Portuguese, Galleria</div>
@@ -216,7 +204,6 @@
       </li>
       <li data-reveal>
         <span class="r">5</span>
-        <span class="thumb needs-photo" role="img" aria-label="Photo needed: The Better Box"></span>
         <div class="row-body">
           <div class="nm">The Better Box</div>
           <div class="desc">Philly-Chinese, Northwest</div>
@@ -276,18 +263,6 @@
       <p>Neither can the place across the street. That is the point. A spot in a Vouch Top 10 means the people who eat in this city put you there, and nobody sold it to you.</p>
       <p>We tag you every time we post your food. Send us a better photo and we will use it instead of ours. And tell us where you eat on your day off, because we will take a cook's pick over a review site every time.</p>
       <p><strong>support@vouchfood.com</strong></p>
-    </div>
-  </div>
-</section>
-
-<!-- APP -->
-<section id="app-preview" style="padding-top:0">
-  <div class="wrap">
-    <div class="sec-head"><span class="kick">The app</span><h2 class="disp">It is one tap.</h2><div class="rule"></div></div>
-    <div class="phones">
-      <div class="phone" data-reveal><div class="ph-slot" role="img" aria-label="Screenshot needed"><span>Screenshot needed</span></div><p class="phone-cap">Pick your city. See what the locals picked.</p></div>
-      <div class="phone raised" data-reveal><div class="ph-slot" role="img" aria-label="Screenshot needed"><span>Screenshot needed</span></div><p class="phone-cap">One tap to vote. The list moves overnight.</p></div>
-      <div class="phone" data-reveal><div class="ph-slot" role="img" aria-label="Screenshot needed"><span>Screenshot needed</span></div><p class="phone-cap">Argue in the comments. Tell people what to order.</p></div>
     </div>
   </div>
 </section>
