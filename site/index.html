@@ -140,7 +140,6 @@
   .chart .thumb{width:52px;height:52px;border-radius:6px;flex-shrink:0}
   .chart .thumb.blurred{background:linear-gradient(135deg,var(--bg-3),var(--bg-2))}
   .chart .row-body{flex:1;min-width:0}
-  .chart .why{font-family:var(--text);font-style:italic;color:var(--gold);font-size:13px;margin-top:6px;opacity:.85;border:1px dashed rgba(201,154,75,.4);padding:6px 10px;border-radius:4px;display:inline-block}
   @media(max-width:600px){.chart li{gap:12px}.chart .r{width:32px}.chart .thumb{width:40px;height:40px}}
   .chart img.thumb{object-fit:cover;display:block}
 </style>
@@ -171,44 +170,36 @@
     <ol class="chart">
       <li class="top" data-reveal>
         <span class="r">1</span>
-        <img class="thumb" src="/img/mensho.jpg" alt="Mensho">
+        <img class="thumb" src="/img/chopnblok.jpg" alt="ChopnBlok">
         <div class="row-body">
-          <div class="nm">Mensho</div>
-          <div class="desc">Ramen, Chinatown</div>
-          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+          <div class="nm">ChopnBlok</div>
+          <div class="desc">West African, Montrose</div>
         </div>
       </li>
       <li data-reveal>
         <span class="r">2</span>
+        <img class="thumb" src="/img/mensho.jpg" alt="Mensho">
         <div class="row-body">
-          <div class="nm">CorkScrew BBQ</div>
-          <div class="desc">Barbecue, Old Town Spring</div>
-          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+          <div class="nm">Mensho</div>
+          <div class="desc">Ramen, Chinatown</div>
         </div>
       </li>
       <li data-reveal>
         <span class="r">3</span>
         <div class="row-body">
-          <div class="nm">Tacos Los Brothers</div>
-          <div class="desc">Tacos, South Main</div>
-          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
+          <div class="nm">CorkScrew BBQ</div>
+          <div class="desc">Barbecue, Old Town Spring</div>
         </div>
       </li>
-      <li data-reveal>
+      <li class="locked-row" data-reveal>
         <span class="r">4</span>
-        <div class="row-body">
-          <div class="nm">The Peri Peri Factory</div>
-          <div class="desc">Portuguese, Galleria</div>
-          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
-        </div>
+        <span class="thumb blurred" aria-hidden="true"></span>
+        <div class="row-body"><span class="tag">Inside the app</span></div>
       </li>
-      <li data-reveal>
+      <li class="locked-row" data-reveal>
         <span class="r">5</span>
-        <div class="row-body">
-          <div class="nm">The Better Box</div>
-          <div class="desc">Philly-Chinese, Northwest</div>
-          <p class="why">[Andrew: ~12 words. Name the dish, one sensory detail, timing if relevant, no superlatives.]</p>
-        </div>
+        <span class="thumb blurred" aria-hidden="true"></span>
+        <div class="row-body"><span class="tag">Inside the app</span></div>
       </li>
       <li class="locked-row" data-reveal>
         <span class="r">6</span>
@@ -272,11 +263,10 @@
   <div class="wrap">
     <div class="sec-head"><span class="kick">Cities</span><h2 class="disp">Houston first.</h2><div class="rule"></div></div>
     <div class="doc-body">
-      <p>Houston opens first. Atlanta is next. After that we will believe the inbox over our own guesses, so tell us where you want it.</p>
+      <p>Houston opens first. After that we will believe the inbox over our own guesses, so tell us where you want it.</p>
     </div>
     <div class="cities">
       <span class="cty live"><span class="d"></span>Houston</span>
-      <span class="cty live"><span class="d"></span>Atlanta</span>
     </div>
   </div>
 </section>
@@ -303,7 +293,7 @@
     <div class="fc"><h4>Follow</h4><a href="https://instagram.com/vouch.food" rel="noopener">Instagram</a><a href="mailto:support@vouchfood.com">support@vouchfood.com</a></div>
     <div class="fc"><h4>Company</h4><a href="#how">How it works</a><a href="#cities">Cities</a><a href="/privacy">Privacy</a><a href="/support">Support</a></div>
   </div>
-  <div class="wrap"><div class="colophon"><span>© 2026 Vouch · Made for locals</span><span>Houston and Atlanta first · your city next</span></div></div>
+  <div class="wrap"><div class="colophon"><span>© 2026 Vouch · Made for locals</span><span>Houston first, your city next</span></div></div>
 </footer>
 
 <script>
