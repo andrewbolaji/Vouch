@@ -1141,3 +1141,67 @@ describe("waitlist", () => {
     );
   });
 });
+
+describe("voteEvents", () => {
+  test("DENIED: unauthenticated user cannot read voteEvents", async () => {
+    await seedAsAdmin("voteEvents/evt-1", {
+      eventId: "evt-1",
+      type: "create",
+      userId: "alice",
+      restaurantId: "hou-1",
+      cityId: "houston",
+    });
+    const db = unauthenticated().firestore();
+    await assertFails(getDoc(doc(db, "voteEvents/evt-1")));
+  });
+
+  test("DENIED: unauthenticated user cannot write voteEvents", async () => {
+    const db = unauthenticated().firestore();
+    await assertFails(
+      setDoc(doc(db, "voteEvents/evt-fake"), {
+        eventId: "evt-fake",
+        type: "create",
+        userId: "alice",
+        restaurantId: "hou-1",
+        cityId: "houston",
+      })
+    );
+  });
+
+  test("DENIED: authenticated user cannot read voteEvents, including the user the event is about", async () => {
+    await seedAsAdmin("voteEvents/evt-1", {
+      eventId: "evt-1",
+      type: "create",
+      userId: "alice",
+      restaurantId: "hou-1",
+      cityId: "houston",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(getDoc(doc(db, "voteEvents/evt-1")));
+  });
+
+  test("DENIED: authenticated user cannot write voteEvents", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "voteEvents/evt-fake"), {
+        eventId: "evt-fake",
+        type: "create",
+        userId: "alice",
+        restaurantId: "hou-1",
+        cityId: "houston",
+      })
+    );
+  });
+
+  test("DENIED: authenticated user cannot list voteEvents", async () => {
+    await seedAsAdmin("voteEvents/evt-1", {
+      eventId: "evt-1",
+      type: "create",
+      userId: "alice",
+      restaurantId: "hou-1",
+      cityId: "houston",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(getDocs(collection(db, "voteEvents")));
+  });
+});

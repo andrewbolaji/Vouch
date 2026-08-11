@@ -1,0 +1,124 @@
+/**
+ * Tests for the vote audit trail (recordVoteCreated/recordVoteDeleted).
+ *
+ * Run with emulators:
+ *   firebase emulators:exec --only firestore \
+ *     'cd functions && npx jest --forceExit vote_audit.test.ts'
+ *
+ * In its own file for the same reason as submit_comment.test.ts: a
+ * fresh module registry means its own initializeApp() call with no
+ * effect on index.test.ts's suites.
+ *
+ * What is NOT tested here: the Firestore trigger wiring itself, or
+ * that Cloud Functions retries actually reuse the same event.id on
+ * redelivery. Both are Firebase infrastructure. The dedup test below
+ * simulates a retry by calling the function twice with the same
+ * eventId, which is the one thing our own code is responsible for.
+ */
+
+import {initializeApp, getApps, deleteApp} from "firebase-admin/app";
+import {getFirestore, Timestamp} from "firebase-admin/firestore";
+import {recordVoteCreated, recordVoteDeleted} from "./vote_audit";
+
+process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+
+if (getApps().length === 0) {
+  initializeApp({projectId: "vouch-test"});
+}
+
+const db = getFirestore();
+
+afterAll(async () => {
+  await Promise.all(getApps().map((app) => deleteApp(app)));
+});
+
+async function clearFirestore() {
+  const collections = await db.listCollections();
+  for (const col of collections) {
+    const docs = await col.listDocuments();
+    for (const d of docs) {
+      await d.delete();
+    }
+  }
+}
+
+describe("vote audit trail", () => {
+  beforeEach(async () => {
+    await clearFirestore();
+    await db.collection("restaurants").doc("hou-1").set({
+      id: "hou-1",
+      cityId: "houston",
+      name: "Turkey Leg Hut",
+      rank: 1,
+      voteCount: 0,
+    });
+  });
+
+  afterAll(async () => {
+    await clearFirestore();
+  });
+
+  test("a vote create writes exactly one event", async () => {
+    await recordVoteCreated(db, "evt-create-1", "hou-1", "alice");
+
+    const snap = await db.collection("voteEvents").get();
+    expect(snap.size).toBe(1);
+
+    const data = snap.docs[0].data();
+    expect(data.eventId).toBe("evt-create-1");
+    expect(data.type).toBe("create");
+    expect(data.userId).toBe("alice");
+    expect(data.restaurantId).toBe("hou-1");
+    expect(data.cityId).toBe("houston");
+    expect(data.occurredAt).toBeDefined();
+    expect(snap.docs[0].id).toBe("evt-create-1");
+  });
+
+  test("a delete writes exactly one event and captures voteCreatedAt", async () => {
+    const originalCreatedAt = Timestamp.now();
+
+    await recordVoteDeleted(
+      db,
+      "evt-delete-1",
+      "hou-1",
+      "alice",
+      originalCreatedAt
+    );
+
+    const snap = await db.collection("voteEvents").get();
+    expect(snap.size).toBe(1);
+
+    const data = snap.docs[0].data();
+    expect(data.eventId).toBe("evt-delete-1");
+    expect(data.type).toBe("delete");
+    expect(data.userId).toBe("alice");
+    expect(data.restaurantId).toBe("hou-1");
+    expect(data.cityId).toBe("houston");
+    expect(data.voteCreatedAt).toBeDefined();
+    expect(data.voteCreatedAt.toMillis()).toBe(originalCreatedAt.toMillis());
+  });
+
+  test("a delete with no prior createdAt records voteCreatedAt as null", async () => {
+    await recordVoteDeleted(db, "evt-delete-2", "hou-1", "alice", null);
+
+    const snap = await db.collection("voteEvents").doc("evt-delete-2").get();
+    expect(snap.data()?.voteCreatedAt).toBeNull();
+  });
+
+  test("a duplicate invocation of the same eventId does not produce two records", async () => {
+    await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice");
+    await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice");
+
+    const snap = await db.collection("voteEvents").get();
+    expect(snap.size).toBe(1);
+  });
+
+  test("a vote event under a restaurantId with no restaurant document still writes an event, with cityId null", async () => {
+    await recordVoteCreated(db, "evt-orphan-1", "nonexistent-restaurant", "alice");
+
+    const snap = await db.collection("voteEvents").doc("evt-orphan-1").get();
+    expect(snap.exists).toBe(true);
+    expect(snap.data()?.cityId).toBeNull();
+    expect(snap.data()?.restaurantId).toBe("nonexistent-restaurant");
+  });
+});

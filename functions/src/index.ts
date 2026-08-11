@@ -18,6 +18,7 @@ import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue, Timestamp} from "firebase-admin/firestore";
 import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
+import {recordVoteCreated, recordVoteDeleted} from "./vote_audit";
 import {
   applyCommentCreated,
   applyCommentDeleted,
@@ -40,11 +41,24 @@ setGlobalOptions({maxInstances: 10, region: "us-central1"});
 // 1. onVoteCreated / onVoteDeleted
 //    Firestore trigger on /restaurants/{restaurantId}/votes/{userId}
 //    Delegates to shared applyVoteCreated/applyVoteDeleted functions.
+//
+//    The audit write (recordVoteCreated/recordVoteDeleted) runs first,
+//    before the voteCount aggregation. applyVoteCreated/applyVoteDeleted
+//    call .update() on the restaurant doc, which throws if that doc
+//    does not exist, an orphaned or fabricated restaurantId is exactly
+//    the case the audit trail exists to catch, so it must not depend
+//    on the aggregation succeeding first.
 // ---------------------------------------------------------------------------
 
 export const onVoteCreated = onDocumentCreated(
   "restaurants/{restaurantId}/votes/{userId}",
   async (event) => {
+    await recordVoteCreated(
+      db,
+      event.id,
+      event.params.restaurantId,
+      event.params.userId
+    );
     await applyVoteCreated(db, event.params.restaurantId);
   }
 );
@@ -52,6 +66,15 @@ export const onVoteCreated = onDocumentCreated(
 export const onVoteDeleted = onDocumentDeleted(
   "restaurants/{restaurantId}/votes/{userId}",
   async (event) => {
+    const voteCreatedAt =
+      (event.data?.data()?.createdAt as Timestamp | undefined) ?? null;
+    await recordVoteDeleted(
+      db,
+      event.id,
+      event.params.restaurantId,
+      event.params.userId,
+      voteCreatedAt
+    );
     await applyVoteDeleted(db, event.params.restaurantId);
   }
 );

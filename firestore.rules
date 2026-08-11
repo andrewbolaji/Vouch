@@ -176,6 +176,19 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------
+    // voteEvents - admin-only (Cloud Function via Admin SDK)
+    //
+    // Append-only vote audit trail. No client can read or write,
+    // not even the user the event is about. Written by the
+    // onVoteCreated/onVoteDeleted triggers using the Admin SDK,
+    // which bypasses rules. Read only via console or script.
+    // -------------------------------------------------------
+    match /voteEvents/{eventId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------
     // suggestions - no direct client creates
     //
     // Only the Cloud Function (admin SDK) can create
