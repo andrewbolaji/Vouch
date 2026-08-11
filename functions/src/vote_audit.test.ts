@@ -32,6 +32,7 @@ afterAll(async () => {
   await Promise.all(getApps().map((app) => deleteApp(app)));
 });
 
+/** Clears all Firestore data between tests. */
 async function clearFirestore() {
   const collections = await db.listCollections();
   for (const col of collections) {
@@ -74,7 +75,7 @@ describe("vote audit trail", () => {
     expect(snap.docs[0].id).toBe("evt-create-1");
   });
 
-  test("a delete writes exactly one event and captures voteCreatedAt", async () => {
+  test("a delete writes one event, captures voteCreatedAt", async () => {
     const originalCreatedAt = Timestamp.now();
 
     await recordVoteDeleted(
@@ -95,17 +96,18 @@ describe("vote audit trail", () => {
     expect(data.restaurantId).toBe("hou-1");
     expect(data.cityId).toBe("houston");
     expect(data.voteCreatedAt).toBeDefined();
-    expect(data.voteCreatedAt.toMillis()).toBe(originalCreatedAt.toMillis());
+    expect(data.voteCreatedAt.toMillis())
+      .toBe(originalCreatedAt.toMillis());
   });
 
-  test("a delete with no prior createdAt records voteCreatedAt as null", async () => {
+  test("a delete with no createdAt records voteCreatedAt null", async () => {
     await recordVoteDeleted(db, "evt-delete-2", "hou-1", "alice", null);
 
     const snap = await db.collection("voteEvents").doc("evt-delete-2").get();
     expect(snap.data()?.voteCreatedAt).toBeNull();
   });
 
-  test("a duplicate invocation of the same eventId does not produce two records", async () => {
+  test("a duplicate eventId does not produce two records", async () => {
     await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice");
     await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice");
 
@@ -113,8 +115,13 @@ describe("vote audit trail", () => {
     expect(snap.size).toBe(1);
   });
 
-  test("a vote event under a restaurantId with no restaurant document still writes an event, with cityId null", async () => {
-    await recordVoteCreated(db, "evt-orphan-1", "nonexistent-restaurant", "alice");
+  test("an orphaned restaurantId still writes, cityId null", async () => {
+    await recordVoteCreated(
+      db,
+      "evt-orphan-1",
+      "nonexistent-restaurant",
+      "alice"
+    );
 
     const snap = await db.collection("voteEvents").doc("evt-orphan-1").get();
     expect(snap.exists).toBe(true);
