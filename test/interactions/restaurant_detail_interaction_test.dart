@@ -250,9 +250,11 @@ void main() {
       'insider notes withheld from widget tree '
       'when locked (security)',
       (tester) async {
-        // Notes come from the fixture, not SeedData. SeedData no
-        // longer carries any: it is compiled into the release binary,
-        // so it holds free-tier content only. Without the fixture the
+        // Notes come from the subcollection fixture, the way they
+        // arrive in production. They are deliberately NOT set on the
+        // Restaurant object: _parseRestaurant nulls those two fields
+        // on every parse, so a fixture that set them would test a
+        // path that does not exist. Without a fixture at all, the
         // Tantanmen assertion below would pass because the string
         // exists nowhere, which is not the same as the gate holding.
         await tester.pumpWidget(
@@ -260,9 +262,8 @@ void main() {
             const RestaurantDetailScreen(
               restaurantId: 'hou-1',
             ),
-            appStateOverride: buildGatedFixtureAppState(
-              isPaidTier: false,
-              withInsiderNotes: true,
+            appStateOverride: buildInsiderNotesAppState(
+              notes: kInsiderNotesFixture,
             ),
           ),
         );
@@ -303,9 +304,8 @@ void main() {
               restaurantId: 'hou-1',
             ),
             membershipOverride: membership,
-            appStateOverride: buildGatedFixtureAppState(
-              isPaidTier: true,
-              withInsiderNotes: true,
+            appStateOverride: buildInsiderNotesAppState(
+              notes: kInsiderNotesFixture,
             ),
           ),
         );

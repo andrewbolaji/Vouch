@@ -211,9 +211,8 @@ void main() {
       await tester.pumpWidget(
         buildTestApp(
           const RestaurantDetailScreen(restaurantId: 'hou-1'),
-          appStateOverride: buildGatedFixtureAppState(
-            isPaidTier: false,
-            withInsiderNotes: true,
+          appStateOverride: buildInsiderNotesAppState(
+            notes: kInsiderNotesFixture,
           ),
         ),
       );

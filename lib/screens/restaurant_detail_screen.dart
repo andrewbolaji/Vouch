@@ -158,6 +158,31 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final membership = context.watch<MembershipProvider>();
+
+    // Insider notes load from here rather than from initState, so
+    // that an upgrade performed on this screen is picked up. That is
+    // exactly what the paywall's own CTA produces, and a load fired
+    // only at initState would leave the user who just paid sitting on
+    // a spinner. The notLoaded guard plus the one inside
+    // loadInsiderNotesForRestaurant keep this to a single read.
+    //
+    // Only fired when entitled. firestore.rules gates the
+    // insiderNotes subcollection on isCityInsider(), so a free user's
+    // read is denied at the server, and firing it would spend a round
+    // trip to learn what the client's own claim already says.
+    //
+    // Scheduled post-frame because loadInsiderNotesForRestaurant
+    // notifies synchronously, which is not safe during a build.
+    if (membership.canViewInsiderTips &&
+        appState.insiderNotesFor(widget.restaurantId).status ==
+            InsiderNotesStatus.notLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          appState.loadInsiderNotesForRestaurant(widget.restaurantId),
+        );
+      });
+    }
     final savedProvider = context.watch<SavedProvider>();
     final auth = context.watch<AuthService>();
     final restaurant = appState.restaurantById(widget.restaurantId);
@@ -666,13 +691,34 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   ],
                   // Insider notes (below comments so conversation is
                   // reachable for free users without passing the paywall)
-                  if (restaurant.whatToOrder != null ||
-                      restaurant.insiderTip != null) ...[
+                  //
+                  // This section used to be guarded on
+                  // restaurant.whatToOrder or restaurant.insiderTip
+                  // being non-null. Neither can ever be non-null:
+                  // RestaurantRepository._parseRestaurant sets both to
+                  // null on every parse, because they are legacy
+                  // fields and the real content lives in the
+                  // insiderNotes subcollection. So the whole section
+                  // was unreachable, and nobody saw notes or the
+                  // pitch for them, paid or free. That was finding 2.
+                  //
+                  // It is now driven by the entitlement rather than by
+                  // the data, which is the only thing it can be driven
+                  // by: rules gate the subcollection on
+                  // isCityInsider(), so a free client cannot discover
+                  // whether notes exist, and a hasInsiderNotes flag on
+                  // the public document is exactly the leak the
+                  // subcollection exists to prevent.
+                  ...[
                     const SizedBox(height: AppTheme.spacingMd),
                     if (membership.canViewInsiderTips)
-                      InsiderNotes(
-                        whatToOrder: restaurant.whatToOrder,
-                        tip: restaurant.insiderTip,
+                      _InsiderNotesSection(
+                        state: appState.insiderNotesFor(widget.restaurantId),
+                        onRetry: () => unawaited(
+                          appState.loadInsiderNotesForRestaurant(
+                            widget.restaurantId,
+                          ),
+                        ),
                       )
                     else
                       PaywallGate(
@@ -1096,6 +1142,118 @@ class _LoadMoreCommentsButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Renders insider notes for a user who is entitled to read them.
+///
+/// Four states, kept distinct on purpose. An entitled user looking at
+/// a restaurant nobody has written about yet is not an error and is
+/// not a paywall, and collapsing those into one another is how the
+/// original bug stayed invisible: everything rendered nothing, and
+/// nothing looked deliberate.
+class _InsiderNotesSection extends StatelessWidget {
+  const _InsiderNotesSection({required this.state, required this.onRetry});
+
+  final InsiderNotesState state;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (state.status) {
+      case InsiderNotesStatus.notLoaded:
+      case InsiderNotesStatus.loading:
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+
+      case InsiderNotesStatus.loaded:
+        return InsiderNotes(
+          whatToOrder: state.notes?.whatToOrder,
+          tip: state.notes?.insiderTip,
+        );
+
+      case InsiderNotesStatus.loadedEmpty:
+        // Deliberately plain, and deliberately not an apology. The
+        // 33 notes that used to fill this space were generated rather
+        // than observed and were deleted on 2026-08-13. Empty because
+        // nothing true has been written yet is the honest state, and
+        // it is better than the alternative that was here before.
+        return const _InsiderNotesMessage(
+          icon: Icons.edit_note_outlined,
+          text: 'No insider notes for this one yet.',
+        );
+
+      case InsiderNotesStatus.error:
+        return _InsiderNotesMessage(
+          icon: Icons.cloud_off,
+          text: "Couldn't load the insider notes.",
+          actionLabel: 'Try again',
+          onAction: onRetry,
+        );
+    }
+  }
+}
+
+class _InsiderNotesMessage extends StatelessWidget {
+  const _InsiderNotesMessage({
+    required this.icon,
+    required this.text,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String text;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingMd),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.textTertiary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppTheme.textSecondary, size: 18),
+          const SizedBox(width: AppTheme.spacingSm),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTheme.bodySmall.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: AppTheme.spacingSm),
+            GestureDetector(
+              onTap: onAction,
+              child: Text(
+                actionLabel!,
+                style: AppTheme.labelMedium.copyWith(
+                  color: AppTheme.accent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

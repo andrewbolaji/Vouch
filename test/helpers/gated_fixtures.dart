@@ -56,18 +56,17 @@ const List<Restaurant> kGatedRestaurants = [
   ),
 ];
 
-/// A free-visible restaurant carrying insider notes.
+/// Insider notes as they actually arrive: from the subcollection.
 ///
-/// Insider notes are cityInsider-only regardless of rank, so the
-/// canary for that gate has to be a note, not a rank.
-const Restaurant kInsiderNotesRestaurant = Restaurant(
-  id: 'hou-1',
-  cityId: 'houston',
-  name: 'Mensho',
-  cuisine: 'Ramen',
-  imageUrl: 'placeholder://restaurant',
-  description: 'Free-visible fixture carrying gated insider notes.',
-  rank: 1,
+/// There used to be a `kInsiderNotesRestaurant` here that set
+/// `insiderTip` and `whatToOrder` on the Restaurant object, plus a
+/// `withInsiderNotes` flag to swap it in. Both are gone.
+/// `_parseRestaurant` nulls those two fields on every production
+/// parse, so that seam encoded a path production does not have, and
+/// tests built on it kept passing for three months while the screen
+/// rendered nothing at all. See InsiderNotesFixtureRepository.
+const InsiderNotes kInsiderNotesFixture = InsiderNotes(
+  restaurantId: 'hou-1',
   insiderTip: 'No reservations and lines form. Go off-peak, around 4 PM.',
   whatToOrder: 'The Wagyu Texas BBQ Tantanmen (smoked A5 beef).',
 );
@@ -87,10 +86,8 @@ class GatedFixtureCityRepository extends CityRepository {
 /// nothing above kFreeTierMaxRank, which is precisely why the screen
 /// cannot derive its locked-row count from loaded data.
 class GatedFixtureRestaurantRepository extends RestaurantRepository {
-  GatedFixtureRestaurantRepository({this.withInsiderNotes = false})
+  GatedFixtureRestaurantRepository()
       : super(firestore: FakeFirebaseFirestore());
-
-  final bool withInsiderNotes;
 
   @override
   Future<List<Restaurant>> getForCity(
@@ -99,15 +96,65 @@ class GatedFixtureRestaurantRepository extends RestaurantRepository {
   }) async {
     final free = SeedData.restaurants
         .where((r) => r.cityId == cityId && r.rank <= kFreeTierMaxRank)
-        .map(
-          (r) => withInsiderNotes && r.id == kInsiderNotesRestaurant.id
-              ? kInsiderNotesRestaurant
-              : r,
-        )
         .toList();
     if (!canViewTop10) return free;
     return [...free, ...kGatedRestaurants.where((r) => r.cityId == cityId)];
   }
+}
+
+/// Serves insider notes from a real subcollection read, not from a
+/// field set on the restaurant.
+///
+/// The point of the shape. `_parseRestaurant` nulls `insiderTip` and
+/// `whatToOrder` on every restaurant document, correctly, because
+/// they are legacy fields and the real content lives in the
+/// `insiderNotes` subcollection. A fixture that sets those fields on
+/// the Restaurant object would test a path production does not have,
+/// and would have gone on passing while the screen rendered nothing
+/// at all, which is exactly what happened for three months.
+///
+/// So this overrides `getInsiderNotes` and leaves the restaurant
+/// fields null, the way the production parser leaves them.
+class InsiderNotesFixtureRepository extends RestaurantRepository {
+  InsiderNotesFixtureRepository({this.notes, this.throwOnRead = false})
+      : super(firestore: FakeFirebaseFirestore());
+
+  /// Null means the subdocument does not exist, which is what a
+  /// restaurant nobody has written about looks like.
+  final InsiderNotes? notes;
+  final bool throwOnRead;
+
+  @override
+  Future<List<Restaurant>> getForCity(
+    String cityId, {
+    required bool canViewTop10,
+  }) async =>
+      SeedData.restaurants
+          .where((r) => r.cityId == cityId && r.rank <= kFreeTierMaxRank)
+          .toList();
+
+  @override
+  Future<InsiderNotes?> getInsiderNotes(String restaurantId) async {
+    if (throwOnRead) throw Exception('fixture: insider notes read failed');
+    return notes;
+  }
+}
+
+/// AppState wired to the insider notes fixture, on the real Firestore
+/// load path.
+AppState buildInsiderNotesAppState({
+  InsiderNotes? notes,
+  bool throwOnRead = false,
+}) {
+  return AppState(
+    useFirebase: true,
+    isPaidTier: true,
+    cityRepo: GatedFixtureCityRepository(),
+    restaurantRepo: InsiderNotesFixtureRepository(
+      notes: notes,
+      throwOnRead: throwOnRead,
+    ),
+  );
 }
 
 /// A repository that cannot be reached, to drive the fallback path.
@@ -149,16 +196,11 @@ AppState buildOfflineFallbackAppState({required bool isPaidTier}) {
 /// useFirebase:false path skips that entirely and hands back
 /// SeedData, so a test built on it could never exercise the tier
 /// filter it claims to be testing.
-AppState buildGatedFixtureAppState({
-  required bool isPaidTier,
-  bool withInsiderNotes = false,
-}) {
+AppState buildGatedFixtureAppState({required bool isPaidTier}) {
   return AppState(
     useFirebase: true,
     isPaidTier: isPaidTier,
     cityRepo: GatedFixtureCityRepository(),
-    restaurantRepo: GatedFixtureRestaurantRepository(
-      withInsiderNotes: withInsiderNotes,
-    ),
+    restaurantRepo: GatedFixtureRestaurantRepository(),
   );
 }

@@ -62,6 +62,51 @@ class RestaurantCommentsState {
   final bool isLoadingMore;
 }
 
+/// Where a restaurant's insider notes are in their load lifecycle.
+///
+/// `loadedEmpty` is deliberately distinct from `loaded`. An entitled
+/// user looking at a restaurant Andrew has not written about yet is
+/// not an error and is not a paywall, and collapsing those states is
+/// what made finding 2 invisible for three months.
+enum InsiderNotesStatus { notLoaded, loading, loaded, loadedEmpty, error }
+
+/// One restaurant's insider notes and their load state.
+class InsiderNotesState {
+  const InsiderNotesState.notLoaded()
+      : status = InsiderNotesStatus.notLoaded,
+        notes = null,
+        errorMessage = null;
+
+  const InsiderNotesState.loading()
+      : status = InsiderNotesStatus.loading,
+        notes = null,
+        errorMessage = null;
+
+  const InsiderNotesState.loaded(InsiderNotes this.notes)
+      : status = InsiderNotesStatus.loaded,
+        errorMessage = null;
+
+  /// The entitled user read successfully and there is nothing written.
+  const InsiderNotesState.empty()
+      : status = InsiderNotesStatus.loadedEmpty,
+        notes = null,
+        errorMessage = null;
+
+  const InsiderNotesState.error(this.errorMessage)
+      : status = InsiderNotesStatus.error,
+        notes = null;
+
+  final InsiderNotesStatus status;
+  final InsiderNotes? notes;
+  final String? errorMessage;
+
+  /// True only when there is something written to show.
+  bool get hasNotes =>
+      status == InsiderNotesStatus.loaded &&
+      ((notes?.insiderTip ?? '').trim().isNotEmpty ||
+          (notes?.whatToOrder ?? '').trim().isNotEmpty);
+}
+
 class AppState extends ChangeNotifier {
   AppState({
     CityRepository? cityRepo,
@@ -135,6 +180,7 @@ class AppState extends ChangeNotifier {
   /// online read path uses _restaurantComments instead.
   List<Comment> _comments = [];
   final Map<String, RestaurantCommentsState> _restaurantComments = {};
+  final Map<String, InsiderNotesState> _insiderNotes = {};
   final Set<String> _votedRestaurantIds = {};
   bool _isLoading = true;
   bool _isOffline = false;
@@ -241,6 +287,57 @@ class AppState extends ChangeNotifier {
   /// restaurantId. Safe to call every time a screen opens: does
   /// nothing once a page is already loaded or already loading, so
   /// re-entering a screen does not refetch what is already there.
+  /// The insider notes load state for one restaurant.
+  InsiderNotesState insiderNotesFor(String restaurantId) =>
+      _insiderNotes[restaurantId] ?? const InsiderNotesState.notLoaded();
+
+  /// Loads insider notes for one restaurant, on demand.
+  ///
+  /// Only call this for a user who is entitled. firestore.rules gates
+  /// the insiderNotes subcollection on isCityInsider(), so a free
+  /// user's read is denied at the server, and firing it anyway would
+  /// spend a round trip to learn something the client already knows
+  /// from its own claim.
+  ///
+  /// That gate is also why the free user's branch cannot be driven by
+  /// this data at all: a free client cannot discover whether notes
+  /// exist without being told, and a `hasInsiderNotes` flag on the
+  /// public document is exactly the leak the subcollection exists to
+  /// prevent. The screen renders the free branch from the entitlement
+  /// instead, the same shape as the locked rows in finding 11.
+  Future<void> loadInsiderNotesForRestaurant(String restaurantId) async {
+    if (!_useFirebase) return;
+
+    final existing = _insiderNotes[restaurantId];
+    if (existing != null &&
+        (existing.status == InsiderNotesStatus.loading ||
+            existing.status == InsiderNotesStatus.loaded ||
+            existing.status == InsiderNotesStatus.loadedEmpty)) {
+      return;
+    }
+
+    _insiderNotes[restaurantId] = const InsiderNotesState.loading();
+    notifyListeners();
+
+    try {
+      final repo = _restaurantRepo ?? RestaurantRepository();
+      final notes = await repo.getInsiderNotes(restaurantId);
+      // A missing subdocument and a subdocument with two blank
+      // strings are the same thing to a reader, so both resolve to
+      // empty rather than one of them rendering blank headings.
+      final hasContent = notes != null &&
+          ((notes.insiderTip ?? '').trim().isNotEmpty ||
+              (notes.whatToOrder ?? '').trim().isNotEmpty);
+      _insiderNotes[restaurantId] = hasContent
+          ? InsiderNotesState.loaded(notes)
+          : const InsiderNotesState.empty();
+    } on Exception catch (e, stack) {
+      _recordError('loadInsiderNotesForRestaurant', e, stack);
+      _insiderNotes[restaurantId] = InsiderNotesState.error(e.toString());
+    }
+    notifyListeners();
+  }
+
   Future<void> loadCommentsForRestaurant(String restaurantId) async {
     if (_usingSeedComments) return;
     final existing = _restaurantComments[restaurantId];
