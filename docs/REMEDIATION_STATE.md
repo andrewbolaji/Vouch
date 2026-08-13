@@ -45,7 +45,7 @@ clears it.
 | 8 | Not started. `submitComment` target validation. The client cannot write comments at all, so this applies to that callable only. | |
 | 9 | Landed. Cascade guard so applyVoteDeleted/applyCommentDeleted do not throw NOT_FOUND when the parent restaurant is already gone. | `1c7639a` |
 | 10 | **Measured, design not written. Outranks everything except city status and 11.** | |
-| 11 | **Not started. The paywall never renders for free users.** | |
+| 11 | Landed. Section guard and locked row count both came from `top6to10`, always empty for a free user, so the paywall and the only paid-tier entry point on the screen never rendered. Both now come from rank constants. Locked rows are rank plus a fixed-width redaction bar, no gated field. Six paywall tests rewritten to assert the rule, not the roster. | `2e4efea` |
 
 Other landed work: `39c3edf` voteCount nightly reconciliation plus
 docs; `f4c7fa9` profile lockout fix, vote-list backfill script, deploy
@@ -162,6 +162,29 @@ Then rewrite the six tests to assert the rule, not the roster: free
 user sees 1 to 5 rendered and 6 to 10 locked, sourced from the
 fixture's own ranks, so it survives any reorder.
 
+**Shipped in `2e4efea`.** Two bugs, not one: the section guard at
+line 133 and the row count at line 173, which was
+`List.generate(top6to10.length, ...)`. Both derived from the same
+always-empty list, so fixing only the guard would have rendered a
+header above zero rows. Both now come from `kFreeTierMaxRank`,
+`kGatedRankStart` and `kGatedRankEnd` in `lib/models/restaurant.dart`.
+
+Rows are rank plus a fixed-width redaction bar. See open decision 6
+for why cuisine and neighbourhood are absent.
+
+Red first, with `city_detail_screen.dart` reverted to HEAD and the
+constants left in place so the failure was behavioural rather than a
+missing symbol: 3 of 5 failed, all free-path, `Found 0 widgets with
+text "See plans"`. The entitled-user test passed at HEAD, which
+confirms the diagnosis from the other side.
+
+Two of the old assertions named restaurants that had already left the
+seed, so their `findsNothing` passed because the string existed
+nowhere. `test/helpers/gated_fixtures.dart` restores real production
+names as canaries, under `test/` where nothing compiles them into a
+release binary. That file is also what finding 4 needs: it is where
+gated seed content goes when it leaves `lib/data/seed_data.dart`.
+
 ## Finding 4: the verification method that works
 
 Goal: gated data (ranks above 5, and all insiderTip/whatToOrder) stops
@@ -263,8 +286,20 @@ Both App Review claims verify:
    diacritics and on `Corkscrew` versus `CorkScrew` casing. Worth its
    own test.
 4. **Image hosting**, bundled versus Storage.
-5. **Setting Houston live**, and whether finding 11 ships first so the
-   paid tier has an entry point when it does.
+5. **Setting Houston live.** Finding 11 has now shipped (`2e4efea`),
+   so the paid tier has an entry point when it does.
+6. **What a locked row shows.** The brief asked for both "rendered
+   from the rank numbers alone, no gated field reaches the client in
+   any form" and "rank, cuisine and neighbourhood visible and the
+   name redacted." These conflict: `restaurant_repository.dart:31`
+   filters ranks above `kFreeTierMaxRank` out of the query and
+   `firestore.rules` denies them independently, so the free client
+   holds no document for ranks 6 to 10 and there is no cuisine or
+   neighbourhood to redact. Shipped as rank only, because that is the
+   reading that keeps finding 4's binary claim checkable. Showing
+   real cuisine and neighbourhood needs a publicly readable teaser
+   projection: new fields, new rules, and a different shape of
+   verification for finding 4.
 
 ## Required fields for a new restaurant document
 
