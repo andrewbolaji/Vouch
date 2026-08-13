@@ -23,25 +23,21 @@
  */
 
 const admin = require("firebase-admin");
+const {initAdminApp, resolvedProjectId} = require("./lib/admin_app");
 
-// Pinned explicitly rather than left to ambient project detection
-// (GCLOUD_PROJECT, gcloud config, metadata server). An earlier version
-// of this script relied on that detection, printed "(unknown)" for the
-// project, and appeared to succeed with a result of zero documents
-// when it may not have reached any project at all. Trust the number
-// this script prints only if the project name above it is not "(unknown)".
-const PROJECT_ID = "majorcitymusteats";
-
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  projectId: PROJECT_ID,
-});
+// This script is where the pinning rule was first learned: an earlier
+// version relied on ambient project detection, printed "(unknown)"
+// for the project, and appeared to succeed with a result of zero
+// documents when it may not have reached any project at all. The
+// reasoning now lives in lib/admin_app.js, which every script in this
+// directory shares, so no script has to remember it individually.
+initAdminApp();
 const db = admin.firestore();
 
 const DRIFT_THRESHOLD_MS = 60 * 1000;
 
 async function main() {
-  const projectId = admin.app().options.projectId || "(unknown)";
+  const projectId = resolvedProjectId();
   console.log(`\nChecking vote document timestamps`);
   console.log(`Target project: ${projectId}\n`);
 

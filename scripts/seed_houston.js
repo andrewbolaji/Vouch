@@ -32,9 +32,9 @@ const {
   cleanDemoData,
   writeHoustonData,
 } = require("./lib/firestore_writer");
+const {initAdminApp, resolvedProjectId} = require("./lib/admin_app");
 
-// Initialize Firebase Admin with default credentials
-admin.initializeApp();
+initAdminApp();
 const db = admin.firestore();
 const { FieldValue } = admin.firestore;
 
@@ -42,7 +42,7 @@ async function main() {
   const args = process.argv.slice(2);
   const confirm = args.includes("--confirm");
   const cleanDemo = args.includes("--clean-demo");
-  const projectId = admin.app().options.projectId || "(unknown)";
+  const projectId = resolvedProjectId();
 
   console.log(`\nHouston seed pipeline`);
   console.log(`Target project: ${projectId}`);

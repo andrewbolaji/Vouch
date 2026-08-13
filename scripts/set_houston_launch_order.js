@@ -23,8 +23,9 @@
 
 const admin = require("firebase-admin");
 const {cascadeDeleteRestaurant} = require("./lib/cascade_delete");
+const {initAdminApp, resolvedProjectId} = require("./lib/admin_app");
 
-admin.initializeApp();
+initAdminApp();
 const db = admin.firestore();
 
 // Curated launch order: [rank, name]
@@ -55,7 +56,7 @@ const REMOVALS = [
 async function main() {
   const args = process.argv.slice(2);
   const confirm = args.includes("--confirm");
-  const projectId = admin.app().options.projectId || "(unknown)";
+  const projectId = resolvedProjectId();
 
   console.log(`\nSet Houston launch order`);
   console.log(`Target project: ${projectId}`);

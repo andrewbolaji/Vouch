@@ -28,9 +28,9 @@
 const path = require("path");
 const fs = require("fs");
 const admin = require("firebase-admin");
+const {initAdminApp, resolvedProjectId} = require("./lib/admin_app");
 
-// Initialize Firebase Admin with default credentials
-admin.initializeApp();
+initAdminApp();
 const db = admin.firestore();
 const { FieldValue } = admin.firestore;
 
@@ -426,7 +426,7 @@ async function writeAtlantaData(db, FieldValue, enrichedCandidates, confirm) {
 async function main() {
   const args = process.argv.slice(2);
   const confirm = args.includes("--confirm");
-  const projectId = admin.app().options.projectId || "(unknown)";
+  const projectId = resolvedProjectId();
 
   console.log(`\nAtlanta seed pipeline`);
   console.log(`Target project: ${projectId}`);

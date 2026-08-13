@@ -15,8 +15,9 @@
  */
 
 const admin = require("firebase-admin");
+const {initAdminApp, resolvedProjectId} = require("./lib/admin_app");
 
-admin.initializeApp();
+initAdminApp();
 const db = admin.firestore();
 
 // Curated launch order: [rank, name]
@@ -43,7 +44,7 @@ const LAUNCH_ORDER = [
 async function main() {
   const args = process.argv.slice(2);
   const confirm = args.includes("--confirm");
-  const projectId = admin.app().options.projectId || "(unknown)";
+  const projectId = resolvedProjectId();
 
   console.log(`\nSet Atlanta launch order`);
   console.log(`Target project: ${projectId}`);

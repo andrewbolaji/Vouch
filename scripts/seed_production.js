@@ -24,9 +24,9 @@
  */
 
 const admin = require("firebase-admin");
+const {initAdminApp, resolvedProjectId} = require("./lib/admin_app");
 
-// Initialize with default credentials (service account or gcloud auth)
-admin.initializeApp();
+initAdminApp();
 const db = admin.firestore();
 
 const { Timestamp, FieldValue } = admin.firestore;
@@ -223,7 +223,7 @@ async function main() {
   const args = process.argv.slice(2);
   const force = args.includes("--force");
   const confirm = args.includes("--confirm");
-  const projectId = admin.app().options.projectId || "(unknown)";
+  const projectId = resolvedProjectId();
 
   console.log(`\nVouch seed script`);
   console.log(`Target project: ${projectId}`);

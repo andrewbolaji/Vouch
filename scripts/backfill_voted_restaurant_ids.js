@@ -40,26 +40,19 @@
  */
 
 const admin = require("firebase-admin");
+const {initAdminApp, resolvedProjectId} = require("./lib/admin_app");
 
-// Pinned explicitly rather than left to ambient project detection,
-// for the reason recorded in check_vote_timestamps.js: a
-// collectionGroup query with no resolvable project either throws or
-// reports zero documents, and zero is the answer this script expects
-// today, so an unresolved project would be indistinguishable from a
-// clean result. Trust the counts below only if the project printed
-// above them is not "(unknown)".
-const PROJECT_ID = "majorcitymusteats";
-
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  projectId: PROJECT_ID,
-});
+// Project pinned by the shared initializer, not resolved from the
+// ambient environment: a collectionGroup query with no resolvable
+// project reports zero documents, and zero is the answer this script
+// expects today, so the two would be indistinguishable.
+initAdminApp();
 const db = admin.firestore();
 
 async function main() {
   const args = process.argv.slice(2);
   const confirm = args.includes("--confirm");
-  const projectId = admin.app().options.projectId || "(unknown)";
+  const projectId = resolvedProjectId();
 
   console.log(`\nBackfill votedRestaurantIds from vote documents`);
   console.log(`Target project: ${projectId}`);
