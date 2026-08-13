@@ -391,6 +391,23 @@ That is the provenance line drawn by the data itself.
 Atlanta's notes are still not "Andrew went there", so they need
 honest attribution rather than the insider-note voice.
 
+## Content provenance audit
+
+`docs/CONTENT_PROVENANCE_AUDIT.md`, 2026-08-13. Every user-visible
+field written by the two seed scripts, traced and checked for whether
+it asserts something about the real world.
+
+Four confirmed falsehoods live in production, the worst being
+`nyc-2`'s description telling users that Dom DeMarco, who died on
+17 March 2022, is hand-cutting basil onto their pizza. Seven more need
+verification, including a possible fabricated Michelin star on
+`Corkscrew BBQ`, a Houston launch restaurant.
+
+The provenance line is binary on every field. Atlanta: 0 descriptions,
+0 vibeTags, 17 Places-verified addresses with real coordinates.
+Scaffold cities: 40 descriptions, 40 sets of vibeTags, 0 placeIds,
+and all 40 coordinates set to `0,0`.
+
 ## Reachability sweep
 
 `docs/REACHABILITY_SWEEP.md`, 2026-08-13. Every conditional render
