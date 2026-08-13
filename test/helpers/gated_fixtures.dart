@@ -110,6 +110,36 @@ class GatedFixtureRestaurantRepository extends RestaurantRepository {
   }
 }
 
+/// A repository that cannot be reached, to drive the fallback path.
+///
+/// Throws from getForCity rather than from getCities, because that is
+/// where a real read fails once auth and the city list have already
+/// succeeded, and it is the case that leaves AppState holding
+/// SeedData with isOffline set.
+class UnreachableRestaurantRepository extends RestaurantRepository {
+  UnreachableRestaurantRepository() : super(firestore: FakeFirebaseFirestore());
+
+  @override
+  Future<List<Restaurant>> getForCity(
+    String cityId, {
+    required bool canViewTop10,
+  }) async {
+    throw Exception('fixture: restaurant read failed');
+  }
+}
+
+/// AppState that fell back to the bundled seed, as it does when
+/// Firestore is unreachable. isOffline is true and only ranks 1 to
+/// kFreeTierMaxRank are present, whatever the user paid for.
+AppState buildOfflineFallbackAppState({required bool isPaidTier}) {
+  return AppState(
+    useFirebase: true,
+    isPaidTier: isPaidTier,
+    cityRepo: GatedFixtureCityRepository(),
+    restaurantRepo: UnreachableRestaurantRepository(),
+  );
+}
+
 /// AppState on the real Firestore load path, fed by the fixture
 /// repositories.
 ///

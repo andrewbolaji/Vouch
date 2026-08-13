@@ -87,8 +87,17 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     // The locked rows are therefore rendered from the rank constants
     // rather than from loaded data, which is also what keeps gated
     // fields out of the client and out of the release binary.
-    final hasGatedSection =
-        _showTop10 && (!membership.canViewTop10 || top6to10.isNotEmpty);
+
+    // An entitled user with an empty gated band is not a user whose
+    // city has five restaurants. It is a user whose fetch failed and
+    // fell back to SeedData, which carries ranks 1 to
+    // kFreeTierMaxRank and nothing else. Rendering silence there
+    // states a fact about the city that is not true.
+    final gatedFailedToLoad =
+        membership.canViewTop10 && top6to10.isEmpty && appState.isOffline;
+
+    final hasGatedSection = _showTop10 &&
+        (!membership.canViewTop10 || top6to10.isNotEmpty || gatedFailedToLoad);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -162,7 +171,9 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                               isLocked: !membership.canViewTop10,
                             ),
                             const SizedBox(height: AppTheme.spacingMd),
-                            if (membership.canViewTop10)
+                            if (gatedFailedToLoad)
+                              const _GatedLoadFailed()
+                            else if (membership.canViewTop10)
                               ...top6to10.map(
                                 (r) => RestaurantCard(
                                   restaurant: r,
@@ -326,6 +337,49 @@ class _ToggleButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown to an entitled user when ranks above the free tier could not
+/// be fetched and the screen is running on the bundled fallback.
+///
+/// Deliberately not styled as a locked row. The user is entitled to
+/// this content; it is missing, not withheld, and conflating the two
+/// would invite them to pay for something they already bought.
+class _GatedLoadFailed extends StatelessWidget {
+  const _GatedLoadFailed();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingMd),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: AppTheme.textTertiary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.cloud_off,
+            color: AppTheme.textSecondary,
+            size: 18,
+          ),
+          const SizedBox(width: AppTheme.spacingSm),
+          Expanded(
+            child: Text(
+              "Couldn't load ranks $kGatedRankStart to $kGatedRankEnd. "
+              'Pull down to try again.',
+              style: AppTheme.bodySmall.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

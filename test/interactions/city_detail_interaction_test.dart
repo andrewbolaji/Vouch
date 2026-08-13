@@ -194,6 +194,56 @@ void main() {
     );
 
     testWidgets(
+      'entitled user on the offline fallback is told ranks are missing',
+      (tester) async {
+        final appState = buildOfflineFallbackAppState(isPaidTier: true);
+        await tester.pumpWidget(
+          buildTestApp(
+            const CityDetailScreen(cityId: 'houston'),
+            appStateOverride: appState,
+            membershipOverride: MembershipProvider(
+              initialTier: MembershipTier.localsPass,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle(seedLoadDuration);
+
+        expect(appState.isOffline, isTrue);
+        expect(
+          appState
+              .restaurantsForCity('houston')
+              .where((r) => r.rank > kFreeTierMaxRank),
+          isEmpty,
+          reason: 'the bundled fallback carries free-tier ranks only',
+        );
+
+        await tester.tap(find.text('Top 10'));
+        await tester.pumpAndSettle();
+
+        // Silence here would tell a paying user this city has five
+        // restaurants, which is a claim about the city rather than
+        // about the failed fetch.
+        expect(
+          find.textContaining(
+            "Couldn't load ranks $kGatedRankStart to $kGatedRankEnd",
+          ),
+          findsOneWidget,
+        );
+
+        // Not a paywall. They already paid for this.
+        expect(find.byType(PaywallGate), findsNothing);
+        for (var rank = kGatedRankStart; rank <= kGatedRankEnd; rank++) {
+          expect(
+            find.bySemanticsLabel(
+              'Rank $rank, locked. Upgrade to see this restaurant.',
+            ),
+            findsNothing,
+          );
+        }
+      },
+    );
+
+    testWidgets(
       'tapping restaurant navigates to detail screen',
       (tester) async {
         final appState = buildGatedFixtureAppState(isPaidTier: false);

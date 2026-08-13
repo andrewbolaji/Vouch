@@ -38,7 +38,7 @@ clears it.
 | 1 (failure path) | Landed. toggleVote awaits and rolls back; rules split get/list; cascade guard on applyVoteDeleted/applyCommentDeleted. | `1c7639a` |
 | 2 | **Blocked on Andrew.** insiderNotes never load, and the outer gate at `restaurant_detail_screen.dart:669` can never be true because `RestaurantRepository._parseRestaurant` nulls both fields, so free users never see the teaser either. Do not add a `hasInsiderNotes` flag, explicitly rejected. | |
 | 3 | Landed. refreshEntitlements now runs on launch and sign-in; unconfirmed claim renders pending, not paid; pending is ephemeral and recomputed. | `b5a2084` |
-| 4 | **In flight, reverted, unblocked by the finding 11 decision.** See "Finding 4" below. | |
+| 4 | Landed. `seed_data.dart` cut from 57 restaurants to 25, ranks 1 to `kFreeTierMaxRank` only, all 50 insiderTip/whatToOrder pairs removed including on free ranks. Gated content moved to `test/helpers/gated_fixtures.dart`, not deleted. Entitled users on the fallback now get an explicit could-not-load row. Verified by `strings -a` before and after, see "Finding 4" below. | |
 | 5 | Not started. Prepare signature verification, GET /subscribers reconciliation, event-id dedupe against a test secret. Andrew is generating `REVENUECAT_WEBHOOK_SIGNING_SECRET`, kept separate from the existing bearer secret. | |
 | 6 | Not started. Account deletion is not resumable. Comments anonymisation already removes the uid (`user_cleanup.ts:130` writes `userId: "deleted"`), so that decision is NOT re-opened. Record in DECISIONS.md that deletion works on the happy path and does not survive interruption. | |
 | 7 | Landed. votes rules split into `get` (owner only) and `list: false`. | `1c7639a` |
@@ -210,17 +210,98 @@ strings -a build/ios/iphoneos/Runner.app/Frameworks/App.framework/App | grep -c 
 canary.** It killed both bad methods here. A grep returning nothing
 after a fix proves nothing unless it returned something before.
 
-**Before-state measured** (`App`, 7,498,304 bytes): canary
-`patio with the downtown skyline view` = 1, `The Better Box` = 2,
-`Tantanmen` = 1, control `Mensho` = 3.
-
 Canary must appear only in gated data, not in ranks 1 to 5 and not in
-a test file.
+a test file. Always include controls that must **survive**, otherwise
+a build that dropped every string would look like a pass.
 
-**Why it was reverted:** stripping gated rows made six paywall tests
-fail, which exposed finding 11. Blocked on that decision, now given.
-Working tree was reverted clean; the seed transformation is a short
-scripted edit to redo.
+**Before, at `e3205bd`** (`App`, 7,498,304 bytes):
+
+| Canary | Kind | Count |
+|---|---|---|
+| `Top Sushi` | rank 7 | 2 |
+| `The Better Box` | rank 8 | 2 |
+| `Joey Uptown` | rank 9 | 1 |
+| `No reservations and lines form. Go off-peak, around 4 PM.` | insiderTip on a **free** rank | 1 |
+| `Wagyu Texas BBQ Tantanmen` | whatToOrder | 1 |
+| `Mensho` | control, rank 1 | 3 |
+| `Corkscrew BBQ` | control, rank 5 | 3 |
+
+**After** (`App`, 7,481,792 bytes, down 16,512):
+
+| Canary | Before | After | |
+|---|---|---|---|
+| `Joey Uptown` (rank 9) | 1 | **0** | gone |
+| `No reservations and lines form. Go off-peak, around 4 PM.` | 1 | **0** | gone |
+| `Wagyu Texas BBQ Tantanmen` | 1 | **0** | gone |
+| `Top Sushi` (rank 7) | 2 | **1** | seed copy gone, `demo_image_overrides.dart` copy remains |
+| `The Better Box` (rank 8) | 2 | **1** | same |
+| `Mensho` (rank 1, control) | 3 | 3 | survives, as required |
+| `Corkscrew BBQ` (rank 5, control) | 3 | 3 | survives, as required |
+
+The controls holding at 3 is what makes the zeros mean something. A
+build that dropped every string would show the same zeros.
+
+**Why it was reverted the first time:** stripping gated rows made six
+paywall tests fail, which exposed finding 11. That is now closed
+(`2e4efea`), which unblocked this.
+
+### Landed
+
+`lib/data/seed_data.dart` went from 57 restaurants to 25: ranks 1 to
+`kFreeTierMaxRank` only, and all 50 `insiderTip` / `whatToOrder` pairs
+removed. Note that insider notes were stripped from **free** ranks
+too. They are a `cityInsider` entitlement regardless of rank, so rank
+alone was never the right filter.
+
+Gated content moved to `test/helpers/gated_fixtures.dart` rather than
+being deleted. Deleting it would have made three `findsNothing`
+assertions pass because their strings existed nowhere.
+
+Three tests broke on the change, all of them tests that had been
+relying on `hou-1` carrying notes from the seed. They now take an
+`AppState` built on `buildGatedFixtureAppState(withInsiderNotes:
+true)`. `test/screens/restaurant_detail_screen_test.dart` had its own
+local `buildTestApp` with a different signature, so it needed its own
+`appStateOverride` seam.
+
+### A second channel, found by the after-grep, NOT fixed
+
+`lib/config/demo_image_overrides.dart` maps restaurant name to a
+bundled asset path, and `assets/demo/` is declared in `pubspec.yaml`
+line 63, so it ships. Three of its 29 keys are gated restaurant names:
+
+| Key | Rank |
+|---|---|
+| `lost and found` | 6 |
+| `top sushi` | 7 |
+| `the better box` | 8 |
+
+The matching files exist: `assets/demo/Lost and Found.png`,
+`Lost and Found 2.png`, `Top Sushi.png`, `The Better Box.png`. So the
+names and the photographs of three gated restaurants ship in the
+release bundle regardless of what `seed_data.dart` holds. Emptying the
+seed does not close this.
+
+**Deliberately not fixed here.** The file opens with "DEMO ONLY. Set
+false or delete before any public launch build" and carries its own
+removal checklist, so flipping `kUseDemoImageOverrides` is a launch
+decision with visible consequences for every demo build, not a
+cleanup to fold into this commit. It is also entangled with open
+decision 4, image hosting.
+
+**Consequence for the numbers below:** `Top Sushi` and `The Better
+Box` do not reach zero after this change, and the reason is this file,
+not the seed. `Joey Uptown` (rank 9) is the uncontaminated rank
+canary.
+
+**Explicit could-not-load state.** The gap was an entitled user on the
+fallback: `top6to10` is empty, so the whole section used to vanish and
+five restaurants read as "this city has five restaurants". Now
+`_GatedLoadFailed` renders "Couldn't load ranks 6 to 10". Deliberately
+not styled as a locked row, because that content is missing rather
+than withheld and they already paid for it. Tested via
+`UnreachableRestaurantRepository`, which throws from `getForCity` so
+`AppState` takes the real catch branch and sets `isOffline`.
 
 ## Image pipeline
 

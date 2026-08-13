@@ -10,6 +10,7 @@ import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/widgets/insider_notes.dart';
 import 'package:vouch/widgets/paywall_gate.dart';
 
+import '../helpers/gated_fixtures.dart';
 import '../helpers/test_app.dart';
 
 const _testUser = AuthUser(
@@ -249,10 +250,19 @@ void main() {
       'insider notes withheld from widget tree '
       'when locked (security)',
       (tester) async {
+        // Notes come from the fixture, not SeedData. SeedData no
+        // longer carries any: it is compiled into the release binary,
+        // so it holds free-tier content only. Without the fixture the
+        // Tantanmen assertion below would pass because the string
+        // exists nowhere, which is not the same as the gate holding.
         await tester.pumpWidget(
           buildTestApp(
             const RestaurantDetailScreen(
               restaurantId: 'hou-1',
+            ),
+            appStateOverride: buildGatedFixtureAppState(
+              isPaidTier: false,
+              withInsiderNotes: true,
             ),
           ),
         );
@@ -293,6 +303,10 @@ void main() {
               restaurantId: 'hou-1',
             ),
             membershipOverride: membership,
+            appStateOverride: buildGatedFixtureAppState(
+              isPaidTier: true,
+              withInsiderNotes: true,
+            ),
           ),
         );
         await tester.pumpAndSettle(seedLoadDuration);

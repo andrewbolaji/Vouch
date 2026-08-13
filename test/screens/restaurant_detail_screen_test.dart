@@ -11,17 +11,25 @@ import 'package:vouch/screens/restaurant_detail_screen.dart';
 import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/auth_service.dart';
 
+import '../helpers/gated_fixtures.dart';
+
 const _signedInUser = AuthUser(
   uid: 'test-uid',
   email: 'test@test.com',
   method: AuthMethod.email,
 );
 
-Widget buildTestApp(Widget child, {AuthService? authOverride}) {
+Widget buildTestApp(
+  Widget child, {
+  AuthService? authOverride,
+  AppState? appStateOverride,
+}) {
   final auth = authOverride ?? AuthService.mock();
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider(create: (_) => AppState(useFirebase: false)),
+      ChangeNotifierProvider(
+        create: (_) => appStateOverride ?? AppState(useFirebase: false),
+      ),
       ChangeNotifierProvider(create: (_) => MembershipProvider()),
       ChangeNotifierProvider(create: (_) => SavedProvider(authService: auth)),
       ChangeNotifierProvider(
@@ -198,10 +206,15 @@ void main() {
     // A3: Comments section renders above the City Insider paywall gate.
     // Uses default (free, non-insider) user so PaywallGate is present.
     testWidgets('comments header renders above paywall gate', (tester) async {
-      // hou-1 has insiderTip/whatToOrder, so the paywall gate shows for free users
+      // The gate needs a restaurant that actually has notes. SeedData
+      // no longer carries any, so this comes from the fixture.
       await tester.pumpWidget(
         buildTestApp(
           const RestaurantDetailScreen(restaurantId: 'hou-1'),
+          appStateOverride: buildGatedFixtureAppState(
+            isPaidTier: false,
+            withInsiderNotes: true,
+          ),
         ),
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 700));

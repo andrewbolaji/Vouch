@@ -1,5 +1,34 @@
 import 'package:vouch/models/models.dart';
 
+/// Offline fallback content. Free tier only, by construction.
+///
+/// Everything in here is compiled into the release binary and is
+/// readable by anyone willing to unzip the app, so it may hold only
+/// what an unauthenticated user is already entitled to see. It
+/// carries ranks 1 to `kFreeTierMaxRank` and no insider notes.
+///
+/// Verified by `strings -a` on the iOS AOT snapshot rather than by
+/// reading this file, because the point is what survives compilation:
+///
+///   flutter build ios --release --no-codesign
+///   strings -a build/ios/iphoneos/Runner.app/Frameworks/App.framework/App \
+///     | grep -cF "`<canary>`"
+///
+/// Two other methods produce confident false passes and must not be
+/// used: grepping `main.dart.js` from a web build (dart2js does not
+/// preserve the strings, so the control disappears too), and `grep -c`
+/// straight at the binary without `strings` (returns 0 for
+/// everything). Always grep before the change and show the canary is
+/// found. See docs/REMEDIATION_STATE.md, "Finding 4".
+///
+/// The gated content that used to live here is now in
+/// `test/helpers/gated_fixtures.dart`. It was moved rather than
+/// deleted: a `findsNothing` assertion against a string that exists
+/// nowhere passes for the wrong reason, and two tests had already
+/// been caught doing exactly that.
+///
+/// A fallback list is a truncated list, not a short one. Anything
+/// rendering it must say so, see `AppState.isOffline`.
 class SeedData {
   SeedData._();
 
@@ -78,13 +107,6 @@ class SeedData {
               '9889 Bellaire Blvd, Ste C308, Houston, TX 77036',
         ),
       ],
-      insiderTip:
-          'No reservations and lines form.'
-          ' Go off-peak, around 4 PM.',
-      whatToOrder:
-          'The Wagyu Texas BBQ Tantanmen (smoked A5'
-          ' beef). Matcha Duck Ramen for something'
-          ' different.',
       vibeTags: ['Quick Bite', 'Cozy', 'Neighborhood Favorite'],
     ),
     Restaurant(
@@ -168,124 +190,7 @@ class SeedData {
           address: '26608 Keith St, Spring, TX 77373',
         ),
       ],
-      insiderTip:
-          'Arrive by 10 AM on weekends or the brisket'
-          ' is gone.',
-      whatToOrder:
-          'Brisket, beef ribs, and the garlic sausage'
-          ' links.',
       vibeTags: ['Worth the Drive', 'No Frills', 'Cash Friendly'],
-    ),
-    Restaurant(
-      id: 'hou-4',
-      cityId: 'houston',
-      name: 'Lost and Found',
-      cuisine: 'Cocktail Bar + Kitchen',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'A lively Midtown bar with colorful craft'
-          ' cocktails, a downtown-view patio, and a famous'
-          ' Travis Scott mural.',
-      rank: 6,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'Midtown',
-          address: '160 W Gray St, Houston, TX 77019',
-        ),
-      ],
-      insiderTip:
-          'The patio with the downtown skyline view is'
-          ' the spot.',
-      whatToOrder:
-          'Craft cocktails and shareable plates on the'
-          ' patio.',
-      vibeTags: ['Good Drinks', 'Lively', 'Patio Views'],
-    ),
-    Restaurant(
-      id: 'hou-14',
-      cityId: 'houston',
-      name: 'Top Sushi',
-      cuisine: 'Japanese (Sushi)',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Creative sushi rolls and fresh-cut fish on'
-          ' Westheimer. Known for signature rolls with'
-          ' bold flavor combos.',
-      rank: 7,
-      locations: [
-        RestaurantLocation(
-          name: 'Westheimer',
-          address:
-              '8401 Westheimer Rd, Ste 160,'
-              ' Houston, TX 77063',
-        ),
-      ],
-      vibeTags: ['Date Night', 'Group Friendly', 'Good Drinks'],
-    ),
-    Restaurant(
-      id: 'hou-15',
-      cityId: 'houston',
-      name: 'The Better Box',
-      cuisine: 'Comfort Food (Food Truck)',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'A food truck turning out loaded comfort-food'
-          ' boxes that punch above their price point.',
-      rank: 8,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Cypress Creek',
-          address:
-              '6560 Cypress Creek Pkwy,'
-              ' Houston, TX 77069',
-        ),
-      ],
-      vibeTags: ['Comfort Food', 'Cash Friendly', 'Hidden Gem'],
-      isMobileVenue: true,
-    ),
-    Restaurant(
-      id: 'hou-16',
-      cityId: 'houston',
-      name: 'Joey Uptown',
-      cuisine: 'Globally-Inspired New American',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'A 10,000-square-foot Galleria restaurant with fire-torched '
-          'sushi, steaks, and a temperature-controlled patio. Part of '
-          'the JOEY chain.',
-      rank: 9,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'Galleria / Uptown',
-          address:
-              '5045 Westheimer Rd, Ste X01,'
-              ' Houston, TX 77056',
-        ),
-      ],
-      vibeTags: ['Date Night', 'Group Friendly', 'Trendy'],
-    ),
-    Restaurant(
-      id: 'hou-17',
-      cityId: 'houston',
-      name: 'Lotus Seafood',
-      cuisine: 'Cajun Seafood',
-      imageUrl: 'placeholder://restaurant',
-      description:
-          'Houston-born Cajun seafood by the pound since'
-          ' 2006. Five locations. Famous for the Crack'
-          ' Sauce.',
-      rank: 10,
-      locations: [
-        RestaurantLocation(
-          name: 'Southwest Freeway',
-          address:
-              '9531 SW Fwy, Houston, TX 77074',
-        ),
-      ],
-      vibeTags: ['Flavor Bomb', 'Group Friendly', 'Casual'],
     ),
 
     // Atlanta
@@ -304,11 +209,6 @@ class SeedData {
               '1100 W Peachtree St NW, Atlanta, GA 30309',
         ),
       ],
-      insiderTip: '',
-      whatToOrder:
-          'Tortelli di Mele (round ravioli filled with'
-          ' Granny Smith apple, sausage, and parmigiano,'
-          ' topped with browned butter and sage)',
     ),
     Restaurant(
       id: 'atl-2',
@@ -325,10 +225,6 @@ class SeedData {
               '792 Moreland Ave SE, Atlanta, GA 30316',
         ),
       ],
-      insiderTip: '',
-      whatToOrder:
-          'Whole bird combo, the stewed beans, house'
-          ' flour tortillas, churros',
     ),
     Restaurant(
       id: 'atl-3',
@@ -347,10 +243,6 @@ class SeedData {
               ' GA 30308',
         ),
       ],
-      insiderTip: '',
-      whatToOrder:
-          'Honey hot wings (ask for the sauce on the'
-          ' fries too)',
     ),
     Restaurant(
       id: 'atl-4',
@@ -368,10 +260,6 @@ class SeedData {
               '1401 Moreland Ave SE, Atlanta, GA 30316',
         ),
       ],
-      insiderTip: '',
-      whatToOrder:
-          'Red rice, smothered turkey wings, black-eyed'
-          ' peas, mac and cheese',
     ),
     Restaurant(
       id: 'atl-5',
@@ -388,241 +276,6 @@ class SeedData {
               '510 Piedmont Ave NE, Atlanta, GA 30308',
         ),
       ],
-      insiderTip: '',
-      whatToOrder:
-          'Fried chicken with lobster mac, the Pho'
-          ' cocktail',
-    ),
-    Restaurant(
-      id: 'atl-6',
-      cityId: 'atlanta',
-      name: 'Aviva by Kameel',
-      cuisine: 'Mediterranean',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 6,
-      locations: [
-        RestaurantLocation(
-          name: 'Downtown (Peachtree Center)',
-          address:
-              '225 Peachtree St NW, Atlanta, GA 30303',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder:
-          'Falafel, the lentil soup, fresh garlic bread',
-    ),
-    Restaurant(
-      id: 'atl-7',
-      cityId: 'atlanta',
-      name: 'The Optimist',
-      cuisine: 'Seafood',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 7,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'West Midtown',
-          address:
-              '914 Howell Mill Rd NW, Atlanta, GA 30318',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder: 'Oysters, the lobster roll',
-    ),
-    Restaurant(
-      id: 'atl-8',
-      cityId: 'atlanta',
-      name: 'Flavor Rich',
-      cuisine: 'Elevated soul food / brunch',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 8,
-      locations: [
-        RestaurantLocation(
-          name: 'Downtown',
-          address:
-              '549 Peachtree St, Atlanta, GA 30308',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder:
-          'Crawfish and crab mac, chef French toast,'
-          ' wagyu burger',
-    ),
-    Restaurant(
-      id: 'atl-9',
-      cityId: 'atlanta',
-      name: "Clay's",
-      cuisine: 'Wings / sports cafe',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 9,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Sandy Springs',
-          address:
-              '5975 Roswell Rd D-245, Atlanta, GA 30328',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder:
-          'Garlic parmesan wings, lemon pepper fries',
-    ),
-    Restaurant(
-      id: 'atl-10',
-      cityId: 'atlanta',
-      name: 'Kimball House',
-      cuisine: 'Oysters + cocktails',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 10,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'Decatur',
-          address:
-              '303 E Howard Ave, Decatur, GA 30030',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder:
-          'Oysters at happy hour, Caviar and Middlins',
-    ),
-    Restaurant(
-      id: 'atl-11',
-      cityId: 'atlanta',
-      name: 'Juci Jerk',
-      cuisine: 'Jamaican / Caribbean',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 11,
-      locations: [
-        RestaurantLocation(
-          name: 'Stone Mountain',
-          address:
-              '5503 Memorial Dr, Stone Mountain,'
-              ' GA 30083',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder: 'Jerk chicken',
-    ),
-    Restaurant(
-      id: 'atl-12',
-      cityId: 'atlanta',
-      name: 'Jamaican Jerk Biz',
-      cuisine: 'Jamaican / seafood',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 12,
-      locations: [
-        RestaurantLocation(
-          name: 'Mableton',
-          address:
-              '1400 Veterans Memorial Hwy SE, Mableton,'
-              ' GA 30126',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder: 'Jerk chicken, oxtail',
-    ),
-    Restaurant(
-      id: 'atl-13',
-      cityId: 'atlanta',
-      name: 'The Dining Experience',
-      cuisine: 'American / seafood / desserts',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 13,
-      locations: [
-        RestaurantLocation(
-          name: 'Fairburn',
-          address:
-              '8420 Senoia Rd Ste 201, Fairburn,'
-              ' GA 30213',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder: '',
-    ),
-    Restaurant(
-      id: 'atl-14',
-      cityId: 'atlanta',
-      name: 'La Grotta',
-      cuisine: 'Italian (old-school fine dining)',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 14,
-      priceLevel: 4,
-      locations: [
-        RestaurantLocation(
-          name: 'Buckhead',
-          address:
-              '2637 Peachtree Rd NE, Atlanta, GA 30305',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder: 'House-made pastas',
-    ),
-    Restaurant(
-      id: 'atl-15',
-      cityId: 'atlanta',
-      name: 'Le Colonial',
-      cuisine: 'French-Vietnamese',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 15,
-      locations: [
-        RestaurantLocation(
-          name: 'Buckhead',
-          address:
-              '3035 Peachtree Rd NE, Atlanta, GA 30305',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder: 'Shaking beef, spring rolls',
-    ),
-    Restaurant(
-      id: 'atl-16',
-      cityId: 'atlanta',
-      name: 'The Porter Beer Bar',
-      cuisine: 'Gastropub / beer',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 16,
-      locations: [
-        RestaurantLocation(
-          name: 'Little Five Points',
-          address:
-              '1156 Euclid Ave NE, Atlanta, GA 30307',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder:
-          'Mussels, beer cheese, the huge beer list',
-    ),
-    Restaurant(
-      id: 'atl-17',
-      cityId: 'atlanta',
-      name: 'La Fonda Latina',
-      cuisine: 'Mexican / comfort',
-      imageUrl: 'placeholder://restaurant',
-      description: '',
-      rank: 17,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Poncey-Highland',
-          address:
-              '923 Ponce De Leon Ave NE, Atlanta,'
-              ' GA 30306',
-        ),
-      ],
-      insiderTip: '',
-      whatToOrder: 'Paella, breakfast burrito',
     ),
 
     // NYC
@@ -645,12 +298,6 @@ class SeedData {
               '178 Broadway, Brooklyn, NY 11211',
         ),
       ],
-      insiderTip:
-          'Reservations book 30 days out.'
-          ' Call at exactly noon.',
-      whatToOrder:
-          'Porterhouse for two. German fried potatoes.'
-          ' Creamed spinach.',
       vibeTags: [
         'Iconic',
         'Special Occasion',
@@ -675,9 +322,6 @@ class SeedData {
               '1424 Avenue J, Brooklyn, NY 11230',
         ),
       ],
-      insiderTip:
-          'Cash only. The square slice is the move.',
-      whatToOrder: 'Square slice. Period.',
       vibeTags: [
         'Iconic',
         'Cash Only',
@@ -703,12 +347,6 @@ class SeedData {
               '75 9th Ave, New York, NY 10011',
         ),
       ],
-      insiderTip:
-          'Get the adobada. Skip the line at lunch,'
-          ' go at 3 PM.',
-      whatToOrder:
-          'Adobada taco with everything.'
-          ' Horchata to drink.',
       vibeTags: [
         'Quick Bite',
         'Cash Friendly',
@@ -733,11 +371,6 @@ class SeedData {
               '205 E Houston St, New York, NY 10002',
         ),
       ],
-      insiderTip:
-          'Tip the cutter and they will hook you up'
-          ' with extra meat.',
-      whatToOrder:
-          'Pastrami on rye with mustard. Nothing else.',
       vibeTags: [
         'Iconic',
         'Tourist Worthy',
@@ -762,156 +395,10 @@ class SeedData {
           address: 'Various, New York, NY',
         ),
       ],
-      insiderTip:
-          'Spicy level 1 is already intense.'
-          ' You have been warned.',
-      whatToOrder:
-          'Spicy cumin lamb hand-pulled noodles.',
       vibeTags: [
         'Cash Friendly',
         'Quick Bite',
         'Flavor Bomb',
-      ],
-    ),
-    Restaurant(
-      id: 'nyc-6',
-      cityId: 'nyc',
-      name: "Joe's Pizza",
-      cuisine: 'Pizza',
-      imageUrl:
-          'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800',
-      description:
-          'The quintessential New York slice.',
-      rank: 6,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Greenwich Village',
-          address:
-              '7 Carmine St, New York, NY 10014',
-        ),
-      ],
-      insiderTip:
-          'Late night after bars is the real'
-          ' experience.',
-      whatToOrder: 'Plain cheese slice, folded.',
-      vibeTags: ['Late Night', 'Quick Bite', 'Iconic'],
-    ),
-    Restaurant(
-      id: 'nyc-7',
-      cityId: 'nyc',
-      name: 'Russ & Daughters',
-      cuisine: 'Jewish Deli',
-      imageUrl:
-          'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800',
-      description:
-          'Smoked fish and bagels, family-run'
-          ' since 1914.',
-      rank: 7,
-      locations: [
-        RestaurantLocation(
-          name: 'Lower East Side',
-          address:
-              '179 E Houston St, New York, NY 10002',
-        ),
-      ],
-      insiderTip:
-          'The cafe on Orchard St has seating,'
-          ' the original is counter only.',
-      whatToOrder:
-          'Classic bagel with lox, cream cheese,'
-          ' capers, onions.',
-      vibeTags: [
-        'Breakfast Spot',
-        'Old School',
-        'Iconic',
-      ],
-    ),
-    Restaurant(
-      id: 'nyc-8',
-      cityId: 'nyc',
-      name: 'Sushi Nakazawa',
-      cuisine: 'Japanese',
-      imageUrl:
-          'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800',
-      description:
-          'Jiro Dreams of Sushi graduate.'
-          ' Omakase perfection.',
-      rank: 8,
-      priceLevel: 4,
-      locations: [
-        RestaurantLocation(
-          name: 'West Village',
-          address:
-              '23 Commerce St, New York, NY 10014',
-        ),
-      ],
-      insiderTip:
-          'Book exactly 30 days ahead via Resy.',
-      whatToOrder:
-          'Omakase. There is no other option.',
-      vibeTags: [
-        'Special Occasion',
-        'Omakase',
-        'Date Night',
-      ],
-    ),
-    Restaurant(
-      id: 'nyc-9',
-      cityId: 'nyc',
-      name: 'Lucali',
-      cuisine: 'Pizza',
-      imageUrl:
-          'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800',
-      description:
-          'BYOB, cash only, no slices.'
-          ' The pizza speaks for itself.',
-      rank: 9,
-      locations: [
-        RestaurantLocation(
-          name: 'Carroll Gardens',
-          address:
-              '575 Henry St, Brooklyn, NY 11231',
-        ),
-      ],
-      insiderTip:
-          'Line up by 4:30 PM. Bring your own wine.',
-      whatToOrder:
-          'Plain pie with calzone on the side.',
-      vibeTags: [
-        'BYOB',
-        'Worth the Wait',
-        'Neighborhood Favorite',
-      ],
-    ),
-    Restaurant(
-      id: 'nyc-10',
-      cityId: 'nyc',
-      name: 'Levain Bakery',
-      cuisine: 'Bakery',
-      imageUrl:
-          'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800',
-      description:
-          'Cookies the size of your fist.'
-          ' Gooey center, crispy outside.',
-      rank: 10,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Upper West Side',
-          address:
-              '167 W 74th St, New York, NY 10023',
-        ),
-      ],
-      insiderTip:
-          'Go early. They sell out of dark chocolate'
-          ' peanut butter by noon.',
-      whatToOrder:
-          'Dark chocolate peanut butter cookie.',
-      vibeTags: [
-        'Quick Bite',
-        'Sweet Tooth',
-        'Tourist Worthy',
       ],
     ),
 
@@ -934,11 +421,6 @@ class SeedData {
               '2000 E 7th St, Los Angeles, CA 90021',
         ),
       ],
-      insiderTip:
-          'The sweet potato taco is unexpectedly'
-          ' the star.',
-      whatToOrder:
-          'Sweet potato taco and the tuna tostada.',
       vibeTags: [
         'Chef-Driven',
         'Casual',
@@ -963,11 +445,6 @@ class SeedData {
               '727 N Broadway, Los Angeles, CA 90012',
         ),
       ],
-      insiderTip:
-          'Howlin is not a joke. Start at Medium'
-          ' your first time.',
-      whatToOrder:
-          'Sando at Medium with slaw and pickles.',
       vibeTags: [
         'Worth the Wait',
         'Spicy',
@@ -993,12 +470,6 @@ class SeedData {
               '2121 E 7th Pl, Los Angeles, CA 90021',
         ),
       ],
-      insiderTip:
-          'Reservations drop at midnight on Resy,'
-          ' 30 days ahead.',
-      whatToOrder:
-          'Spaghetti rustichella, bone marrow,'
-          ' any pizza.',
       vibeTags: [
         'Date Night',
         'Group Friendly',
@@ -1023,12 +494,6 @@ class SeedData {
               '5233 Sunset Blvd, Los Angeles, CA 90027',
         ),
       ],
-      insiderTip:
-          'Order from the Southern Thai menu,'
-          ' not the regular one.',
-      whatToOrder:
-          'Crying Tiger beef, morning glory,'
-          ' jazz fried rice.',
       vibeTags: [
         'Hidden Gem',
         'Spicy',
@@ -1053,165 +518,10 @@ class SeedData {
           address: 'Various, Los Angeles, CA',
         ),
       ],
-      insiderTip:
-          'No modifications, no soy sauce.'
-          ' Trust the chef.',
-      whatToOrder: 'Trust Me menu. Always.',
       vibeTags: [
         'Omakase',
         'Date Night',
         'Clean Vibes',
-      ],
-    ),
-    Restaurant(
-      id: 'la-6',
-      cityId: 'la',
-      name: "Langer's Deli",
-      cuisine: 'Deli',
-      imageUrl:
-          'https://images.unsplash.com/photo-1553909489-cd47e0907980?w=800',
-      description:
-          'The #19 pastrami sandwich might be better'
-          " than Katz's. We said it.",
-      rank: 6,
-      locations: [
-        RestaurantLocation(
-          name: 'Westlake',
-          address:
-              '704 S Alvarado St, Los Angeles, CA 90057',
-        ),
-      ],
-      insiderTip: 'Lunch only. They close at 4 PM.',
-      whatToOrder:
-          '#19 pastrami with coleslaw and swiss'
-          ' on rye.',
-      vibeTags: [
-        'Old School',
-        'Lunch Only',
-        'Iconic',
-      ],
-    ),
-    Restaurant(
-      id: 'la-7',
-      cityId: 'la',
-      name: 'Mariscos Jalisco',
-      cuisine: 'Mexican Seafood',
-      imageUrl:
-          'https://images.unsplash.com/photo-1559847844-5315695dadae?w=800',
-      description:
-          'A taco truck that won a James Beard Award.'
-          ' Crispy shrimp tacos.',
-      rank: 7,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Boyle Heights',
-          address:
-              '3040 E Olympic Blvd, Los Angeles,'
-              ' CA 90023',
-        ),
-      ],
-      insiderTip:
-          'Cash only. Get there before the line'
-          ' wraps.',
-      whatToOrder:
-          'Tacos dorados de camaron. Multiple.',
-      vibeTags: [
-        'Cash Only',
-        'Street Food',
-        'No Frills',
-      ],
-    ),
-    Restaurant(
-      id: 'la-8',
-      cityId: 'la',
-      name: 'Petit Trois',
-      cuisine: 'French',
-      imageUrl:
-          'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800',
-      description:
-          "Ludo Lefebvre's no-reservations French"
-          ' bistro. 25 seats.',
-      rank: 8,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'Mid-Wilshire',
-          address:
-              '718 N Highland Ave, Los Angeles,'
-              ' CA 90038',
-        ),
-      ],
-      insiderTip:
-          'Go solo and sit at the bar.'
-          ' It is the best seat.',
-      whatToOrder:
-          'Omelette, double cheeseburger,'
-          ' and the Big Mec.',
-      vibeTags: [
-        'Solo Dining',
-        'Chef-Driven',
-        'Cozy',
-      ],
-    ),
-    Restaurant(
-      id: 'la-9',
-      cityId: 'la',
-      name: 'Pine & Crane',
-      cuisine: 'Taiwanese',
-      imageUrl:
-          'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800',
-      description:
-          'Silver Lake Taiwanese that makes dan dan'
-          ' noodles worth crossing town for.',
-      rank: 9,
-      locations: [
-        RestaurantLocation(
-          name: 'Silver Lake',
-          address:
-              '1521 Griffith Park Blvd,'
-              ' Los Angeles, CA 90026',
-        ),
-      ],
-      insiderTip:
-          'Their three cup chicken is underrated.',
-      whatToOrder:
-          'Dan dan noodles, beef roll,'
-          ' three cup chicken.',
-      vibeTags: [
-        'Neighborhood Favorite',
-        'Casual',
-        'Cash Friendly',
-      ],
-    ),
-    Restaurant(
-      id: 'la-10',
-      cityId: 'la',
-      name: "Porto's Bakery",
-      cuisine: 'Cuban Bakery',
-      imageUrl:
-          'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800',
-      description:
-          'Cuban bakery chain where the cheese rolls'
-          ' cause actual stampedes.',
-      rank: 10,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'Multiple locations',
-          address: 'Various, Los Angeles, CA',
-        ),
-      ],
-      insiderTip:
-          'Order online for pickup. The in-store line'
-          ' is brutal.',
-      whatToOrder:
-          'Cheese rolls (a dozen), guava and cheese'
-          ' pastry, potato ball.',
-      vibeTags: [
-        'Sweet Tooth',
-        'Cash Friendly',
-        'Big Portions',
       ],
     ),
 
@@ -1235,12 +545,6 @@ class SeedData {
               '1723 N Halsted St, Chicago, IL 60614',
         ),
       ],
-      insiderTip:
-          'Tickets, not reservations. They sell out'
-          ' instantly. Set a calendar alert.',
-      whatToOrder:
-          'The Gallery menu. You do not choose.'
-          ' You experience.',
       vibeTags: [
         'Special Occasion',
         'Adventurous',
@@ -1265,12 +569,6 @@ class SeedData {
           address: 'Various, Chicago, IL',
         ),
       ],
-      insiderTip:
-          'Get the combo: Italian beef dipped with'
-          ' hot peppers plus a Chicago dog.',
-      whatToOrder:
-          'Italian beef, dipped, hot. Chicago-style'
-          ' hot dog. Chocolate cake shake.',
       vibeTags: [
         'Iconic',
         'Cash Friendly',
@@ -1294,11 +592,6 @@ class SeedData {
           address: 'Various, Chicago, IL',
         ),
       ],
-      insiderTip:
-          'Order ahead. A real deep dish takes'
-          ' 45 minutes.',
-      whatToOrder:
-          'Buttercrust deep dish with sausage.',
       vibeTags: [
         'Iconic',
         'Group Friendly',
@@ -1324,12 +617,6 @@ class SeedData {
               '809 W Randolph St, Chicago, IL 60607',
         ),
       ],
-      insiderTip:
-          'The goat empanadas are a must.'
-          ' Do not skip them.',
-      whatToOrder:
-          'Goat empanadas, hamachi crudo,'
-          ' wood oven pig face.',
       vibeTags: [
         'Chef-Driven',
         'Date Night',
@@ -1354,166 +641,10 @@ class SeedData {
               '3800 N Pulaski Rd, Chicago, IL 60641',
         ),
       ],
-      insiderTip:
-          'Get there before noon on weekends or'
-          ' brisket sells out.',
-      whatToOrder:
-          'Brisket and half rack of ribs.'
-          ' Mac and cheese.',
       vibeTags: [
         'No Frills',
         'Worth the Wait',
         'Casual',
-      ],
-    ),
-    Restaurant(
-      id: 'chi-6',
-      cityId: 'chicago',
-      name: 'Au Cheval',
-      cuisine: 'Burgers',
-      imageUrl:
-          'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800',
-      description:
-          'The burger that launched a thousand wait'
-          ' lists. Single or double, both legendary.',
-      rank: 6,
-      locations: [
-        RestaurantLocation(
-          name: 'West Loop',
-          address:
-              '800 W Randolph St, Chicago, IL 60607',
-        ),
-      ],
-      insiderTip:
-          'Put your name in before you want to eat.'
-          ' The wait is real.',
-      whatToOrder:
-          'Double cheeseburger with egg and bacon.',
-      vibeTags: [
-        'Worth the Wait',
-        'Late Night',
-        'Iconic',
-      ],
-    ),
-    Restaurant(
-      id: 'chi-7',
-      cityId: 'chicago',
-      name: "Dove's Luncheonette",
-      cuisine: 'Tex-Mex',
-      imageUrl:
-          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
-      description:
-          'Retro Tex-Mex diner with vinyl playing'
-          ' and mezcal flowing.',
-      rank: 7,
-      locations: [
-        RestaurantLocation(
-          name: 'Wicker Park',
-          address:
-              '1545 N Damen Ave, Chicago, IL 60622',
-        ),
-      ],
-      insiderTip:
-          'Brunch is chaos in the best way.'
-          ' The playlist alone is worth the wait.',
-      whatToOrder:
-          'Fried chicken torta, elote,'
-          ' any mezcal cocktail.',
-      vibeTags: [
-        'Brunch Spot',
-        'Cozy',
-        'Good Drinks',
-      ],
-    ),
-    Restaurant(
-      id: 'chi-8',
-      cityId: 'chicago',
-      name: "Jim's Original",
-      cuisine: 'Hot Dogs',
-      imageUrl:
-          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
-      description:
-          'Maxwell Street Polish sausage stand, open'
-          ' since 1939. Cash, no frills.',
-      rank: 8,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'University Village',
-          address:
-              '1250 S Union Ave, Chicago, IL 60607',
-        ),
-      ],
-      insiderTip:
-          "3 AM after a night out is peak Jim's.",
-      whatToOrder:
-          'Maxwell Street Polish with grilled onions'
-          ' and sport peppers.',
-      vibeTags: [
-        'Late Night',
-        'Cash Only',
-        'Street Food',
-      ],
-    ),
-    Restaurant(
-      id: 'chi-9',
-      cityId: 'chicago',
-      name: 'Kasama',
-      cuisine: 'Filipino',
-      imageUrl:
-          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
-      description:
-          'First Filipino restaurant to earn a Michelin'
-          ' star. Bakery by day, tasting menu by night.',
-      rank: 9,
-      priceLevel: 3,
-      locations: [
-        RestaurantLocation(
-          name: 'Ukrainian Village',
-          address:
-              '1001 N Winchester Ave, Chicago,'
-              ' IL 60622',
-        ),
-      ],
-      insiderTip:
-          'Daytime bakery requires no reservation.'
-          ' Night tasting books out weeks ahead.',
-      whatToOrder:
-          'Longanisa breakfast sandwich (day).'
-          ' Full tasting (night).',
-      vibeTags: [
-        'Chef-Driven',
-        'Breakfast Spot',
-        'Hidden Gem',
-      ],
-    ),
-    Restaurant(
-      id: 'chi-10',
-      cityId: 'chicago',
-      name: "Mister D's",
-      cuisine: 'Diner',
-      imageUrl:
-          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
-      description:
-          'Old-school Chicago diner. Greek owners,'
-          ' massive portions, bottomless coffee.',
-      rank: 10,
-      priceLevel: 1,
-      locations: [
-        RestaurantLocation(
-          name: 'South Loop',
-          address:
-              '2 E Roosevelt Rd, Chicago, IL 60605',
-        ),
-      ],
-      insiderTip:
-          'The gyros plate is enough for two people.',
-      whatToOrder:
-          'Gyros plate, Greek omelet, slice of pie.',
-      vibeTags: [
-        'Old School',
-        'Big Portions',
-        'Breakfast Spot',
       ],
     ),
   ];
