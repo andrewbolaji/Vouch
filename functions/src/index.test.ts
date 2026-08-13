@@ -1317,9 +1317,25 @@ describe("Membership webhook auth validation (pure)", () => {
     expect(isValidAuth(secret, secret)).toBe(false);
   });
 
+  // crypto.timingSafeEqual throws a RangeError on mismatched buffer
+  // lengths rather than returning false. isValidAuth's length check
+  // has to run first and return before ever calling it, or a short
+  // Authorization header turns a clean 401 into an uncaught throw,
+  // which onRevenueCatWebhook does not try/catch around this call
+  // (index.ts calls isValidAuth before its try block starts), so it
+  // would surface as a 500. RevenueCat retries a 500; it does not
+  // retry a 401. This test proves the guard runs, not just that the
+  // final answer is false: a different-length header must reject
+  // without ever reaching timingSafeEqual, so it must not throw.
+  test("different-length wrong secret rejected, does not throw", () => {
+    const shortWrong = "Bearer short";
+    expect(() => isValidAuth(shortWrong, secret)).not.toThrow();
+    expect(isValidAuth(shortWrong, secret)).toBe(false);
+  });
+
   // Same length as the correct header, one changed character, so this
   // has to fail inside timingSafeEqual itself rather than on the
-  // length-mismatch shortcut every other rejection case above hits.
+  // length-mismatch shortcut the case above hits.
   test("same-length wrong secret rejected", () => {
     const sameLengthWrong = `Bearer ${secret.slice(0, -1)}X`;
     expect(isValidAuth(sameLengthWrong, secret)).toBe(false);
