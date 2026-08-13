@@ -66,8 +66,9 @@ describe("Rank engine golden set", () => {
     const expectedOrder = [
       // 5 fresh votes beats everything.
       "clear-winner",
-      // Exact tie (4 votes each, both 30 days old): voteCount ties too,
-      // so assignRanks falls through to alphabetical name.
+      // Exact tie (4 votes each, both 30 days old): voteCount ties
+      // too, and neither fixture sets displayOrder, so both are
+      // sorted last-equal and assignRanks falls through to id.
       "tie-alpha",
       "tie-zebra",
       // Same vote count (3), different age: decay alone decides.
@@ -105,5 +106,92 @@ describe("Rank engine golden set", () => {
 
     const actualOrder = assignRanks(scored).map((r) => r.id);
     expect(actualOrder).toEqual(["fresh-vote", "future-vote"]);
+  });
+});
+
+// ================================================================
+// Tie-break: curated order, not alphabetical
+//
+// A city launches with zero votes. Every score is 0 and every
+// voteCount is 0, so every comparison falls through to the final
+// tie-break, and that tie-break alone decides the entire published
+// list. The first nightly run is therefore the highest-stakes run
+// there is, and it happens before a single user has voted.
+// ================================================================
+describe("assignRanks tie-break on a zero-vote city", () => {
+  // The curated Houston order. displayOrder is written alongside rank
+  // by scripts/set_houston_launch_order.js:140, so it is the record
+  // of what a human decided, and it is the only field that survives a
+  // recompute wiping rank.
+  const curated = [
+    {id: "hou-1", name: "Mensho", displayOrder: 1},
+    {id: "hou-11", name: "Tacos Los Brothers", displayOrder: 2},
+    {id: "hou-12", name: "Crave Suya", displayOrder: 3},
+    {id: "hou-13", name: "The Peri Peri Factory", displayOrder: 4},
+    {id: "hou-9", name: "Corkscrew BBQ", displayOrder: 5},
+  ];
+
+  test("zero votes leaves the curated order untouched", () => {
+    const scored: ScoredRestaurant[] = curated.map((c) => ({
+      id: c.id,
+      name: c.name,
+      voteCount: 0,
+      score: 0,
+      displayOrder: c.displayOrder,
+    }));
+
+    expect(assignRanks(scored).map((r) => r.id)).toEqual(
+      curated.map((c) => c.id)
+    );
+  });
+
+  test("input order does not matter, displayOrder does", () => {
+    // Same set, shuffled on the way in. Firestore returns documents
+    // in whatever order it likes, so an engine that happened to
+    // preserve input order would still be wrong.
+    const shuffled = [
+      curated[3], curated[0], curated[4], curated[2], curated[1],
+    ];
+    const scored: ScoredRestaurant[] = shuffled.map((c) => ({
+      id: c.id,
+      name: c.name,
+      voteCount: 0,
+      score: 0,
+      displayOrder: c.displayOrder,
+    }));
+
+    expect(assignRanks(scored).map((r) => r.id)).toEqual(
+      curated.map((c) => c.id)
+    );
+  });
+
+  test("a restaurant with no displayOrder sorts last, not first", () => {
+    // scripts/seed_houston_new.js writes displayOrder 9999 for a new
+    // candidate, but a document written by any other path may not
+    // carry the field at all. Undefined must not read as 0 and jump
+    // the queue ahead of the curated list.
+    const scored: ScoredRestaurant[] = [
+      {id: "newcomer", name: "AAA Newcomer", voteCount: 0, score: 0},
+      {id: "hou-1", name: "Mensho", voteCount: 0, score: 0, displayOrder: 1},
+      {id: "candidate", name: "BBB Candidate", voteCount: 0, score: 0,
+        displayOrder: 9999},
+    ];
+
+    const order = assignRanks(scored).map((r) => r.id);
+    expect(order[0]).toBe("hou-1");
+    expect(order).toEqual(["hou-1", "candidate", "newcomer"]);
+  });
+
+  test("votes still outrank curation", () => {
+    // The tie-break is only a tie-break. One real vote must still
+    // beat a hand-picked number one, or the list stops being
+    // vote-ranked.
+    const scored: ScoredRestaurant[] = [
+      {id: "hou-1", name: "Mensho", voteCount: 0, score: 0, displayOrder: 1},
+      {id: "hou-9", name: "Corkscrew BBQ", voteCount: 1, score: 0.997,
+        displayOrder: 5},
+    ];
+
+    expect(assignRanks(scored).map((r) => r.id)).toEqual(["hou-9", "hou-1"]);
   });
 });

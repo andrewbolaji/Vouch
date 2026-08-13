@@ -1023,13 +1023,22 @@ describe("Rank engine (pure score math)", () => {
   });
 
   // eslint-disable-next-line max-len
-  test("assignRanks tie-breaking: equal score and voteCount, alphabetical by name", () => {
+  test("assignRanks tie-breaking: equal score and voteCount, lower displayOrder wins", () => {
+    // This asserted alphabetical-by-name until the zero-vote
+    // measurement showed that ordering a whole launch list
+    // alphabetically was the bug, not the behaviour. See
+    // rank_engine.ts :: assignRanks.
+    //
+    // Both name and id are deliberately set so that either one, used
+    // as the tie-break, produces the opposite answer. displayOrder is
+    // the only field that can yield the expectation below, so the
+    // test cannot pass by accident on the id fallback.
     const ranked = assignRanks([
-      {id: "z", score: 10, voteCount: 50, name: "Zebra"},
-      {id: "a", score: 10, voteCount: 50, name: "Alpha"},
+      {id: "z", score: 10, voteCount: 50, name: "Zebra", displayOrder: 1},
+      {id: "a", score: 10, voteCount: 50, name: "Alpha", displayOrder: 2},
     ]);
-    expect(ranked[0].id).toBe("a");
-    expect(ranked[1].id).toBe("z");
+    expect(ranked[0].id).toBe("z");
+    expect(ranked[1].id).toBe("a");
   });
 });
 

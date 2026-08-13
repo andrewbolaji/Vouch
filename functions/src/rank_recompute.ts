@@ -105,10 +105,16 @@ export async function recomputeAllRanks(
         score,
         // The true count from the read above, not the possibly
         // stale restaurant.voteCount field, so the tie-break in
-        // assignRanks (score, then voteCount, then name) sorts on
-        // the same number this function is about to write back.
+        // assignRanks sorts on the same number this function is
+        // about to write back.
         voteCount: votesSnap.size,
         name: (restDoc.data().name as string) ?? "",
+        // The curated position, and the reason this recompute does
+        // not scramble a launch list that has no votes yet. Passed
+        // through as-is: undefined means the document never went
+        // through a launch-order script, and assignRanks sorts that
+        // last rather than treating it as position 0.
+        displayOrder: restDoc.data().displayOrder as number | undefined,
       });
     }
 
