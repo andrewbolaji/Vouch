@@ -485,13 +485,49 @@ rather than a side effect. A longer list is a larger editorial claim
 and needs proportionally more signal before its curation should stop
 mattering.
 
-## What is still open
+## Decided
 
-Only the two numbers, and both now have a table under them rather
-than a feeling:
+- **`BASELINE_STEP = 2.0`.** Seventeen people for rank 1 against nine.
+- **`BASELINE_EXPIRY_VOTES_PER_RESTAURANT = 20`,** unchanged. The
+  long end of the three-week-to-three-month range is acceptable
+  precisely because the opening-list line is saying so the whole time.
+  Given finding 14, a longer baseline is also doing more protective
+  work than a shorter one, which argues against reducing it.
+- **Scaling with `n`,** confirmed.
 
-1. **`BASELINE_STEP`**, recommended **2.0**. Nine friends versus
-   seventeen for rank 1 on launch day.
-2. **`BASELINE_EXPIRY_VOTES_PER_RESTAURANT`**, currently 20.
-   Unmeasured, and with the opening-list string in place it is now a
-   product choice rather than an honesty risk.
+### A vote must be visibly acknowledged even when it cannot move a rank
+
+At `STEP = 2.0` a single vote moves nothing until the city reaches
+about 100 votes. That is correct behaviour, one vote should not
+reorder a top ten, but it means a user taps vote and the ranking
+tells them nothing happened for the whole opening period. A vote that
+appears to do nothing is a vote people stop casting.
+
+**Confirmed already in place, no work needed:**
+
+| | |
+|---|---|
+| Optimistic local update | `app_state.dart:618-624`, `voteCount ± 1` |
+| Rendered before the network call | `notifyListeners()` at `:628` runs **before** the `await` at `:635` |
+| Haptic confirmation | `HapticFeedback.lightImpact()` at `:626` |
+| Displayed on the detail screen | `vote_button.dart:105` renders `formatCount(voteCount)` unconditionally |
+| Rolls back on failure | the existing `toggleVote` rollback from finding 1 |
+
+One detail worth knowing rather than discovering. `restaurant_card.dart:19`
+sets `showVotes = restaurant.voteCount > 0`, so a card hides its count
+at zero. At launch every count is zero, so the first vote makes the
+count **appear** rather than incrementing a visible number. That is
+arguably stronger feedback than `0 -> 1` would be, and it is not a
+defect, but it should be a deliberate choice rather than an accident,
+so it is recorded here.
+
+**No work ships with Fix B for this.** The mechanism exists and is
+immediate.
+
+## Blocked on finding 14
+
+Every manipulation number above assumes a vote costs a person. App
+Check is unenforced on every service, so today a vote costs an email
+address. `BASELINE_STEP = 2.0` is the right choice for the casual
+case, a restaurant owner telling friends, and it is close to
+irrelevant against a script. See `docs/FINDING_14_APP_CHECK.md`.
