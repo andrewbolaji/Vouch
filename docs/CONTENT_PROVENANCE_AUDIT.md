@@ -48,27 +48,55 @@ in this table is the same failure mode as the content it is auditing.
 
 ### Confirmed wrong
 
+Five, after verification moved one item in and Corkscrew's star out.
+
 | # | Field | Restaurant | Text | Why it is wrong |
 |---|---|---|---|---|
 | 1 | `description` | nyc r2 Di Fara Pizza | "**Dom DeMarco has been hand-cutting basil on every slice** since 1965." | Domenico DeMarco died 17 March 2022. Present perfect continuous about a named person, dead four years. Independently verified by Andrew. |
 | 2 | `description` | nyc r1 Peter Luger | "**Cash only**, no menu needed. Porterhouse for two since 1887." | Peter Luger began accepting credit cards in 2021, ending a decades-long cash-only policy that was its most repeated trait. A user is told to bring cash for a $200 steak dinner on the basis of a fact that stopped being true five years ago. |
 | 3 | `description` | la r1 Guerrilla Tacos | "**Chef Wes Avila** turned a taco cart into an LA institution." | Avila left Guerrilla Tacos around 2020 and has run other kitchens since. The sentence is past tense so it is not strictly false, but it is the only thing said about the restaurant and it names a chef who is not there. |
 | 4 | `vibeTags` | 3 restaurants | `"Cash Only"` | Same defect as #2, in a second field. Includes Peter Luger. |
+| 5 | `description` | la r8 Petit Trois | "**no-reservations** French bistro. **25 seats**." | Wrong on both counts. 21 seats at the original counter, and it takes reservations. Promoted here from the unverified list after being checked. |
 
-### Needs verification before being called wrong
+**Stale-but-once-true** is worth naming as its own category. #2 and #3
+were both accurate when written. A user who brings cash for a two
+hundred dollar steak dinner on the strength of #2 is harmed by that
+sentence in a way that "it used to be right" does not repair.
 
-I am not confident enough to assert these, and guessing here would
-repeat the failure being audited.
+### Verified, in both directions
 
-| # | Field | Restaurant | Claim | Concern |
-|---|---|---|---|---|
-| 5 | `description` | houston r5 Corkscrew BBQ | "**Michelin-starred in 2024.**" | The Texas Michelin Guide launched in 2024, but I believe barbecue restaurants received Bib Gourmand and Recommended listings rather than stars. If so this is a fabricated award for a real business, which is the most serious category there is. **Check this one first.** |
-| 6 | `description` | houston r10 Lotus Seafood | "**Five locations.**" | A count that drifts. Lotus Seafood has been expanding. |
-| 7 | `description` | houston r4 The Peri Peri Factory | "**Houston's first.**" | Unsourced superlative. |
-| 8 | `description` | houston r1 Mensho | "**Michelin-recognized.**" | Vague enough to be unfalsifiable, which is its own problem. |
-| 9 | `description` | la r8 Petit Trois | "**no-reservations** French bistro. **25 seats.**" | Both are specific operational facts that change. |
-| 10 | `description` | la r4 Jitlada | "**Jonathan Gold approved.**" | Gold died in 2018. Historically true, he championed Jitlada, but presented as a live endorsement. Same shape as #1, milder. |
-| 11 | `description` | houston r6 Lost and Found | "a **famous Travis Scott mural**." | Named person, specific claim, unsourced. This is also the description that `hou-4`'s deleted insider tip was paraphrased from. |
+The first version of this file listed these seven as "needs
+verification" and singled out Corkscrew BBQ's Michelin star as the
+most serious item on the list. **That was wrong, and the direction of
+the error is the lesson.**
+
+I compiled the list by looking for fabrications, so a true claim that
+looked like the kind of thing a scaffold invents got filed as a
+suspected invention. A generator that produces plausible text will
+sometimes produce true text. A list of "suspected fabrications"
+assembled by looking only for falsehood will mislabel the true ones,
+which is the same failure this audit exists to catch, pointed the
+other way.
+
+Every one has now been checked against a source and recorded as true,
+false, or unverifiable.
+
+| # | Restaurant | Claim | Verdict |
+|---|---|---|---|
+| 5 | houston r5 Corkscrew BBQ | "Michelin-starred in 2024." | **TRUE.** CorkScrew BBQ in Spring received a star in the inaugural MICHELIN Guide Texas, announced 11 November 2024, one of four Texas barbecue restaurants to do so. |
+| 6 | houston r10 Lotus Seafood | "Five locations." | **TRUE** as of August 2026. Five Houston locations plus a food truck. A drifting count, so true today is not true indefinitely. |
+| 7 | houston r4 The Peri Peri Factory | "Houston's first. Halal-certified." | **TRUE.** Houston's first peri peri restaurant, kitchen stocked with exclusively halal-certified ingredients. |
+| 11 | houston r6 Lost and Found | "a famous Travis Scott mural." | **TRUE.** A colourful mural of Travis Scott in the parking lot at 160 W Gray St. People were hopping the construction fence to photograph it before the venue opened. |
+| 8 | houston r1 Mensho | "Tokyo ramen master Tomoharu Shono's Houston shop. Michelin-recognized." | **MISLEADING, not false.** Shono and the Asiatown shop are real. The Michelin recommendation belongs to Mensho's San Francisco location (recommended 2017 to 2022). The sentence reads as though the Houston shop holds it. |
+| 9 | la r8 Petit Trois | "no-reservations French bistro. 25 seats." | **FALSE on both counts.** The original counter seats 21, not 25, and the restaurant takes reservations, including OpenTable, large parties and private dining. |
+| 10 | la r4 Jitlada | "Jonathan Gold approved." | **TRUE but invokes a dead critic.** Gold championed Jitlada and died 21 July 2018. Jitlada is still open at 5233 W Sunset Blvd as of 2026. Same shape as the Di Fara sentence, milder: a real association, written as though it were current. |
+
+**Score: four true, one misleading, one false, one true-but-stale.**
+
+Which is the point. Roughly two thirds of what I suspected was
+invented is accurate. That is exactly why accuracy is the wrong
+disqualifier, and it is the argument for the principle recorded under
+Recommendation below rather than an argument against it.
 
 ### Not false, but not ours to say
 
@@ -150,15 +178,71 @@ Places.
 - The marketing site, which Andrew flagged as carrying the same risk
   on a surface I cannot see.
 
+## vouchfood.com, diffed against production
+
+Andrew supplied the live site rows. Note that the held rows were
+written against the old ordering, so a rank mismatch is expected and
+is not what is reported here. Only factual accuracy of each pairing is.
+
+**Revealed rows.** All five pairings are accurate. Two describe
+restaurants that are not in the app.
+
+| Site row | Production | Verdict |
+|---|---|---|
+| 1 ChòpnBlọk, West African, Montrose | **absent from all 57** | Pairing correct. 507 Westheimer Rd is Montrose, cuisine is right. Not in the app. |
+| 2 Mensho, Ramen, Chinatown | Mensho, Ramen, Chinatown | **Exact match.** |
+| 3 CorkScrew BBQ, Barbecue, Old Town Spring | Corkscrew BBQ, BBQ, Spring | Match, and the site is **more precise**: 26608 Keith St is Old Town Spring. Casing differs, `CorkScrew` versus `Corkscrew`, which is the exact fragility that will make `LAUNCH_ORDER` and `resolveDemoAsset` miss silently. |
+| 4 Roostar, Vietnamese, East End | **absent from all 57** | Pairing correct. 2929 Navigation Blvd is East End, cuisine is right. Not in the app. |
+| 5 JOEY Uptown, New American, Galleria | Joey Uptown, Globally-Inspired New American, Galleria / Uptown | Match. Site's cuisine is a shortening of production's. |
+
+**Held rows.** Three correspond to a real production restaurant. Two
+correspond to nothing.
+
+| Site row | Nearest production restaurant | Verdict |
+|---|---|---|
+| 8 Sushi | Top Sushi, Japanese (Sushi), Westheimer | Cuisine matches. No neighbourhood published, so nothing to contradict. |
+| 9 American, Midtown | Lost and Found, Cocktail Bar + Kitchen, Midtown | Neighbourhood matches exactly. "American" is a loose reading of "Cocktail Bar + Kitchen". |
+| 10 Portuguese, Galleria | The Peri Peri Factory, Portuguese-African, Westheimer | Cuisine matches. 6375 Westheimer Rd sits in the Galleria/Uptown area, so the neighbourhood is defensible. Note this restaurant is **rank 4** in production, a revealed rank, not a held one. |
+| 6 **Tex-Mex, East End** | **none** | No Tex-Mex restaurant exists in Houston in the app, and no Houston restaurant is in East End. |
+| 7 **Indian, Humble** | **none** | No Indian restaurant exists in Houston in the app. "Humble" appears in the repo only in a code comment listing Houston-metro suburbs (`scripts/lib/places_enricher.js:11`). |
+
+Searched the whole repo, not just production: neither pairing has a
+counterpart in `seed_production.js`, `seed_houston_new.js`,
+`set_houston_launch_order.js` (including its `REMOVALS` list) or the
+CSVs. The only `Tex-Mex` string in the codebase is on `chi-7` Dove's
+Luncheonette, a **Chicago** restaurant.
+
+**What that does and does not establish.** I can prove rows 6 and 7
+describe no restaurant in the app or the repo. I cannot prove they
+describe no restaurant in Houston. ChòpnBlọk and Roostar are both real
+and both absent, so absence from the app is not evidence of invention.
+Andrew is the only person who can say whether rows 6 and 7 were
+sourced or filled in.
+
+The narrow conclusion: **three of the five held rows are traceable to
+a real production restaurant and two are not**, and nothing published
+on the site contradicts production.
+
 ## Recommendation
 
-This matches where Andrew said it was heading, and the data supports it.
+Approved by Andrew, and the principle matters more than the action.
 
-The scaffold cities are not curated, are not live, and their content
-is generated end to end. **Delete all 40 descriptions and all
-vibeTags** rather than repairing 12 flagged claims inside 40 fabricated
-paragraphs. Repairing them would leave 28 paragraphs of unsourced
-marketing copy that merely have no falsifiable claim in them yet.
+**The disqualifier is provenance, not accuracy.** The verification
+above found four of seven suspected fabrications to be true. That is
+an argument for deleting them, not against it. Nobody at Vouch knows
+which of the 40 paragraphs are accurate. A stopped clock is right
+twice a day and you still do not use it to tell the time.
+
+Repairing 12 flagged claims inside 40 generated paragraphs leaves 28
+paragraphs of unsourced copy that merely have no falsifiable claim in
+them yet, plus a maintenance story in which the next person assumes
+the surviving text was checked.
+
+**Delete all 40 descriptions and all vibeTags.** Then re-add verified
+facts deliberately, one at a time, by a human who checked. Corkscrew's
+Michelin star comes back that way, because it is both excellent and
+true, and it will be in the app because somebody verified it rather
+than because a scaffold guessed right.
 
 Houston is the exception that needs care: it is a launch city whose
 content is scaffold. Its 10 descriptions need rewriting rather than

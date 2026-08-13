@@ -22,7 +22,7 @@ A restaurant can enhance its listing, never buy its rank. Rankings stay fully lo
 ---
 
 ### go_router with typed routes
-**The idea:** Replace Navigator.push(MaterialPageRoute(...)) with go_router for declarative routing and deep link support (vouch.app/city/houston/restaurant/hou-1).
+**The idea:** Replace Navigator.push(MaterialPageRoute(...)) with go_router for declarative routing and deep link support (vouchfood.com/city/houston/restaurant/hou-1).
 
 **Why v1.1:** Current navigation works but cannot handle incoming deep links. Required for the share/deep-link feature.
 
@@ -54,14 +54,16 @@ A restaurant can enhance its listing, never buy its rank. Rankings stay fully lo
 
 ---
 
-### Vote weight repositioning + transparency display
-**The idea:** Reposition premium tiers around vote weight as the headline feature: Free = 1x, Locals Pass = 3x, City Insider = 3x with insider tips and verified-visit badge. Add vote breakdown display on every restaurant detail page showing total votes, breakdown by tier, and weighted total (e.g., "142 free votes (worth 142) + 15 premium votes (worth 45) = 187 weighted"). Visible to all users including free. Transparency is the ethical defense.
+### Verified-visit vote weight + transparency display
+**The idea:** A vote's weight is earned by proving the voter actually visited the restaurant (verified-visit detection), never by membership tier, and applies to every user regardless of tier. Not purchasable at any price. Add vote breakdown display on every restaurant detail page showing total votes, breakdown by verified vs. unverified, and weighted total (e.g., "142 unverified votes (worth 142) + 15 verified votes (worth 45) = 187 weighted"). Visible to all users including free. Transparency is the ethical defense.
 
-**Why v1.1:** Requires sufficient voting volume for weight to demonstrably move rankings. Launching with this before volume exists makes the feature feel hollow.
+**Why v1.1:** Requires sufficient voting volume for weight to demonstrably move rankings, and verified-visit detection does not exist yet. Vote docs already carry a weight field (defaults to 1, enforced by security rules; see docs/DECISIONS.md, 2026-06-11) so the schema is ready, but nothing yet detects or grants a verified visit. Launching before volume exists, or before detection ships, makes the feature feel hollow.
 
-**Trigger:** 6+ months post-launch AND voting volume sufficient that vote weight demonstrably moves rankings (estimated 1K+ DAU per active city).
+**Trigger:** Verified-visit detection ships AND 6+ months post-launch AND voting volume sufficient that vote weight demonstrably moves rankings (estimated 1K+ DAU per active city).
 
-**Effort estimate:** Medium (schema changes to vote docs, Cloud Function for weighted tallying, UI for breakdown display).
+**Conditions before this ships:** the detection mechanism itself needs rate limiting (checking in cannot be spammed) and dedup (the same visit cannot grant weight twice). Add to that list: functions/src/vote_audit.ts's recordVoteCreated/recordVoteDeleted do not capture weight today, only eventId, type, userId, restaurantId, cityId, occurredAt, and on deletes, voteCreatedAt. That is correct while weight is pinned to 1 by firestore.rules, a constant is not worth storing. The day this feature ships, weight stops being constant, and an audit log that does not record what a vote was worth cannot reconstruct a weighted total after the fact. Add a weight field to both event types before or alongside this ship.
+
+**Effort estimate:** Medium (verified-visit detection mechanism, Cloud Function for weighted tallying, UI for breakdown display).
 
 ---
 
@@ -229,4 +231,46 @@ A restaurant can enhance its listing, never buy its rank. Rankings stay fully lo
 
 ## Skipped (deliberately not building)
 
-(None yet. Add items here with reasoning when ideas come up that don't fit the product vision.)
+### Tier-based vote weight (Free 1x, Locals Pass 3x, City Insider 3x)
+**The idea:** Give paid tiers more voting power than free users, as originally proposed under "Vote weight repositioning" above.
+
+**Why skipped:** Lets money buy rank. Contradicts this file's own governing rule: "A restaurant can enhance its listing, never buy its rank... Everything monetizable lives outside the ranking. Free food is fine, free rank is not." The same principle holds for users, not just restaurants: a tier that casts a heavier vote is paying for influence over rank, exactly what the ranking is supposed to be immune to. The paywall bullets this depended on ("increased vote weight" on City Insider, "Verified visits (2x vote weight)") were removed from lib/models/membership.dart in commit 1250cc3, "Remove unimplemented paid-tier claims and add subscription disclosures" (2026-08-07). A compile-time check added in commit 48e8e21 (test/models/feature_claims_test.dart) now fails the build if a paywall bullet claims a capability with no backing code, so this cannot quietly reappear without being deliberately re-added and re-justified. Superseded by the earned, tier-independent version in v1.1 above.
+
+---
+
+### Comment-derived insider content
+
+**The idea:** Augment a restaurant's insider content with what the
+comments actually say. If thirty people mention the birria, that is
+worth surfacing.
+
+Build the **count** first, not the summary: "birria, 12 mentions",
+derived from the comment thread. No model, nothing generated, nothing
+that can hallucinate, and a user can scroll down and verify it in ten
+seconds.
+
+**Why v1.1:** It needs comment volume that does not exist yet.
+Production currently holds zero comments on zero restaurants
+(measured 2026-08-13, docs/REACHABILITY_SWEEP.md).
+
+**Why it is worth recording now:** it permanently solves the finding 2
+shape. A restaurant with no note from Andrew still has something to
+say once people comment, and it improves with usage rather than
+requiring more of his writing.
+
+**Four constraints on the AI summary version, which comes after the
+count and not instead of it.** These are not style preferences. They
+are what separates this from the 33 generated insider notes deleted on
+2026-08-13, which is the exact failure it would otherwise reproduce.
+
+1. It summarises and never adds. Every clause traces to a comment.
+2. It is labelled as what people said, not as Vouch's voice. The
+   insider note is Andrew speaking. This is not, and conflating them
+   relaunches the problem under a new name.
+3. It sits directly above the comments, so it is checkable in place.
+4. It has a minimum volume threshold. Summarising three comments into
+   a consensus is manufacturing one.
+
+**Effort estimate:** Small for the count (client-side or a
+`replyCount`-style denormalization). Medium for the summary, most of
+it in the labelling and threshold rather than the model call.
