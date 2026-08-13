@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vouch/models/membership.dart';
 import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/revenue_cat_service.dart';
 
 void main() {
+  _pendingTests();
   group('MembershipProvider', () {
     setUp(() {
       TestWidgetsFlutterBinding.ensureInitialized();
@@ -130,5 +132,174 @@ void main() {
       await provider2.refreshEntitlements();
       expect(provider2.currentTier, MembershipTier.free);
     });
+  });
+}
+
+// ====================================================================
+// Pending confirmation: paid according to RevenueCat, not yet
+// according to the custom claim firestore.rules actually enforces.
+//
+// simulatePurchases: false is required to reach this at all.
+// kSimulatePurchases is a compile-time const tied to kDebugMode, and
+// tests run in debug, so without the seam every one of these paths is
+// unreachable and the behaviour ships unproven.
+// ====================================================================
+
+void _pendingTests() {
+  group('MembershipProvider pending confirmation', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      RevenueCatService.resetSimulatedState();
+    });
+
+    AuthService signedInMock({String? claim}) {
+      final auth = AuthService.mock(
+        initialUser: const AuthUser(uid: 'u1', emailVerified: true),
+      )..setMockMembershipClaim(claim);
+      return auth;
+    }
+
+    test('an entitlement with no claim yet is pending, and stays locked',
+        () async {
+      final auth = signedInMock();
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+
+      await provider.refreshEntitlements();
+
+      expect(provider.isAwaitingConfirmation, isTrue);
+      expect(provider.currentTier, MembershipTier.free);
+      // Locked, not optimistically unlocked: firestore.rules gates on
+      // the claim, so unlocking here would produce denied reads.
+      expect(provider.canViewInsiderTips, isFalse);
+      expect(provider.canViewTop10, isFalse);
+    });
+
+    test('a claim that agrees resolves to paid and clears pending',
+        () async {
+      final auth = signedInMock(claim: 'cityInsider');
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+
+      await provider.refreshEntitlements();
+
+      expect(provider.isAwaitingConfirmation, isFalse);
+      expect(provider.currentTier, MembershipTier.cityInsider);
+      expect(provider.canViewInsiderTips, isTrue);
+    });
+
+    test('no entitlement means nothing pending', () async {
+      final auth = signedInMock();
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+
+      await provider.refreshEntitlements();
+
+      expect(provider.isAwaitingConfirmation, isFalse);
+      expect(provider.currentTier, MembershipTier.free);
+    });
+
+    // The ephemerality proof. A stored pending flag would strand a
+    // user who backgrounded the app mid-purchase in a confirming
+    // state nothing re-evaluates. A fresh provider is what a relaunch
+    // produces, and it must land on the real tier.
+    test('a relaunch out of pending resolves to the real tier', () async {
+      final auth = signedInMock();
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+
+      final beforeRelaunch = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+      await beforeRelaunch.refreshEntitlements();
+      expect(beforeRelaunch.isAwaitingConfirmation, isTrue);
+
+      // The webhook lands while the app is closed.
+      auth.setMockMembershipClaim('cityInsider');
+
+      // Relaunch: a new provider carrying nothing forward.
+      final afterRelaunch = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+      await afterRelaunch.refreshEntitlements();
+
+      expect(afterRelaunch.isAwaitingConfirmation, isFalse);
+      expect(afterRelaunch.currentTier, MembershipTier.cityInsider);
+    });
+
+    test('a relaunch still pending stays pending, not silently paid',
+        () async {
+      final auth = signedInMock();
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+
+      final afterRelaunch = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+      await afterRelaunch.refreshEntitlements();
+
+      expect(afterRelaunch.isAwaitingConfirmation, isTrue);
+      expect(afterRelaunch.currentTier, MembershipTier.free);
+    });
+
+    test('retryConfirmation clears pending once the claim lands',
+        () async {
+      final auth = signedInMock();
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+      await provider.refreshEntitlements();
+      expect(provider.isAwaitingConfirmation, isTrue);
+
+      auth.setMockMembershipClaim('cityInsider');
+      await provider.retryConfirmation();
+
+      expect(provider.isAwaitingConfirmation, isFalse);
+      expect(provider.currentTier, MembershipTier.cityInsider);
+    });
+
+    test('a claim for a different tier does not confirm', () async {
+      final auth = signedInMock(claim: 'localsPass');
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+
+      await provider.refreshEntitlements();
+
+      expect(provider.isAwaitingConfirmation, isTrue);
+      expect(provider.currentTier, MembershipTier.free);
+    });
+
+    // The slow path, deliberately: the real poll budget is 5 tries
+    // with a 2 second gap, so this exercises the exhaustion branch
+    // end to end rather than short-cutting to refreshEntitlements.
+    test('a purchase whose claim never lands ends pending, not paid',
+        () async {
+      final auth = signedInMock();
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+      );
+
+      final result = await provider.purchaseTier(MembershipTier.cityInsider);
+
+      expect(result, PurchaseResult.success);
+      expect(provider.isAwaitingConfirmation, isTrue);
+      expect(provider.currentTier, MembershipTier.free);
+      expect(provider.canViewInsiderTips, isFalse);
+    }, timeout: const Timeout(Duration(seconds: 60)));
   });
 }

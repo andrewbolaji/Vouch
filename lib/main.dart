@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -51,6 +53,15 @@ void main() async {
   final authService = AuthService();
   final analyticsService = AnalyticsService();
   final membershipProvider = MembershipProvider(authService: authService);
+
+  // Recompute tier and pending state from live entitlements on every
+  // launch. Without this a returning subscriber starts as Free until
+  // they repurchase or restore, and a purchase whose claim landed
+  // while the app was closed would come back up still confirming.
+  // Not awaited: a slow or offline entitlement check must not hold up
+  // first paint, and until it resolves the safe default (free, not
+  // pending) is already in place.
+  unawaited(membershipProvider.refreshEntitlements());
 
   runApp(
     VouchApp(

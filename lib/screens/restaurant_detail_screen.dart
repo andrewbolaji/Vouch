@@ -678,6 +678,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       PaywallGate(
                         isLocked: true,
                         source: 'insider_notes',
+                        isAwaitingConfirmation:
+                            membership.isAwaitingConfirmation,
+                        onRetryConfirmation: membership.retryConfirmation,
                         onUpgradeTap: () {
                           unawaited(
                             HapticFeedback.mediumImpact(),

@@ -102,6 +102,22 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? _mockMembershipClaim;
+
+  /// Test only: the membershipTier claim a .mock() instance reports.
+  ///
+  /// Null models the webhook not having set the claim yet, which is
+  /// the state a purchase sits in between paying and the claim
+  /// landing.
+  @visibleForTesting
+  void setMockMembershipClaim(String? claim) {
+    assert(
+      _firebaseAuth == null,
+      'setMockMembershipClaim is only for .mock() instances',
+    );
+    _mockMembershipClaim = claim;
+  }
+
   // Display-name caching keys (SharedPreferences, not sensitive)
   static const String _prefKeyUserName = 'auth_user_name';
   static const String _prefKeyUserEmail = 'auth_user_email';
@@ -581,7 +597,11 @@ class AuthService extends ChangeNotifier {
   /// updated claims (e.g. email_verified after verification).
   Future<void> forceTokenRefresh() async {
     try {
-      await _firebaseAuth!.currentUser?.getIdToken(true);
+      // Null-safe, not force-unwrapped: a .mock() instance has no
+      // FirebaseAuth, and the force-unwrap threw a TypeError that the
+      // Exception catch below does not cover, so any caller reaching
+      // this on a mock crashed rather than degrading.
+      await _firebaseAuth?.currentUser?.getIdToken(true);
     } on Exception catch (e, stack) {
       _log('token', 'force refresh failed: $e');
       _recordNonFatal('forceTokenRefresh', e, stack);
@@ -591,7 +611,10 @@ class AuthService extends ChangeNotifier {
   /// Returns the membershipTier custom claim from the current ID token.
   /// Forces a token refresh to get the latest claims from the server.
   Future<String?> getMembershipTierClaim() async {
-    if (_firebaseAuth == null) return null;
+    // A .mock() instance serves whatever setMockMembershipClaim was
+    // given, so a test can model the webhook having landed, not
+    // landed, or landed on a different tier.
+    if (_firebaseAuth == null) return _mockMembershipClaim;
     try {
       final result =
           await _firebaseAuth.currentUser?.getIdTokenResult(true);

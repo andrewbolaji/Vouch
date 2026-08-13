@@ -157,6 +157,10 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                               PaywallGate(
                                 isLocked: true,
                                 source: 'top10',
+                                isAwaitingConfirmation:
+                                    membership.isAwaitingConfirmation,
+                                onRetryConfirmation:
+                                    membership.retryConfirmation,
                                 onUpgradeTap: () {
                                   unawaited(
                                     HapticFeedback.mediumImpact(),
