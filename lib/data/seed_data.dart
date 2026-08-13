@@ -95,10 +95,7 @@ class SeedData {
       name: 'Mensho',
       cuisine: 'Ramen',
       imageUrl: 'placeholder://restaurant',
-      description:
-          "Tokyo ramen master Tomoharu Shono's Houston"
-          ' shop. Michelin-recognized, known for a'
-          ' wagyu-meets-Texas-BBQ bowl.',
+      description: 'Ramen. Chinatown.',
       rank: 1,
       locations: [
         RestaurantLocation(
@@ -107,7 +104,6 @@ class SeedData {
               '9889 Bellaire Blvd, Ste C308, Houston, TX 77036',
         ),
       ],
-      vibeTags: ['Quick Bite', 'Cozy', 'Neighborhood Favorite'],
     ),
     Restaurant(
       id: 'hou-11',
@@ -115,11 +111,7 @@ class SeedData {
       name: 'Tacos Los Brothers',
       cuisine: 'Mexican (Tacos)',
       imageUrl: 'placeholder://restaurant',
-      description:
-          'Dollar tacos from a gas-station truck that'
-          ' somehow became the best late-night move in'
-          ' Houston. Carne asada, al pastor, fresh'
-          ' tortillas.',
+      description: 'Tacos. Food truck in South Main.',
       rank: 2,
       priceLevel: 1,
       locations: [
@@ -128,7 +120,6 @@ class SeedData {
           address: '9365 S Main St, Houston, TX 77025',
         ),
       ],
-      vibeTags: ['Late Night', 'Cash Friendly', 'No Frills'],
       isMobileVenue: true,
     ),
     Restaurant(
@@ -137,10 +128,7 @@ class SeedData {
       name: 'Crave Suya',
       cuisine: 'West African',
       imageUrl: 'placeholder://restaurant',
-      description:
-          'Nigerian suya done right, from a food truck'
-          ' that draws lines across Houston. Spicy'
-          ' grilled beef skewers with yaji seasoning.',
+      description: 'West African. Food truck on Richmond Ave.',
       rank: 3,
       priceLevel: 1,
       locations: [
@@ -150,7 +138,6 @@ class SeedData {
               '8633 Richmond Ave, Houston, TX 77063',
         ),
       ],
-      vibeTags: ['Flavor Bomb', 'Hidden Gem', 'Cash Friendly'],
       isMobileVenue: true,
     ),
     Restaurant(
@@ -159,10 +146,7 @@ class SeedData {
       name: 'The Peri Peri Factory',
       cuisine: 'Portuguese-African (Peri Peri Chicken)',
       imageUrl: 'placeholder://restaurant',
-      description:
-          'Flame-grilled peri peri chicken with sauces'
-          ' from mild to extra hot. Houston first.'
-          ' Halal-certified.',
+      description: 'Peri peri chicken. Westheimer.',
       rank: 4,
       locations: [
         RestaurantLocation(
@@ -171,7 +155,6 @@ class SeedData {
               '6375 Westheimer Rd, Houston, TX 77057',
         ),
       ],
-      vibeTags: ['Spicy', 'Halal', 'Casual'],
     ),
     Restaurant(
       id: 'hou-9',
@@ -180,9 +163,9 @@ class SeedData {
       cuisine: 'BBQ',
       imageUrl: 'placeholder://restaurant',
       description:
-          'Pitmaster Will Buckman cooks over all-wood'
-          ' fires. Michelin-starred in 2024. Get there'
-          ' early or eat somewhere else.',
+          'Barbecue in Spring. Awarded a MICHELIN star'
+          ' in the inaugural MICHELIN Guide Texas,'
+          ' November 2024.',
       rank: 5,
       locations: [
         RestaurantLocation(
@@ -190,7 +173,6 @@ class SeedData {
           address: '26608 Keith St, Spring, TX 77373',
         ),
       ],
-      vibeTags: ['Worth the Drive', 'No Frills', 'Cash Friendly'],
     ),
 
     // Atlanta
@@ -286,9 +268,7 @@ class SeedData {
       cuisine: 'Steakhouse',
       imageUrl:
           'https://images.unsplash.com/photo-1544025162-d76694265947?w=800',
-      description:
-          'Cash only, no menu needed.'
-          ' Porterhouse for two since 1887.',
+      description: '',
       rank: 1,
       priceLevel: 4,
       locations: [
@@ -298,11 +278,6 @@ class SeedData {
               '178 Broadway, Brooklyn, NY 11211',
         ),
       ],
-      vibeTags: [
-        'Iconic',
-        'Special Occasion',
-        'Old School',
-      ],
     ),
     Restaurant(
       id: 'nyc-2',
@@ -311,9 +286,7 @@ class SeedData {
       cuisine: 'Pizza',
       imageUrl:
           'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800',
-      description:
-          'Dom DeMarco has been hand-cutting basil on'
-          ' every slice since 1965.',
+      description: '',
       rank: 2,
       locations: [
         RestaurantLocation(
@@ -321,11 +294,6 @@ class SeedData {
           address:
               '1424 Avenue J, Brooklyn, NY 11230',
         ),
-      ],
-      vibeTags: [
-        'Iconic',
-        'Cash Only',
-        'Worth the Wait',
       ],
     ),
     Restaurant(
@@ -335,9 +303,7 @@ class SeedData {
       cuisine: 'Mexican',
       imageUrl:
           'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=800',
-      description:
-          'Proof that a taco stand in a food hall can'
-          ' be world-class.',
+      description: '',
       rank: 3,
       priceLevel: 1,
       locations: [
@@ -347,11 +313,6 @@ class SeedData {
               '75 9th Ave, New York, NY 10011',
         ),
       ],
-      vibeTags: [
-        'Quick Bite',
-        'Cash Friendly',
-        'No Frills',
-      ],
     ),
     Restaurant(
       id: 'nyc-4',
@@ -360,9 +321,7 @@ class SeedData {
       cuisine: 'Deli',
       imageUrl:
           'https://images.unsplash.com/photo-1553909489-cd47e0907980?w=800',
-      description:
-          'Do not lose your ticket. The pastrami has'
-          ' been perfect since 1888.',
+      description: '',
       rank: 4,
       locations: [
         RestaurantLocation(
@@ -370,11 +329,6 @@ class SeedData {
           address:
               '205 E Houston St, New York, NY 10002',
         ),
-      ],
-      vibeTags: [
-        'Iconic',
-        'Tourist Worthy',
-        'Old School',
       ],
     ),
     Restaurant(
@@ -384,9 +338,7 @@ class SeedData {
       cuisine: 'Chinese',
       imageUrl:
           'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800',
-      description:
-          'Hand-pulled noodles and cumin lamb that built'
-          ' an empire from a basement.',
+      description: '',
       rank: 5,
       priceLevel: 1,
       locations: [
@@ -394,11 +346,6 @@ class SeedData {
           name: 'Multiple locations',
           address: 'Various, New York, NY',
         ),
-      ],
-      vibeTags: [
-        'Cash Friendly',
-        'Quick Bite',
-        'Flavor Bomb',
       ],
     ),
 
@@ -410,9 +357,7 @@ class SeedData {
       cuisine: 'Mexican',
       imageUrl:
           'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=800',
-      description:
-          'Chef Wes Avila turned a taco cart into an'
-          ' LA institution.',
+      description: '',
       rank: 1,
       locations: [
         RestaurantLocation(
@@ -420,11 +365,6 @@ class SeedData {
           address:
               '2000 E 7th St, Los Angeles, CA 90021',
         ),
-      ],
-      vibeTags: [
-        'Chef-Driven',
-        'Casual',
-        'Adventurous',
       ],
     ),
     Restaurant(
@@ -434,9 +374,7 @@ class SeedData {
       cuisine: 'Hot Chicken',
       imageUrl:
           'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=800',
-      description:
-          'Nashville hot chicken that makes Angelenos'
-          ' wait 3 hours happily.',
+      description: '',
       rank: 2,
       locations: [
         RestaurantLocation(
@@ -444,11 +382,6 @@ class SeedData {
           address:
               '727 N Broadway, Los Angeles, CA 90012',
         ),
-      ],
-      vibeTags: [
-        'Worth the Wait',
-        'Spicy',
-        'Loud and Fun',
       ],
     ),
     Restaurant(
@@ -458,9 +391,7 @@ class SeedData {
       cuisine: 'Italian',
       imageUrl:
           'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800',
-      description:
-          'Industrial-chic Italian that still requires'
-          ' booking weeks out.',
+      description: '',
       rank: 3,
       priceLevel: 3,
       locations: [
@@ -470,11 +401,6 @@ class SeedData {
               '2121 E 7th Pl, Los Angeles, CA 90021',
         ),
       ],
-      vibeTags: [
-        'Date Night',
-        'Group Friendly',
-        'Trendy',
-      ],
     ),
     Restaurant(
       id: 'la-4',
@@ -483,9 +409,7 @@ class SeedData {
       cuisine: 'Thai',
       imageUrl:
           'https://images.unsplash.com/photo-1562565652-a0d8f0c59eb4?w=800',
-      description:
-          'Southern Thai food that does not compromise'
-          ' on spice. Jonathan Gold approved.',
+      description: '',
       rank: 4,
       locations: [
         RestaurantLocation(
@@ -493,11 +417,6 @@ class SeedData {
           address:
               '5233 Sunset Blvd, Los Angeles, CA 90027',
         ),
-      ],
-      vibeTags: [
-        'Hidden Gem',
-        'Spicy',
-        'Flavor Bomb',
       ],
     ),
     Restaurant(
@@ -507,9 +426,7 @@ class SeedData {
       cuisine: 'Japanese',
       imageUrl:
           'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800',
-      description:
-          "Kazunori Nozawa's approachable omakase."
-          ' "Trust Me" is the only order.',
+      description: '',
       rank: 5,
       priceLevel: 3,
       locations: [
@@ -517,11 +434,6 @@ class SeedData {
           name: 'Multiple locations',
           address: 'Various, Los Angeles, CA',
         ),
-      ],
-      vibeTags: [
-        'Omakase',
-        'Date Night',
-        'Clean Vibes',
       ],
     ),
 
@@ -533,9 +445,7 @@ class SeedData {
       cuisine: 'Molecular Gastronomy',
       imageUrl:
           'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800',
-      description:
-          "Grant Achatz's three-Michelin-star temple of"
-          ' creativity. Dining as performance art.',
+      description: '',
       rank: 1,
       priceLevel: 4,
       locations: [
@@ -545,11 +455,6 @@ class SeedData {
               '1723 N Halsted St, Chicago, IL 60614',
         ),
       ],
-      vibeTags: [
-        'Special Occasion',
-        'Adventurous',
-        'Chef-Driven',
-      ],
     ),
     Restaurant(
       id: 'chi-2',
@@ -558,9 +463,7 @@ class SeedData {
       cuisine: 'Hot Dogs',
       imageUrl:
           'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
-      description:
-          'Chicago institution. Italian beef and hot'
-          ' dogs that define the city.',
+      description: '',
       rank: 2,
       priceLevel: 1,
       locations: [
@@ -568,11 +471,6 @@ class SeedData {
           name: 'Multiple locations',
           address: 'Various, Chicago, IL',
         ),
-      ],
-      vibeTags: [
-        'Iconic',
-        'Cash Friendly',
-        'Big Portions',
       ],
     ),
     Restaurant(
@@ -582,20 +480,13 @@ class SeedData {
       cuisine: 'Pizza',
       imageUrl:
           'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800',
-      description:
-          'Deep dish done right. Butter crust, sausage'
-          ' patty, chunky tomato.',
+      description: '',
       rank: 3,
       locations: [
         RestaurantLocation(
           name: 'Multiple locations',
           address: 'Various, Chicago, IL',
         ),
-      ],
-      vibeTags: [
-        'Iconic',
-        'Group Friendly',
-        'Tourist Worthy',
       ],
     ),
     Restaurant(
@@ -605,9 +496,7 @@ class SeedData {
       cuisine: 'Modern American',
       imageUrl:
           'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800',
-      description:
-          "Stephanie Izard's flagship. Bold flavors,"
-          ' every dish fights for your attention.',
+      description: '',
       rank: 4,
       priceLevel: 3,
       locations: [
@@ -617,11 +506,6 @@ class SeedData {
               '809 W Randolph St, Chicago, IL 60607',
         ),
       ],
-      vibeTags: [
-        'Chef-Driven',
-        'Date Night',
-        'Trendy',
-      ],
     ),
     Restaurant(
       id: 'chi-5',
@@ -630,9 +514,7 @@ class SeedData {
       cuisine: 'BBQ',
       imageUrl:
           'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=800',
-      description:
-          'Texas-style BBQ in Chicago that Texans'
-          ' actually respect.',
+      description: '',
       rank: 5,
       locations: [
         RestaurantLocation(
@@ -640,11 +522,6 @@ class SeedData {
           address:
               '3800 N Pulaski Rd, Chicago, IL 60641',
         ),
-      ],
-      vibeTags: [
-        'No Frills',
-        'Worth the Wait',
-        'Casual',
       ],
     ),
   ];

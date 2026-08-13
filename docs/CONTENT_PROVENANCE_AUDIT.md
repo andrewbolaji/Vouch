@@ -11,7 +11,8 @@ populated and non-empty on 40 of 57 and the code around it works
 perfectly. It is the field carrying the worst falsehood in the
 codebase.
 
-Nothing was fixed during this audit.
+Nothing was fixed during the audit itself. The remediation that
+followed is recorded at the end.
 
 ## The provenance line, drawn by the data
 
@@ -252,3 +253,68 @@ Andrew is the named speaker.
 
 That leaves the product saying only what can be checked, and puts
 every subjective claim behind a human who actually went.
+
+---
+
+## Executed 2026-08-13
+
+Approved by Andrew after the verification pass. Applied by
+`scripts/strip_scaffold_narrative.js`, dry run by default, cities
+named explicitly, aborts rather than guessing, reads back after
+writing.
+
+| | Result |
+|---|---|
+| scaffold restaurants updated | **40** |
+| vibeTags values removed | **120** |
+| Atlanta documents changed | **0** |
+| structured fields changed | **0** (name, cuisine, rank, locations, priceLevel, openingHours, placeId all untouched) |
+
+Houston's 10 were rewritten rather than emptied, each composed only
+from fields already on the same document: `cuisine`, the location's
+own area name, and `isMobileVenue`. No claim in them is new.
+
+```
+ 1. Ramen. Chinatown.
+ 2. Tacos. Food truck in South Main.
+ 3. West African. Food truck on Richmond Ave.
+ 4. Peri peri chicken. Westheimer.
+ 5. Barbecue in Spring. Awarded a MICHELIN star in the inaugural
+    MICHELIN Guide Texas, November 2024.
+ 6. Cocktail bar and kitchen. Midtown.
+ 7. Sushi. Westheimer.
+ 8. Comfort food. Food truck in Cypress Creek.
+ 9. New American. Galleria.
+10. Cajun seafood. Southwest Freeway.
+```
+
+Rank 5 is the single verified fact carried forward, checked against
+sources during the audit and independently verified by Andrew before
+it ran. It is in the app because two people checked it, not because a
+scaffold guessed right.
+
+**Note for Andrew.** Because these are composed from `cuisine` and the
+neighbourhood, they are now largely redundant with structured fields
+the UI already holds. Emptying them and letting the UI compose the
+same line is a defensible alternative and would leave the voice
+entirely in the insider note, where you are the speaker.
+
+### Two sources also had to change
+
+Deleting from Firestore alone would not have held.
+
+**`scripts/seed_production.js`.** 40 restaurant `description` values
+and 40 `vibeTags` arrays emptied, so a `--force --confirm` run cannot
+restore prose. Values emptied rather than fields removed, so document
+shape is unchanged. The five **city taglines are deliberately left
+alone**: they are Vouch's editorial voice about a city, not a claim
+about a named business, which is a different question and was not in
+scope.
+
+**`lib/data/seed_data.dart`,** which is the offline fallback and ships
+inside the binary. It still carried the scaffold prose for the 25
+free-tier restaurants, so an offline user was still being told Mensho
+is "Michelin-recognized". 25 descriptions replaced, 20 vibeTags
+removed. Confirmed absent from `lib/` afterwards: `Michelin-recognized`,
+`Dom DeMarco`, `Cash only, no menu`, `gas-station truck`,
+`Jonathan Gold`, `We said it`.
