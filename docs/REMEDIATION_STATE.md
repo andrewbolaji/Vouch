@@ -142,7 +142,18 @@ which has **no onTap**.
 non-tappable "Coming Soon" cards. No city detail, no Top 10, no
 voting, no comments, no paywall. Looks intentional, entirely inert.
 
-**No publish path exists.** Both writers are create-only branches and
+**A publish path now exists.** `scripts/publish_city.js`, logic in
+`scripts/lib/city_publisher.js`, 17 tests. One named city, dry run by
+default, idempotent (already live is a reported no-op), writes only
+`status`, reads back to verify. Every blocking precondition
+corresponds to a defect actually found in this remediation:
+`displayOrder` present on all restaurants, ranks unique and contiguous
+from 1, at least `kFreeTierMaxRank` restaurants, `restaurantCount`
+agreeing with reality. Missing images, missing notes and 0,0
+coordinates warn rather than block, because those are product
+judgements. Original text follows.
+
+**No publish path existed.** Both writers are create-only branches and
 houston already exists: `seed_production.js:37` (skips docs with
 `createdAt`) and `firestore_writer.js:136` (inside `if (!cityDoc.exists)`).
 Both were narrowed by commit `bba62e0` "Seed script cannot publish a
