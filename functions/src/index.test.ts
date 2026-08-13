@@ -59,12 +59,28 @@ afterAll(async () => {
 });
 
 /** Clears all Firestore data between tests. */
+/**
+ * Deletes every top-level document AND everything beneath it.
+ *
+ * This used to call `d.delete()`, which does not touch
+ * subcollections. Several tests in this file seed
+ * `restaurants/{id}/votes/{uid}`, so those votes survived into every
+ * later test in the file, and the suite was order dependent without
+ * anybody noticing: a test that seeded no votes could still find some.
+ *
+ * Caught while adding the zero-vote guard tests, where a leaked vote
+ * turned a supposedly voteless city into a voted one and produced a
+ * failure that vanished when the test was run alone.
+ *
+ * submit_comment.test.ts already carries the same fix and the same
+ * warning. This file did not.
+ */
 async function clearFirestore() {
   const collections = await db.listCollections();
   for (const col of collections) {
     const docs = await col.listDocuments();
     for (const d of docs) {
-      await d.delete();
+      await db.recursiveDelete(d);
     }
   }
 }
@@ -1305,6 +1321,143 @@ describe("Rank recompute integration (real recomputeAllRanks)", () => {
 // Tests the same write logic that waitlistSignup uses:
 // email validation, deduplication, and honeypot rejection.
 // ================================================================
+
+// ==================================================================
+// Fix B, step 1: the zero-vote guard.
+//
+// The outer layer, and the strongest of the three protections in
+// docs/FIX_B_DESIGN.md, because it does not depend on any of the
+// baseline arithmetic being correct.
+//
+// A city with no votes has produced no evidence, so a recompute has
+// nothing to act on. Before this, every score was 0, every voteCount
+// was 0, and the entire published order came out of whatever the
+// final tie-break happened to be. Measured on real Houston data, that
+// moved Mensho from 1 to 6 with nobody voting.
+// ==================================================================
+describe("Rank recompute: zero-vote city guard", () => {
+  const now = new Date("2026-06-11T12:00:00Z");
+
+  beforeEach(async () => {
+    await clearFirestore();
+    await db.collection("cities").doc("quiet-city").set({
+      id: "quiet-city",
+      name: "Quiet City",
+    });
+    // Curated order, no votes anywhere.
+    const curated = [
+      {id: "q-1", name: "Zulu Diner", rank: 1, displayOrder: 1},
+      {id: "q-2", name: "Alpha Grill", rank: 2, displayOrder: 2},
+      {id: "q-3", name: "Mid Cafe", rank: 3, displayOrder: 3},
+    ];
+    for (const r of curated) {
+      await db.collection("restaurants").doc(r.id).set({
+        ...r,
+        cityId: "quiet-city",
+        voteCount: 0,
+        // Sentinel. A recompute overwrites rankScore with the
+        // computed value, which for a voteless city is 0. Seeding a
+        // value the engine would never produce is what makes "nothing
+        // was written" detectable: without it, the write still
+        // happens and simply writes identical values, and an
+        // assertion comparing before to after passes while proving
+        // nothing.
+        rankScore: 999,
+      });
+    }
+  });
+
+  test("a city with zero votes is left completely untouched", async () => {
+    const before = await db
+      .collection("restaurants")
+      .where("cityId", "==", "quiet-city")
+      .get();
+    const snapshot = new Map(
+      before.docs.map((d) => [d.id, JSON.stringify(d.data())])
+    );
+
+    await recomputeAllRanks(db, now);
+
+    const after = await db
+      .collection("restaurants")
+      .where("cityId", "==", "quiet-city")
+      .get();
+
+    for (const doc of after.docs) {
+      expect(JSON.stringify(doc.data())).toBe(snapshot.get(doc.id));
+      // The sentinel is the real assertion. rankScore 999 surviving
+      // proves the batch never ran, rather than proving it ran and
+      // wrote the same numbers back.
+      expect(doc.data().rankScore).toBe(999);
+    }
+  });
+
+  test("the curated order survives, name tie-break or not", async () => {
+    await recomputeAllRanks(db, now);
+
+    const after = await db
+      .collection("restaurants")
+      .where("cityId", "==", "quiet-city")
+      .get();
+    const byRank = after.docs
+      .map((d) => d.data())
+      .sort((a, b) => (a.rank as number) - (b.rank as number))
+      .map((d) => d.name as string);
+
+    // Alphabetically this would be Alpha, Mid, Zulu.
+    expect(byRank).toEqual(["Zulu Diner", "Alpha Grill", "Mid Cafe"]);
+  });
+
+  test("one vote anywhere in the city lifts the guard", async () => {
+    await db
+      .collection("restaurants")
+      .doc("q-3")
+      .collection("votes")
+      .doc("voter-1")
+      .set({createdAt: Timestamp.fromDate(now), weight: 1});
+
+    await recomputeAllRanks(db, now);
+
+    const q3 = await db.collection("restaurants").doc("q-3").get();
+    // The guard is about having no evidence at all, not about
+    // protecting curation forever. One real vote and the engine runs.
+    expect(q3.data()?.voteCount).toBe(1);
+    expect(q3.data()?.rank).toBe(1);
+  });
+
+  test("a quiet city does not block a busy one in the same run",
+    async () => {
+      await db.collection("cities").doc("busy-city").set({
+        id: "busy-city",
+        name: "Busy City",
+      });
+      for (const [id, order] of [["b-1", 1], ["b-2", 2]] as const) {
+        await db.collection("restaurants").doc(id).set({
+          id,
+          cityId: "busy-city",
+          name: `Busy ${order}`,
+          rank: order,
+          displayOrder: order,
+          voteCount: 0,
+        });
+      }
+      await db
+        .collection("restaurants")
+        .doc("b-2")
+        .collection("votes")
+        .doc("voter-1")
+        .set({createdAt: Timestamp.fromDate(now), weight: 1});
+
+      await recomputeAllRanks(db, now);
+
+      // Busy city recomputed.
+      expect((await db.collection("restaurants").doc("b-2").get())
+        .data()?.rank).toBe(1);
+      // Quiet city still untouched.
+      expect((await db.collection("restaurants").doc("q-1").get())
+        .data()?.rank).toBe(1);
+    });
+});
 
 describe("Waitlist signup logic", () => {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

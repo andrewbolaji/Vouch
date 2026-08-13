@@ -302,8 +302,8 @@ pairing for the gated band on the open web.
 
 ## Build order
 
-1. The guard. Standalone, smallest, and it protects the launch case
-   on its own even if nothing else lands.
+1. ~~The guard.~~ **Landed.** `rank_recompute.ts`, skips before the
+   batch is built when `cityVoteTotal === 0`.
 2. The constants, the pure `baselineWeight()` and `baselineFor()`
    functions in
    `rank_engine.ts`, with the zero-vote and one-vote fixtures from the

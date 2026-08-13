@@ -81,10 +81,12 @@ export async function recomputeAllRanks(
     // Compute scores
     const scored: ScoredRestaurant[] = [];
     const trueVoteCountById = new Map<string, number>();
+    let cityVoteTotal = 0;
 
     for (const restDoc of restaurantsSnap.docs) {
       const votesSnap = await restDoc.ref.collection("votes").get();
       trueVoteCountById.set(restDoc.id, votesSnap.size);
+      cityVoteTotal += votesSnap.size;
 
       const votes: VoteRecord[] = votesSnap.docs
         .map((vDoc) => {
@@ -116,6 +118,29 @@ export async function recomputeAllRanks(
         // last rather than treating it as position 0.
         displayOrder: restDoc.data().displayOrder as number | undefined,
       });
+    }
+
+    // The zero-vote guard. Fix B, and the outer layer of it.
+    //
+    // A city that has cast no votes has produced no evidence, so
+    // there is nothing for a ranking pass to act on. Every score is
+    // 0, every voteCount is 0, and the published order would come
+    // entirely out of whichever tie-break happens to be last. Before
+    // Fix A that tie-break was alphabetical, and running it against
+    // real Houston data moved Mensho from 1 to 6 with nobody voting.
+    //
+    // Skipping before the batch is built, rather than writing the
+    // same values back, is deliberate. It is the strongest of the
+    // three protections in docs/FIX_B_DESIGN.md because it does not
+    // depend on any of the baseline arithmetic being correct, and it
+    // means a freshly published city keeps exactly the ranks it was
+    // seeded with until a real person votes.
+    if (cityVoteTotal === 0) {
+      logger.info(
+        `[rank] ${cityName} (${cityId}): 0 votes, skipped. ` +
+        `${restaurantsSnap.size} restaurants left untouched.`
+      );
+      continue;
     }
 
     // Assign ranks
