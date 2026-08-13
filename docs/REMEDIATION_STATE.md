@@ -327,6 +327,15 @@ than withheld and they already paid for it. Tested via
 `UnreachableRestaurantRepository`, which throws from `getForCity` so
 `AppState` takes the real catch branch and sets `isOffline`.
 
+## Reachability sweep
+
+`docs/REACHABILITY_SWEEP.md`, 2026-08-13. Every conditional render
+path and gated read in `lib/`, answered against production rather than
+against a fixture. Findings 2, 11 and 12 turned out to be five
+instances of one defect, and the sweep found the fifth
+(`getInsiderNotes` has zero call sites in `lib/` while 50 of 57
+restaurants hold the subcollection it reads).
+
 ## Deferred into Fix B: the public teaser projection
 
 Locked rows ship as rank only. The teaser (rank, cuisine,
@@ -352,8 +361,10 @@ Four facts that do not fit together:
 1. Photographs render only through the demo layer
    (`RestaurantImage.build()` checks `resolveDemoAsset` first).
 2. The demo layer is marked for deletion before any public build.
-3. Deleting it turns every Houston and Atlanta card grey, because
-   `imageUrl` holds `placeholder://restaurant`.
+3. Deleting it costs 6 images, not 27. **Corrected by the sweep:** only
+   6 of the 29 demo keys match a real restaurant name, so 21 of the 27
+   curated documents already render a grey placeholder today. See
+   `docs/REACHABILITY_SWEEP.md`.
 4. The demo layer ships gated restaurant names and photographs into
    the binary regardless of what the seed holds (see finding 4).
 
