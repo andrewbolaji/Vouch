@@ -55,7 +55,7 @@ The absent-`displayOrder` branch is now dead in production, so
 |---|---|---|
 | 1 | Landed. VoteRepository never wired into AppState in main.dart, so votes never reached Firestore. Composition-root test added. | `57e7695` |
 | 1 (failure path) | Landed. toggleVote awaits and rolls back; rules split get/list; cascade guard on applyVoteDeleted/applyCommentDeleted. | `1c7639a` |
-| 2 | **Blocked on Andrew.** insiderNotes never load, and the outer gate at `restaurant_detail_screen.dart:669` can never be true because `RestaurantRepository._parseRestaurant` nulls both fields, so free users never see the teaser either. Do not add a `hasInsiderNotes` flag, explicitly rejected. | |
+| 2 | **Half landed.** 33 generated notes deleted from production (`f`, below). Wiring still to build so a real note renders when one exists. Original text: **Blocked on Andrew.** insiderNotes never load, and the outer gate at `restaurant_detail_screen.dart:669` can never be true because `RestaurantRepository._parseRestaurant` nulls both fields, so free users never see the teaser either. Do not add a `hasInsiderNotes` flag, explicitly rejected. | |
 | 3 | Landed. refreshEntitlements now runs on launch and sign-in; unconfirmed claim renders pending, not paid; pending is ephemeral and recomputed. | `b5a2084` |
 | 4 | Landed. `seed_data.dart` cut from 57 restaurants to 25, ranks 1 to `kFreeTierMaxRank` only, all 50 insiderTip/whatToOrder pairs removed including on free ranks. Gated content moved to `test/helpers/gated_fixtures.dart`, not deleted. Entitled users on the fallback now get an explicit could-not-load row. Verified by `strings -a` before and after, see "Finding 4" below. | |
 | 5 | Not started. Prepare signature verification, GET /subscribers reconciliation, event-id dedupe against a test secret. Andrew is generating `REVENUECAT_WEBHOOK_SIGNING_SECRET`, kept separate from the existing bearer secret. | |
@@ -322,6 +322,74 @@ not styled as a locked row, because that content is missing rather
 than withheld and they already paid for it. Tested via
 `UnreachableRestaurantRepository`, which throws from `getForCity` so
 `AppState` takes the real catch branch and sets `isOffline`.
+
+## Insider notes: provenance traced, 33 deleted
+
+All 50 notes documents in production were traced before anything was
+wired. Two sources, neither of them Andrew.
+
+**33 deleted** (houston 3, chicago 10, la 10, nyc 10). Origin: one
+hardcoded object at `scripts/seed_production.js:91`, introduced by
+`162b12b` (2026-05-07), a commit whose own message calls it scaffold.
+
+Generated, not observed, and one case proves it rather than arguing
+it: `hou-4`'s tip "The patio with the downtown skyline view is the
+spot" paraphrases the description three lines above it in the same
+file, "a downtown-view patio". Text derived from adjacent text.
+
+This corrected the brief. It had said the wiring could ship against
+"Houston's three real notes only". Houston's three come from the same
+object, same file, same commit as the other thirty, so they were not
+real either.
+
+Deleted via `scripts/delete_seeded_insider_notes.js` (dry run by
+default, cities named explicitly, aborts rather than guessing on an
+unrecognised city, reads back after deleting). The hardcoded object in
+`seed_production.js` was emptied in the same commit, because line 206
+rewrites it and a later `--force --confirm` run would have restored
+all 33.
+
+**17 held**, all Atlanta, different provenance. See below.
+
+### Atlanta's 17: salvageable, held pending Andrew
+
+Source is `data/atlanta_candidates_seedready.csv`, committed by
+`2b5da37` (2026-07-03) and described there as a "curated candidate
+list". `docs/DECISIONS.md` (2026-05-09) records the pipeline:
+"Curated via TikTok food creator candidates + Reddit + Eater +
+Michelin pipeline. **Andrew sources Top 10 candidates per city.**"
+
+Four independent signals that this is human-sourced, not generated:
+
+1. **Dish specificity.** "Tortelli di Mele (round ravioli filled with
+   Granny Smith apple, sausage, and parmigiano, topped with browned
+   butter and sage)". "Caviar and Middlins". "Honey hot wings (ask for
+   the sauce on the fries too)". Ingredient level and ordering hacks,
+   not listicle summary.
+2. **Gaps.** Row 14, The Dining Experience, has an empty
+   `WhatToOrder`. Generated sets do not have holes.
+3. **The selection.** Juci Jerk in Stone Mountain, Jamaican Jerk Biz
+   in Mableton, The Dining Experience in Fairburn, Clay's in Sandy
+   Springs. Suburban neighbourhood spots. A generative pass on "best
+   Atlanta restaurants" returns Bacchanalia, Staplehouse, Gunshow. The
+   scaffold cities' picks are exactly that canonical shape: Peter
+   Luger, Katz's, Alinea, Bestia.
+4. **The field split**, which is binary and decisive.
+
+| City | docs | description | vibeTags | openingHours | placeId |
+|---|---|---|---|---|---|
+| atlanta | 17 | **0** | **0** | **17** | **17** |
+| chicago | 10 | 10 | 10 | 0 | 0 |
+| houston | 10 | 10 | 10 | 0 | 0 |
+| la | 10 | 10 | 10 | 0 | 0 |
+| nyc | 10 | 10 | 10 | 0 | 0 |
+
+Atlanta has zero narrative fields and full Google Places enrichment.
+The other four have full narrative and zero external verification.
+That is the provenance line drawn by the data itself.
+
+Atlanta's notes are still not "Andrew went there", so they need
+honest attribution rather than the insider-note voice.
 
 ## Reachability sweep
 

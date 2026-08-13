@@ -88,41 +88,24 @@ const restaurants = [
 ];
 
 // Insider notes (subcollection data)
-const insiderNotes = {
-  "hou-1": { restaurantId: "hou-1", whatToOrder: "The Wagyu Texas BBQ Tantanmen (smoked A5 beef). Matcha Duck Ramen for something different.", insiderTip: "No reservations and lines form. Go off-peak, around 4 PM." },
-  "hou-9": { restaurantId: "hou-9", whatToOrder: "Brisket, beef ribs, and the garlic sausage links.", insiderTip: "Arrive by 10 AM on weekends or the brisket is gone." },
-  "hou-4": { restaurantId: "hou-4", whatToOrder: "Craft cocktails and shareable plates on the patio.", insiderTip: "The patio with the downtown skyline view is the spot." },
-  "nyc-1": { restaurantId: "nyc-1", whatToOrder: "Porterhouse for two. German fried potatoes. Creamed spinach.", insiderTip: "Reservations book 30 days out. Call at exactly noon." },
-  "nyc-2": { restaurantId: "nyc-2", whatToOrder: "Square slice. Period.", insiderTip: "Cash only. The square slice is the move." },
-  "nyc-3": { restaurantId: "nyc-3", whatToOrder: "Adobada taco with everything. Horchata to drink.", insiderTip: "Get the adobada. Skip the line at lunch, go at 3 PM." },
-  "nyc-4": { restaurantId: "nyc-4", whatToOrder: "Pastrami on rye with mustard. Nothing else.", insiderTip: "Tip the cutter and they will hook you up with extra meat." },
-  "nyc-5": { restaurantId: "nyc-5", whatToOrder: "Spicy cumin lamb hand-pulled noodles.", insiderTip: "Spicy level 1 is already intense. You have been warned." },
-  "nyc-6": { restaurantId: "nyc-6", whatToOrder: "Plain cheese slice, folded.", insiderTip: "Late night after bars is the real experience." },
-  "nyc-7": { restaurantId: "nyc-7", whatToOrder: "Classic bagel with lox, cream cheese, capers, onions.", insiderTip: "The cafe on Orchard St has seating, the original is counter only." },
-  "nyc-8": { restaurantId: "nyc-8", whatToOrder: "Omakase. There is no other option.", insiderTip: "Book exactly 30 days ahead via Resy." },
-  "nyc-9": { restaurantId: "nyc-9", whatToOrder: "Plain pie with calzone on the side.", insiderTip: "Line up by 4:30 PM. Bring your own wine." },
-  "nyc-10": { restaurantId: "nyc-10", whatToOrder: "Dark chocolate peanut butter cookie.", insiderTip: "Go early. They sell out of dark chocolate peanut butter by noon." },
-  "la-1": { restaurantId: "la-1", whatToOrder: "Sweet potato taco and the tuna tostada.", insiderTip: "The sweet potato taco is unexpectedly the star." },
-  "la-2": { restaurantId: "la-2", whatToOrder: "Sando at Medium with slaw and pickles.", insiderTip: "Howlin is not a joke. Start at Medium your first time." },
-  "la-3": { restaurantId: "la-3", whatToOrder: "Spaghetti rustichella, bone marrow, any pizza.", insiderTip: "Reservations drop at midnight on Resy, 30 days ahead." },
-  "la-4": { restaurantId: "la-4", whatToOrder: "Crying Tiger beef, morning glory, jazz fried rice.", insiderTip: "Order from the Southern Thai menu, not the regular one." },
-  "la-5": { restaurantId: "la-5", whatToOrder: "Trust Me menu. Always.", insiderTip: "No modifications, no soy sauce. Trust the chef." },
-  "la-6": { restaurantId: "la-6", whatToOrder: "#19 pastrami with coleslaw and swiss on rye.", insiderTip: "Lunch only. They close at 4 PM." },
-  "la-7": { restaurantId: "la-7", whatToOrder: "Tacos dorados de camaron. Multiple.", insiderTip: "Cash only. Get there before the line wraps." },
-  "la-8": { restaurantId: "la-8", whatToOrder: "Omelette, double cheeseburger, and the Big Mec.", insiderTip: "Go solo and sit at the bar. It is the best seat." },
-  "la-9": { restaurantId: "la-9", whatToOrder: "Dan dan noodles, beef roll, three cup chicken.", insiderTip: "Their three cup chicken is underrated." },
-  "la-10": { restaurantId: "la-10", whatToOrder: "Cheese rolls (a dozen), guava and cheese pastry, potato ball.", insiderTip: "Order online for pickup. The in-store line is brutal." },
-  "chi-1": { restaurantId: "chi-1", whatToOrder: "The Gallery menu. You do not choose. You experience.", insiderTip: "Tickets, not reservations. They sell out instantly. Set a calendar alert." },
-  "chi-2": { restaurantId: "chi-2", whatToOrder: "Italian beef, dipped, hot. Chicago-style hot dog. Chocolate cake shake.", insiderTip: "Get the combo: Italian beef dipped with hot peppers plus a Chicago dog." },
-  "chi-3": { restaurantId: "chi-3", whatToOrder: "Buttercrust deep dish with sausage.", insiderTip: "Order ahead. A real deep dish takes 45 minutes." },
-  "chi-4": { restaurantId: "chi-4", whatToOrder: "Goat empanadas, hamachi crudo, wood oven pig face.", insiderTip: "The goat empanadas are a must. Do not skip them." },
-  "chi-5": { restaurantId: "chi-5", whatToOrder: "Brisket and half rack of ribs. Mac and cheese.", insiderTip: "Get there before noon on weekends or brisket sells out." },
-  "chi-6": { restaurantId: "chi-6", whatToOrder: "Double cheeseburger with egg and bacon.", insiderTip: "Put your name in before you want to eat. The wait is real." },
-  "chi-7": { restaurantId: "chi-7", whatToOrder: "Fried chicken torta, elote, any mezcal cocktail.", insiderTip: "Brunch is chaos in the best way. The playlist alone is worth the wait." },
-  "chi-8": { restaurantId: "chi-8", whatToOrder: "Maxwell Street Polish with grilled onions and sport peppers.", insiderTip: "3 AM after a night out is peak Jim's." },
-  "chi-9": { restaurantId: "chi-9", whatToOrder: "Longanisa breakfast sandwich (day). Full tasting (night).", insiderTip: "Daytime bakery requires no reservation. Night tasting books out weeks ahead." },
-  "chi-10": { restaurantId: "chi-10", whatToOrder: "Gyros plate, Greek omelet, slice of pie.", insiderTip: "The gyros plate is enough for two people." },
-};
+// Emptied 2026-08-13. This object held 33 insider notes for Houston,
+// NYC, LA and Chicago, all introduced by commit 162b12b as Block 0
+// scaffold, all generated rather than observed. One of them, hou-4's
+// "The patio with the downtown skyline view is the spot", paraphrased
+// the description three lines above it in this same file, which is
+// how the provenance was established.
+//
+// They were deleted from production by
+// scripts/delete_seeded_insider_notes.js. This object is emptied
+// rather than left in place because line 206 below rewrites it, so a
+// later `--force --confirm` run would have restored all 33.
+//
+// Do not repopulate this. Insider notes are the one thing in the
+// product that claims a human went somewhere and observed something.
+// They are Andrew's to write, and a seed script is the wrong place
+// for them by construction: anything here is authored by whoever
+// edited the file, not by anyone who visited.
+const insiderNotes = {};
 
 // ---- Main ----
 
