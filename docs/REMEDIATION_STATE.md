@@ -4,54 +4,50 @@ Handover for an instance with no memory of this cycle. Specifics over
 prose. Everything here was measured against code or production unless
 it says otherwise.
 
-## URGENT: a scheduled job is paused and must not be restored yet
+## RESOLVED: the recompute is live again, and it ran
 
-`recomputeRanks` was **deleted from production** on 2026-08-13, before
-its 06:00 UTC fire, via:
-
-```
-firebase functions:delete recomputeRanks --project majorcitymusteats --force
-```
-
-Source is untouched (`functions/src/index.ts:317`). Restore is a
-redeploy, no code change:
+`recomputeRanks` was deleted from production on 2026-08-13 to stop it
+alphabetizing Houston. Fix A (`9f0e512`) removed that risk, so it was
+redeployed and **triggered directly** rather than left for 06:00 UTC:
 
 ```
 firebase deploy --only functions:recomputeRanks --project majorcitymusteats
+gcloud scheduler jobs run firebase-schedule-recomputeRanks-us-central1 \
+  --project majorcitymusteats --location us-central1
 ```
 
-**Do not restore until finding 10's fix ships.** Running it against
-current production destroys Houston's curated order (see finding 10).
-The other 10 functions are deployed and untouched.
+`gcloud` has no logged-in account on this machine, only ADC. Minting
+an access token from ADC and passing it as `CLOUDSDK_AUTH_ACCESS_TOKEN`
+works and needs no interactive login.
 
-Side effect, accepted deliberately: this also pauses the `voteCount`
-drift correction. Measured against production on 2026-08-13, before
-any unpause:
+**`displayOrder` was backfilled first**, deliberately, so the run had
+exactly one effect. Chicago, LA and NYC carried it on 0 of 10
+documents each; absent sorts last, so the run would have reordered
+those 30 as well, and a measurement with a second moving part in it
+is not a measurement. `scripts/backfill_display_order.js` wrote 30,
+verified 57/57 by read-back, and a second run is a true no-op.
 
-```
-restaurants: 57
-sum of stored voteCount: -797
-sum of true vote docs:   0
-documents where they disagree: 33
-documents with negative voteCount: 33
-```
+### Finding 9, closed on outcome
 
-Every one of the 33 is negative, from -15 to -33, against zero real
-votes. Pattern by rank: rank 1 holds -33, rank 2 holds -31, down to
-rank 10 at -15, repeated identically across chicago, la and nyc, plus
-three Houston documents. That is a decrementing `FieldValue.increment`
-applied to a `reset_votes.js`-style wipe that deleted the vote
-documents without zeroing the counter, not organic drift.
+| | Before | After |
+|---|---|---|
+| sum of stored `voteCount` | **-797** | **0** |
+| documents with negative `voteCount` | **33** | **0** |
+| documents disagreeing with their votes subcollection | 33 | 0 |
+| documents where `rank != displayOrder` | 0 | **0** |
+| distinct `rankScore` values | mixed | `[0]` |
 
-Houston: `Mensho` -33, `Lost and Found` -27, `Corkscrew BBQ` -17.
-Atlanta: clean, 0 of 17.
+Order after the run, compared line by line against the snapshot taken
+before it: **identical in all five cities.** Houston still reads
+Mensho, Tacos Los Brothers, Crave Suya, The Peri Peri Factory,
+Corkscrew BBQ, Lost and Found, Top Sushi, The Better Box, Joey
+Uptown, Lotus Seafood.
 
-Invisible today, because nothing in the app is browsable (see city
-status). `rank_recompute.ts:125` writes `voteCount: votesSnap.size`
-for every restaurant it iterates, so the first real run clears all 33.
-**That is the mechanism, read from code. The outcome is still
-unmeasured until a run actually happens**, which is what closes
-finding 9 on outcome.
+That is Fix A proven in production rather than in a fixture. The same
+run against the pre-fix engine would have alphabetized every city.
+
+The absent-`displayOrder` branch is now dead in production, so
+"absent sorts last" is a defensive path rather than a live one.
 
 ## Findings
 
