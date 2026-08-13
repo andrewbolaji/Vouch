@@ -231,26 +231,93 @@ So the sequence is:
 
 Step 4 is gated on step 3 having actual data, not on a calendar date.
 
-## Still open, read only
+## Answered: the two questions this report opened
 
-Two questions this report raised and did not answer. Both are read
-only and neither is fixed.
+Both read only. Neither is fixed.
 
-**What protects `waitlistSignup`?** It is publicly callable,
-unauthenticated, necessarily App Check exempt, and it writes to
-Firestore. A script can write waitlist rows at whatever rate it
-likes, which is a data quality problem and a billing one, since
-Firestore writes cost money and nobody is watching the bill on a
-pre-launch project.
+### Finding 15: `waitlistSignup` has no rate limit and no size limit
 
-**What is the exposure on `places.googleapis.com`?** It appears in
-the unenforced list. Whether Places is called from the client at all,
-and if so whether the key is restricted by bundle identifier and by
-API or is a general key in a shipped binary. An unrestricted Places
-key in a public app is a known abuse pattern, and the damage arrives
-as an invoice rather than as an outage.
+**What already protects it, and it is more than expected:**
 
-## Recommendation
+| Control | Present |
+|---|---|
+| POST only | yes |
+| Honeypot (`website` field) silently accepts and does not write | yes |
+| Email format validated | yes, `EMAIL_RE` at `index.ts:383` |
+| **Deduplication** | **yes, and structural** |
+
+Dedup is the strong one. The document id **is** the normalised email
+(`index.ts:428`), and the handler does an existence check first and
+returns `{duplicate: true}` without writing. Even if that check were
+removed, `.set()` on the same id would overwrite rather than
+accumulate. So a repeated email is **one row, permanently**, and the
+obvious flood attack does nothing.
+
+**What is missing:**
+
+1. **No rate limit of any kind.** No per IP, no per minute, nothing.
+   The only global control is `maxInstances: 10` at `index.ts:44`,
+   which caps concurrency and therefore cost velocity, not volume.
+2. **No size limit on `city` or `source`.** Both are written
+   essentially unvalidated: `city?.trim() || null` and
+   `source || "landing"`. Firestore's document limit is about 1 MiB,
+   so a caller can inflate a single row toward that.
+3. `cors: true`, so any origin.
+
+**The exposure, in units rather than dollars.** Per novel email:
+1 document read, 1 document write, and up to roughly 1 MiB of
+storage. Unique emails are unbounded, so a script generating random
+addresses that pass `EMAIL_RE` writes unbounded rows, each of which
+can be inflated.
+
+The write cost is one time. **The storage cost is recurring and is
+the real damage**, and it arrives as an invoice on a pre launch
+project nobody is watching the bill on.
+
+**Cheap fix, when approved:** cap `city` and `source` to something
+like 100 characters, and add a per IP counter. The size cap alone
+removes the recurring component and is a two line change.
+
+### `places.googleapis.com`: not called from the client, but enabled
+
+**Places is never called from the app.** Zero references in `lib/`.
+The only callers are `scripts/seed_houston.js`,
+`scripts/seed_atlanta.js` and `scripts/lib/places_enricher.js`, all
+of which read `GOOGLE_PLACES_API_KEY` from the environment on a
+developer machine. That key is not in the repo and not in the binary.
+
+**But the API is enabled on the project**, confirmed against
+`serviceusage`: `places.googleapis.com` is the one Maps family API
+enabled. So the billing surface exists even though the app does not
+use it.
+
+**Two Firebase API keys do ship in the binary**, in
+`lib/firebase_options.dart` and `ios/Runner/GoogleService-Info.plist`.
+That is normal and by design: a Firebase API key identifies a project
+rather than authorising anything, and Firebase security comes from
+rules and App Check. **That design assumes the key is restricted to
+Firebase APIs.** An unrestricted key extracted from a shipped binary
+can call any enabled API on the project, and Places is enabled.
+
+**I could not determine whether those keys are restricted.** The API
+Keys API (`apikeys.googleapis.com`) is not enabled on the project, so
+the restriction list cannot be read programmatically, and enabling an
+API is a change to the project rather than a read, so it was not
+done for an investigation that was supposed to be read only.
+
+**The check Andrew can do in two minutes**, and it is worth doing
+before public launch: Cloud Console, APIs and Services, Credentials.
+For each key, look at **API restrictions** (should list only the
+Firebase APIs the app needs, never "Don't restrict key") and
+**Application restrictions** (should be iOS bundle id
+`com.thunderrivertech.vouch`). If either says unrestricted, that is
+the fix, and it is a console setting rather than code.
+
+Recorded rather than assumed either way. An unrestricted key would be
+a real finding and a restricted one is a clean answer, and guessing
+between them is what rule 16 exists to prevent.
+
+## Recommendation## Recommendation
 
 Land steps 1 and 2 as one commit, before Storage: register a debug
 token, and add the `X-Firebase-AppCheck` header to both repositories
