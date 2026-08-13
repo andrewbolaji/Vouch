@@ -46,6 +46,7 @@ void main() {
         firestore: fakeFirestore,
         auth: mockAuth,
         httpClient: client,
+        appCheckToken: () async => 'ac-token',
       );
 
       await repo.submit(type: 'general', text: 'Great app!', cityId: 'htx');
@@ -56,6 +57,12 @@ void main() {
             '/submitSuggestion',
       );
       expect(capturedHeaders!['authorization'], 'Bearer test-token');
+      // Finding 14: nothing was attaching this before, because
+      // cloud_functions is absent and the POST is hand-rolled.
+      // Asserted here, on the real repository, rather than only on
+      // the helper: the helper being correct proves nothing about
+      // whether the repository calls it.
+      expect(capturedHeaders!['x-firebase-appcheck'], 'ac-token');
       expect(capturedHeaders!['content-type'], 'application/json');
 
       final body = jsonDecode(capturedBody!) as Map<String, dynamic>;

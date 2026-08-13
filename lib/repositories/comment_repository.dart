@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/core/error/firestore_exception_mapper.dart';
+import 'package:vouch/core/network/app_check_header.dart';
 import 'package:vouch/models/comment.dart';
 
 /// The deployed Cloud Functions region.
@@ -28,13 +28,16 @@ class CommentRepository {
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     http.Client? httpClient,
+    AppCheckTokenProvider? appCheckToken,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _authOverride = auth,
-        _httpClient = httpClient ?? http.Client();
+        _httpClient = httpClient ?? http.Client(),
+        _appCheckToken = appCheckToken ?? defaultAppCheckToken;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth? _authOverride;
   final http.Client _httpClient;
+  final AppCheckTokenProvider _appCheckToken;
 
   // Resolved lazily, not in the constructor: FirebaseAuth.instance is
   // a platform channel call that throws with no default Firebase app
@@ -154,14 +157,16 @@ class CommentRepository {
       'parentId': ?parentId,
     };
 
+    final headers = await callableHeaders(
+      idToken: idToken,
+      appCheckToken: _appCheckToken,
+    );
+
     final http.Response response;
     try {
       response = await _httpClient.post(
         url,
-        headers: {
-          HttpHeaders.authorizationHeader: 'Bearer $idToken',
-          HttpHeaders.contentTypeHeader: 'application/json',
-        },
+        headers: headers,
         body: jsonEncode({'data': payload}),
       );
     } on Exception {

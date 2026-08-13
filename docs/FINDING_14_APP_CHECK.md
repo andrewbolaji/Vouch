@@ -42,7 +42,7 @@ matches** for `enforceAppCheck` in `functions/src/`.
 |---|---|
 | `appAttestConfig` | present, `tokenTtl: 3600s` |
 | `deviceCheckConfig` | present, `tokenTtl: 3600s` |
-| `debugTokens` | **empty** |
+| `debugTokens` | **empty**, confirmed again 2026-08-13 via `scripts/register_app_check_debug_token.js --list` |
 
 ## 1. What breaks if enforcement is turned on
 
@@ -164,6 +164,16 @@ Steps 1 and 2 are unblocked now and are the only code changes.
 
 **None are registered.** `debugTokens` returns `{}`.
 
+`scripts/register_app_check_debug_token.js` provisions one. It has
+been written and its read path verified (`--list` reports 0), and it
+has **deliberately not been run**. Two reasons. The value it returns
+is a credential that bypasses attestation entirely, and running it
+here would print that credential into a session transcript. And a
+debug token is per developer machine: one created from this machine
+does not help the Xcode scheme on Andrew's. He runs `--create` when
+he is at the machine that needs it, and it goes in the scheme's
+environment variables, never in the repo.
+
 `lib/main.dart:37` already selects the debug provider under
 `kDebugMode`:
 
@@ -195,6 +205,50 @@ Where they live:
 Recording that CI does not need one is the point of checking. The
 default assumption would have been that it does, and provisioning a
 long-lived credential nothing uses is its own risk.
+
+## Enforcement binds to external TestFlight, not to a date
+
+**Recorded explicitly, because "enforce before launch" without this
+invites somebody to flip it on a quiet Tuesday.**
+
+The rollout above has a watch step, and today there is nothing to
+watch. Four users, one waitlist row, no live city. A monitor window
+opened now measures nothing, and enforcing on that basis would be a
+decision made against noise rather than against traffic.
+
+So the sequence is:
+
+1. Ship the header and register a debug token. Both done or ready.
+2. Get real devices onto an external TestFlight build carrying the
+   header.
+3. Read the verdict series **when there is a series to read.** Today
+   there is exactly one, `VALID/ALLOW`, count 8. Any new series
+   appearing, `INVALID` or `MISSING`, is signal rather than noise
+   precisely because the baseline is that clean.
+4. Enforce Firestore first and alone, before public launch.
+5. Callables, then Auth last, because sign-in lockout has no in-app
+   recovery.
+
+Step 4 is gated on step 3 having actual data, not on a calendar date.
+
+## Still open, read only
+
+Two questions this report raised and did not answer. Both are read
+only and neither is fixed.
+
+**What protects `waitlistSignup`?** It is publicly callable,
+unauthenticated, necessarily App Check exempt, and it writes to
+Firestore. A script can write waitlist rows at whatever rate it
+likes, which is a data quality problem and a billing one, since
+Firestore writes cost money and nobody is watching the bill on a
+pre-launch project.
+
+**What is the exposure on `places.googleapis.com`?** It appears in
+the unenforced list. Whether Places is called from the client at all,
+and if so whether the key is restricted by bundle identifier and by
+API or is a general key in a shipped binary. An unrestricted Places
+key in a public app is a known abuse pattern, and the damage arrives
+as an invoice rather than as an outage.
 
 ## Recommendation
 

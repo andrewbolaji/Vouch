@@ -266,6 +266,7 @@ void main() {
           firestore: fakeFirestore,
           auth: mockAuth,
           httpClient: client,
+          appCheckToken: () async => 'ac-token',
         );
 
         final comment = await repo.submitComment(
@@ -279,6 +280,10 @@ void main() {
               '/submitComment',
         );
         expect(capturedHeaders!['authorization'], 'Bearer tok');
+        // Finding 14: asserted on the real repository, not only on
+        // the helper. The helper being correct proves nothing about
+        // whether this call site uses it.
+        expect(capturedHeaders!['x-firebase-appcheck'], 'ac-token');
         final sentData =
             (jsonDecode(capturedBody!) as Map<String, dynamic>)['data']
                 as Map<String, dynamic>;

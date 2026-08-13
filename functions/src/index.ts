@@ -382,6 +382,18 @@ export const recomputeRanks = onSchedule(
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// APP CHECK MUST NEVER BE ENFORCED ON THIS FUNCTION.
+//
+// Its caller is the marketing site, not the app. site/index.html
+// posts here with a plain browser fetch, and a browser has no App
+// Attest or Play Integrity token to present. Enforcing App Check
+// here breaks the vouchfood.com signup form silently: the form keeps
+// submitting and every submission 401s.
+//
+// This is stated at the definition rather than only in
+// docs/DECISIONS.md because "App Check is enforced" reads like a
+// project-wide switch, and the person who reaches for it in six
+// months will be reading this file, not that one.
 export const waitlistSignup = onRequest(
   {cors: true},
   async (req, res) => {
@@ -450,6 +462,20 @@ export const waitlistSignup = onRequest(
 
 const revenueCatWebhookSecret = defineSecret("REVENUECAT_WEBHOOK_SECRET");
 
+// APP CHECK MUST NEVER BE ENFORCED ON THIS FUNCTION.
+//
+// Its caller is RevenueCat's servers, not the app. There is no
+// device and no attestation token, and there never will be.
+//
+// This one is worse than the waitlist if it is got wrong. Enforcing
+// App Check here stops entitlement webhooks arriving, so users pay
+// and never receive the tier they paid for, and the failure is
+// invisible from inside the app: the purchase succeeds at the store
+// and the claim never lands.
+//
+// Authentication here is the shared bearer secret checked by
+// isValidAuth below, plus the signature verification tracked as
+// finding 5. Not App Check.
 export const onRevenueCatWebhook = onRequest(
   {cors: false, secrets: [revenueCatWebhookSecret]},
   async (req, res) => {

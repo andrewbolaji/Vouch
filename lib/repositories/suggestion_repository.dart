@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/core/error/firestore_exception_mapper.dart';
+import 'package:vouch/core/network/app_check_header.dart';
 import 'package:vouch/models/suggestion.dart';
 
 /// The deployed Cloud Functions region.
@@ -23,13 +23,16 @@ class SuggestionRepository {
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     http.Client? httpClient,
+    AppCheckTokenProvider? appCheckToken,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _auth = auth ?? FirebaseAuth.instance,
-        _httpClient = httpClient ?? http.Client();
+        _httpClient = httpClient ?? http.Client(),
+        _appCheckToken = appCheckToken ?? defaultAppCheckToken;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final http.Client _httpClient;
+  final AppCheckTokenProvider _appCheckToken;
 
   /// Submits a new suggestion via HTTPS POST to the `submitSuggestion`
   /// Cloud Function.
@@ -61,14 +64,16 @@ class SuggestionRepository {
       'cityId': ?cityId,
     };
 
+    final headers = await callableHeaders(
+      idToken: idToken,
+      appCheckToken: _appCheckToken,
+    );
+
     final http.Response response;
     try {
       response = await _httpClient.post(
         url,
-        headers: {
-          HttpHeaders.authorizationHeader: 'Bearer $idToken',
-          HttpHeaders.contentTypeHeader: 'application/json',
-        },
+        headers: headers,
         body: jsonEncode({'data': payload}),
       );
     } on Exception {
