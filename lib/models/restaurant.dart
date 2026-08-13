@@ -9,6 +9,22 @@ part 'restaurant.g.dart';
 /// Firestore orderBy('rank') query and display by displayOrder instead.
 const int kUnrankedRank = 9999;
 
+/// Highest rank a free user may read. firestore.rules enforces the
+/// same boundary server-side, so this constant describes the gate, it
+/// does not create it.
+const int kFreeTierMaxRank = 5;
+
+/// The gated band, rendered to a free user as locked rows.
+///
+/// A product constant, deliberately not derived from the number of
+/// restaurants the client happens to hold or from
+/// cities.restaurantCount. A free user never receives a document
+/// above kFreeTierMaxRank, so any count taken from loaded data is
+/// zero for them, and restaurantCount is a known drifting
+/// denormalization with no sync mechanism.
+const int kGatedRankStart = kFreeTierMaxRank + 1;
+const int kGatedRankEnd = 10;
+
 @freezed
 abstract class RestaurantLocation with _$RestaurantLocation {
   const factory RestaurantLocation({

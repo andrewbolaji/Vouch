@@ -21,12 +21,16 @@ Widget buildTestApp(
   AuthService? authOverride,
   SavedProvider? savedOverride,
   SuggestionProvider? suggestionOverride,
+  AppState? appStateOverride,
 }) {
   final auth = authOverride ?? AuthService.mock();
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(
-        create: (_) => AppState(useFirebase: false),
+        // Gated content is not in SeedData, so a test needing the
+        // gated band passes an AppState backed by
+        // test/helpers/gated_fixtures.dart instead.
+        create: (_) => appStateOverride ?? AppState(useFirebase: false),
       ),
       ChangeNotifierProvider(
         create: (_) =>

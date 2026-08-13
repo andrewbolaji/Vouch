@@ -71,8 +71,24 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     if (city == null) return const SizedBox.shrink();
 
     final allRestaurants = appState.restaurantsForCity(widget.cityId);
-    final top5 = allRestaurants.where((r) => r.rank <= 5).toList();
-    final top6to10 = allRestaurants.where((r) => r.rank > 5).toList();
+    final top5 =
+        allRestaurants.where((r) => r.rank <= kFreeTierMaxRank).toList();
+    final top6to10 =
+        allRestaurants.where((r) => r.rank > kFreeTierMaxRank).toList();
+
+    // A free user never receives a document above kFreeTierMaxRank:
+    // RestaurantRepository.getForCity filters them out of the query,
+    // and firestore.rules would deny them anyway. So top6to10 is
+    // always empty for a free user, and gating this section on it
+    // being non-empty hid the Top 10 header and the paywall from
+    // exactly the users the paywall exists to convert. The paid tier
+    // had no entry point on this screen at all.
+    //
+    // The locked rows are therefore rendered from the rank constants
+    // rather than from loaded data, which is also what keeps gated
+    // fields out of the client and out of the release binary.
+    final hasGatedSection =
+        _showTop10 && (!membership.canViewTop10 || top6to10.isNotEmpty);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -130,7 +146,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOut,
                 alignment: Alignment.topCenter,
-                child: _showTop10 && top6to10.isNotEmpty
+                child: hasGatedSection
                     ? TweenAnimationBuilder<double>(
                         tween: Tween(begin: 0, end: 1),
                         duration: const Duration(milliseconds: 300),
@@ -169,13 +185,18 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                                 },
                                 message: 'Unlock full rankings '
                                     'with Locals Pass',
+                                // Count comes from the rank constants,
+                                // not top6to10.length, which is always
+                                // zero for the free user who sees this.
                                 child: Column(
-                                  children: List.generate(
-                                    top6to10.length,
-                                    (i) => _LockedRestaurantPlaceholder(
-                                      rank: i + 6,
-                                    ),
-                                  ),
+                                  children: [
+                                    for (var rank = kGatedRankStart;
+                                        rank <= kGatedRankEnd;
+                                        rank++)
+                                      _LockedRestaurantPlaceholder(
+                                        rank: rank,
+                                      ),
+                                  ],
                                 ),
                               ),
                           ],
@@ -314,22 +335,52 @@ class _ToggleButton extends StatelessWidget {
 class _LockedRestaurantPlaceholder extends StatelessWidget {
 
   const _LockedRestaurantPlaceholder({required this.rank});
+
+  /// The only input. Everything else about the restaurant at this
+  /// rank is gated, is never fetched, and must not be inferable from
+  /// what is drawn here.
   final int rank;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 100,
-      margin: const EdgeInsets.only(
-        bottom: AppTheme.spacingMd,
-      ),
-      decoration: AppTheme.cardDecoration,
-      child: Center(
-        child: Text(
-          '#$rank',
-          style: AppTheme.rankDisplay.copyWith(
-            color: AppTheme.textTertiary,
-          ),
+    return Semantics(
+      // container + excludeSemantics so the row announces as one
+      // node. Without it the rank digit is its own node and a screen
+      // reader reads five bare numbers with no indication that
+      // anything is locked or why.
+      container: true,
+      excludeSemantics: true,
+      label: 'Rank $rank, locked. Upgrade to see this restaurant.',
+      child: Container(
+        height: 72,
+        margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingMd,
+        ),
+        decoration: AppTheme.cardDecoration,
+        child: Row(
+          children: [
+            Text(
+              '$rank',
+              style: AppTheme.rankDisplay.copyWith(
+                color: AppTheme.textTertiary,
+              ),
+            ),
+            const SizedBox(width: AppTheme.spacingMd),
+            // A redaction bar where the name would sit, matching the
+            // marketing site's treatment of the same rows. Fixed
+            // width on purpose: varying it by the real name's length
+            // would leak the length of gated data.
+            Expanded(
+              child: Container(
+                height: 12,
+                decoration: BoxDecoration(
+                  color: AppTheme.textTertiary.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
