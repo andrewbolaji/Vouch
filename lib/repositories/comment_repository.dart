@@ -29,12 +29,21 @@ class CommentRepository {
     FirebaseAuth? auth,
     http.Client? httpClient,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance,
+        _authOverride = auth,
         _httpClient = httpClient ?? http.Client();
 
   final FirebaseFirestore _firestore;
-  final FirebaseAuth _auth;
+  final FirebaseAuth? _authOverride;
   final http.Client _httpClient;
+
+  // Resolved lazily, not in the constructor: FirebaseAuth.instance is
+  // a platform channel call that throws with no default Firebase app
+  // (e.g. a widget test that never calls Firebase.initializeApp()).
+  // Eager resolution meant constructing a CommentRepository at all,
+  // even one that never reads a comment, crashed outside a real
+  // Firebase context. Only the code path that actually needs the
+  // signed-in user's token should pay for resolving it.
+  FirebaseAuth get _auth => _authOverride ?? FirebaseAuth.instance;
 
   CollectionReference<Map<String, dynamic>> _commentsRef(
     String restaurantId,

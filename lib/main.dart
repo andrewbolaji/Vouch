@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -11,9 +12,13 @@ import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/report_provider.dart';
 import 'package:vouch/providers/saved_provider.dart';
 import 'package:vouch/providers/suggestion_provider.dart';
+import 'package:vouch/repositories/city_repository.dart';
+import 'package:vouch/repositories/comment_repository.dart';
 import 'package:vouch/repositories/report_repository.dart';
+import 'package:vouch/repositories/restaurant_repository.dart';
 import 'package:vouch/repositories/suggestion_repository.dart';
 import 'package:vouch/repositories/user_repository.dart';
+import 'package:vouch/repositories/vote_repository.dart';
 import 'package:vouch/screens/splash_screen.dart';
 import 'package:vouch/services/analytics_service.dart';
 import 'package:vouch/services/auth_service.dart';
@@ -61,12 +66,20 @@ class VouchApp extends StatelessWidget {
     required this.authService,
     required this.analyticsService,
     required this.membershipProvider,
+    this.firestoreOverride,
     super.key,
   });
 
   final AuthService authService;
   final AnalyticsService analyticsService;
   final MembershipProvider membershipProvider;
+
+  /// Test-only seam: substitutes a fake Firestore for every repository
+  /// this composition root builds. main() never passes this, so
+  /// production is unaffected; a composition-root test passes a
+  /// FakeFirebaseFirestore here to prove the real wiring reaches
+  /// Firestore without needing a live project.
+  final FirebaseFirestore? firestoreOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +88,12 @@ class VouchApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AppState(
             membershipProvider: membershipProvider,
+            cityRepo: CityRepository(firestore: firestoreOverride),
+            restaurantRepo: RestaurantRepository(
+              firestore: firestoreOverride,
+            ),
+            commentRepo: CommentRepository(firestore: firestoreOverride),
+            voteRepo: VoteRepository(firestore: firestoreOverride),
           ),
         ),
         ChangeNotifierProvider.value(value: membershipProvider),

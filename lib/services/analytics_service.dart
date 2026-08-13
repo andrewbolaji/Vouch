@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 /// A recorded analytics call, used for test assertions.
 @immutable
@@ -73,8 +73,18 @@ class AnalyticsService {
   final List<AnalyticsCall>? _sink;
 
   /// Navigator observer for automatic screen_view logging.
-  FirebaseAnalyticsObserver get navigatorObserver =>
-      FirebaseAnalyticsObserver(analytics: _analytics!);
+  ///
+  /// Falls back to a plain, no-op NavigatorObserver when this is a
+  /// .test() instance (_analytics null). Composition-root tests build
+  /// the real VouchApp, which wires this into MaterialApp
+  /// unconditionally; without this fallback, any such test crashes
+  /// on the force-unwrap this getter used to do, a crash no test ever
+  /// hit before because the older, parallel test harness in
+  /// test/helpers/test_app.dart never wires navigatorObservers into
+  /// its own MaterialApp at all.
+  NavigatorObserver get navigatorObserver => _analytics == null
+      ? NavigatorObserver()
+      : FirebaseAnalyticsObserver(analytics: _analytics);
 
   // -- Events --
 
