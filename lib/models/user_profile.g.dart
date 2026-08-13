@@ -44,5 +44,4 @@ Map<String, dynamic> _$UserProfileToJson(_UserProfile instance) =>
       'membershipTier': instance.membershipTier,
       'savedRestaurantIds': instance.savedRestaurantIds,
       'blockedUserIds': instance.blockedUserIds,
-      'votedRestaurantIds': instance.votedRestaurantIds,
     };

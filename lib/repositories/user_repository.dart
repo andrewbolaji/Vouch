@@ -88,6 +88,21 @@ class UserRepository {
   }
 
   /// Creates (or overwrites) a user profile document.
+  ///
+  /// The only whole-document write to users/{uid} in this class, and
+  /// it has no caller in lib/. Do not give it one without reading
+  /// this: a non-merge set is denied by firestore.rules on any
+  /// profile that has votes, because replacing the document drops
+  /// the trigger-owned votedRestaurantIds, and the rule treats
+  /// dropping it as changing it. That is true whether or not the
+  /// payload carries the field, so the model excluding it from
+  /// toJson does not make this shape safe, it only stops the model
+  /// forging a value.
+  ///
+  /// A caller that wants this behaviour should use ensureUserDoc,
+  /// updateSaved, or a set with merge instead, all of which leave
+  /// the field alone. Pinned by the whole-document write tests in
+  /// test-rules/src/firestore.rules.test.ts.
   Future<void> createUser(UserProfile profile) async {
     try {
       await _usersRef.doc(profile.id).set(profile.toJson());

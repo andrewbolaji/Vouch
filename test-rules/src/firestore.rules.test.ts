@@ -771,6 +771,85 @@ describe("users", () => {
     );
   });
 
+  // Whole-document write shapes against a profile that has votes.
+  //
+  // These pin behaviour the rule already had rather than behaviour
+  // it gained: the rule is right in every case below. They exist
+  // because the previous coverage never exercised a full document
+  // carrying this field at all (the unrelated-update test uses a
+  // single named field, and the id tests use documents where both
+  // sides default to []), so nothing recorded that whole-document
+  // overwrites are simply not a usable shape on users/{uid}.
+  test("DENIED: a full document write carrying a stale empty list",
+    async () => {
+      await seedAsAdmin("users/alice", {
+        id: "alice",
+        displayName: "Alice",
+        votedRestaurantIds: ["hou-1"],
+      });
+      const db = freeUser("alice").firestore();
+      await assertFails(
+        setDoc(doc(db, "users/alice"), {
+          id: "alice",
+          displayName: "Alice Updated",
+          votedRestaurantIds: [],
+        })
+      );
+    });
+
+  // The one that matters for the model fix: dropping the field from
+  // the payload does not rescue a whole-document write, because a
+  // non-merge set deletes the server's list, which is itself a
+  // change the rule denies. Excluding the field from serialization
+  // stops the model forging a value; it does not make this shape
+  // legal.
+  test("DENIED: a full document write that omits the field entirely",
+    async () => {
+      await seedAsAdmin("users/alice", {
+        id: "alice",
+        displayName: "Alice",
+        votedRestaurantIds: ["hou-1"],
+      });
+      const db = freeUser("alice").firestore();
+      await assertFails(
+        setDoc(doc(db, "users/alice"), {
+          id: "alice",
+          displayName: "Alice Updated",
+        })
+      );
+    });
+
+  // The two shapes the client actually uses, both safe on a voted
+  // profile: a merge set leaves the untouched field in place, and a
+  // named-field update never mentions it.
+  test("a merge write omitting the field succeeds", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      votedRestaurantIds: ["hou-1"],
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      setDoc(
+        doc(db, "users/alice"),
+        {displayName: "Alice Updated"},
+        {merge: true}
+      )
+    );
+  });
+
+  test("a named-field update on a voted profile succeeds", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      votedRestaurantIds: ["hou-1"],
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users/alice"), {displayName: "Alice Updated"})
+    );
+  });
+
   // The lock above must not turn into a blanket write freeze on the
   // rest of the document.
   test("unrelated update still succeeds alongside the vote lock", async () => {

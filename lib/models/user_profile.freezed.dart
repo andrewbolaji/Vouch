@@ -19,7 +19,21 @@ mixin _$UserProfile {
 // by the client: firestore.rules denies client writes to this
 // field. Read once on sign-in so the app knows which vote
 // buttons to fill in without one read per restaurant.
- List<String> get votedRestaurantIds;
+//
+// includeToJson: false so the model cannot carry a value into a
+// write. Without it, serializing a profile emits whatever the
+// model holds, which for a freshly constructed one is the []
+// default, and a write carrying that against a server list the
+// user really has is denied. Read side left alone: fromJson
+// still parses it.
+//
+// This makes the model incapable of forging the field. It does
+// not make a whole-document overwrite legal on a profile that
+// has votes: omitting the field from a non-merge set deletes the
+// server's list, which the rule denies too, and correctly.
+// Whole-document writes to users/{uid} are not a safe shape here
+// at all. Use named-field updates or set with merge.
+@JsonKey(includeToJson: false) List<String> get votedRestaurantIds;
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -52,7 +66,7 @@ abstract mixin class $UserProfileCopyWith<$Res>  {
   factory $UserProfileCopyWith(UserProfile value, $Res Function(UserProfile) _then) = _$UserProfileCopyWithImpl;
 @useResult
 $Res call({
- String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds, List<String> votedRestaurantIds
+ String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds,@JsonKey(includeToJson: false) List<String> votedRestaurantIds
 });
 
 
@@ -166,7 +180,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds,  List<String> votedRestaurantIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds, @JsonKey(includeToJson: false)  List<String> votedRestaurantIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserProfile() when $default != null:
 return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds,_that.votedRestaurantIds);case _:
@@ -187,7 +201,7 @@ return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.las
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds,  List<String> votedRestaurantIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds, @JsonKey(includeToJson: false)  List<String> votedRestaurantIds)  $default,) {final _that = this;
 switch (_that) {
 case _UserProfile():
 return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds,_that.votedRestaurantIds);case _:
@@ -207,7 +221,7 @@ return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.las
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds,  List<String> votedRestaurantIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds, @JsonKey(includeToJson: false)  List<String> votedRestaurantIds)?  $default,) {final _that = this;
 switch (_that) {
 case _UserProfile() when $default != null:
 return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds,_that.votedRestaurantIds);case _:
@@ -222,7 +236,7 @@ return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.las
 @JsonSerializable()
 
 class _UserProfile implements UserProfile {
-  const _UserProfile({required this.id, required this.displayName, required this.email, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.lastActiveAt, this.photoUrl, this.membershipTier = 'free', final  List<String> savedRestaurantIds = const [], final  List<String> blockedUserIds = const [], final  List<String> votedRestaurantIds = const []}): _savedRestaurantIds = savedRestaurantIds,_blockedUserIds = blockedUserIds,_votedRestaurantIds = votedRestaurantIds;
+  const _UserProfile({required this.id, required this.displayName, required this.email, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.lastActiveAt, this.photoUrl, this.membershipTier = 'free', final  List<String> savedRestaurantIds = const [], final  List<String> blockedUserIds = const [], @JsonKey(includeToJson: false) final  List<String> votedRestaurantIds = const []}): _savedRestaurantIds = savedRestaurantIds,_blockedUserIds = blockedUserIds,_votedRestaurantIds = votedRestaurantIds;
   factory _UserProfile.fromJson(Map<String, dynamic> json) => _$UserProfileFromJson(json);
 
 @override final  String id;
@@ -250,12 +264,40 @@ class _UserProfile implements UserProfile {
 // by the client: firestore.rules denies client writes to this
 // field. Read once on sign-in so the app knows which vote
 // buttons to fill in without one read per restaurant.
+//
+// includeToJson: false so the model cannot carry a value into a
+// write. Without it, serializing a profile emits whatever the
+// model holds, which for a freshly constructed one is the []
+// default, and a write carrying that against a server list the
+// user really has is denied. Read side left alone: fromJson
+// still parses it.
+//
+// This makes the model incapable of forging the field. It does
+// not make a whole-document overwrite legal on a profile that
+// has votes: omitting the field from a non-merge set deletes the
+// server's list, which the rule denies too, and correctly.
+// Whole-document writes to users/{uid} are not a safe shape here
+// at all. Use named-field updates or set with merge.
  final  List<String> _votedRestaurantIds;
 // Maintained by the onVoteCreated/onVoteDeleted triggers, never
 // by the client: firestore.rules denies client writes to this
 // field. Read once on sign-in so the app knows which vote
 // buttons to fill in without one read per restaurant.
-@override@JsonKey() List<String> get votedRestaurantIds {
+//
+// includeToJson: false so the model cannot carry a value into a
+// write. Without it, serializing a profile emits whatever the
+// model holds, which for a freshly constructed one is the []
+// default, and a write carrying that against a server list the
+// user really has is denied. Read side left alone: fromJson
+// still parses it.
+//
+// This makes the model incapable of forging the field. It does
+// not make a whole-document overwrite legal on a profile that
+// has votes: omitting the field from a non-merge set deletes the
+// server's list, which the rule denies too, and correctly.
+// Whole-document writes to users/{uid} are not a safe shape here
+// at all. Use named-field updates or set with merge.
+@override@JsonKey(includeToJson: false) List<String> get votedRestaurantIds {
   if (_votedRestaurantIds is EqualUnmodifiableListView) return _votedRestaurantIds;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_votedRestaurantIds);
@@ -295,7 +337,7 @@ abstract mixin class _$UserProfileCopyWith<$Res> implements $UserProfileCopyWith
   factory _$UserProfileCopyWith(_UserProfile value, $Res Function(_UserProfile) _then) = __$UserProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds, List<String> votedRestaurantIds
+ String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds,@JsonKey(includeToJson: false) List<String> votedRestaurantIds
 });
 
 
