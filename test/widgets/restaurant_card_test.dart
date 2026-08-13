@@ -57,7 +57,7 @@ void main() {
       expect(find.text('Rosemeyer'), findsOneWidget);
     });
 
-    testWidgets('suppresses vote count when zero', (tester) async {
+    testWidgets('shows the vote count at zero', (tester) async {
       const restaurant = Restaurant(
         id: 'hou-ChIJ123',
         cityId: 'houston',
@@ -71,10 +71,38 @@ void main() {
 
       await tester.pumpWidget(buildCard(restaurant));
 
-      // No "0 votes" or "votes" text
-      expect(find.textContaining('votes'), findsNothing);
+      // This asserted findsNothing until 2026-08-13. The count is now
+      // always shown, because at launch every count is zero, and
+      // hiding them meant the app displayed no vote count anywhere.
+      // A voting app whose first screen shows no evidence that voting
+      // exists is not communicating its own premise, and a list where
+      // some cards carry a number and others carry nothing reads as
+      // broken rather than as empty.
+      expect(find.text('0 votes'), findsOneWidget);
       // Cuisine still shown
       expect(find.textContaining('Tacos'), findsOneWidget);
+    });
+
+    testWidgets('still hides the comment count at zero', (tester) async {
+      // The asymmetry is deliberate, so it is pinned rather than left
+      // to be "tidied up" later for consistency. A zero comment count
+      // says nothing has been said, which is not a call to action and
+      // is not part of the ranking premise.
+      const restaurant = Restaurant(
+        id: 'hou-ChIJ123',
+        cityId: 'houston',
+        name: 'Test Place',
+        cuisine: 'Tacos',
+        imageUrl: 'placeholder://restaurant',
+        description: '',
+        rank: kUnrankedRank,
+        priceLevel: 1,
+      );
+
+      await tester.pumpWidget(buildCard(restaurant));
+
+      expect(find.text('0 votes'), findsOneWidget);
+      expect(find.textContaining('comments'), findsNothing);
     });
 
     testWidgets('shows vote count when nonzero even if unranked',
