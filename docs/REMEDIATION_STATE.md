@@ -25,10 +25,33 @@ current production destroys Houston's curated order (see finding 10).
 The other 10 functions are deployed and untouched.
 
 Side effect, accepted deliberately: this also pauses the `voteCount`
-drift correction. 33 of 57 restaurants hold negative `voteCount` with
-zero vote documents. Invisible, because nothing in the app is
-browsable (see city status). The first run after finding 10 lands
-clears it.
+drift correction. Measured against production on 2026-08-13, before
+any unpause:
+
+```
+restaurants: 57
+sum of stored voteCount: -797
+sum of true vote docs:   0
+documents where they disagree: 33
+documents with negative voteCount: 33
+```
+
+Every one of the 33 is negative, from -15 to -33, against zero real
+votes. Pattern by rank: rank 1 holds -33, rank 2 holds -31, down to
+rank 10 at -15, repeated identically across chicago, la and nyc, plus
+three Houston documents. That is a decrementing `FieldValue.increment`
+applied to a `reset_votes.js`-style wipe that deleted the vote
+documents without zeroing the counter, not organic drift.
+
+Houston: `Mensho` -33, `Lost and Found` -27, `Corkscrew BBQ` -17.
+Atlanta: clean, 0 of 17.
+
+Invisible today, because nothing in the app is browsable (see city
+status). `rank_recompute.ts:125` writes `voteCount: votesSnap.size`
+for every restaurant it iterates, so the first real run clears all 33.
+**That is the mechanism, read from code. The outcome is still
+unmeasured until a run actually happens**, which is what closes
+finding 9 on outcome.
 
 ## Findings
 
@@ -44,7 +67,8 @@ clears it.
 | 7 | Landed. votes rules split into `get` (owner only) and `list: false`. | `1c7639a` |
 | 8 | Not started. `submitComment` target validation. The client cannot write comments at all, so this applies to that callable only. | |
 | 9 | Landed. Cascade guard so applyVoteDeleted/applyCommentDeleted do not throw NOT_FOUND when the parent restaurant is already gone. | `1c7639a` |
-| 10 | **Measured, design not written. Outranks everything except city status and 11.** | |
+| 10 (Fix A) | Landed. Tie-break changed from `name.localeCompare` to `displayOrder` asc, then `id`. Absent displayOrder sorts last. `rank_recompute.ts` now passes the field through, without which the change was inert. | `9f0e512` |
+| 10 (Fix B) | Design not written. Baseline that decays to zero at a named threshold. Now also carries the deferred teaser projection, see below. | |
 | 11 | Landed. Section guard and locked row count both came from `top6to10`, always empty for a free user, so the paywall and the only paid-tier entry point on the screen never rendered. Both now come from rank constants. Locked rows are rank plus a fixed-width redaction bar, no gated field. Six paywall tests rewritten to assert the rule, not the roster. | `2e4efea` |
 
 Other landed work: `39c3edf` voteCount nightly reconciliation plus
@@ -302,6 +326,62 @@ not styled as a locked row, because that content is missing rather
 than withheld and they already paid for it. Tested via
 `UnreachableRestaurantRepository`, which throws from `getForCity` so
 `AppState` takes the real catch branch and sets `isOffline`.
+
+## Deferred into Fix B: the public teaser projection
+
+Locked rows ship as rank only. The teaser (rank, cuisine,
+neighbourhood, name hidden) is worth building and is **not** blocked
+on secrecy: vouchfood.com already publishes exactly that pairing for
+ranks 6 to 10 on the open web with no paywall, so the projection
+reveals nothing new.
+
+It is deferred because of where it must live. A separate job writing
+it would be a fourth drifting denormalization, alongside
+`cities.restaurantCount` and comment `userName`. The correct shape is
+one publicly readable teaser document per city holding
+`{rank, cuisine, neighbourhood}` for the gated band, written by
+`recomputeAllRanks` **inside the same batch that sets rank**, so it is
+in sync by construction rather than by a job that can fall behind.
+
+That batch is only open during Fix B. Build it there, not on its own.
+
+## Image pipeline: a deadlock, and therefore a hard blocker
+
+Four facts that do not fit together:
+
+1. Photographs render only through the demo layer
+   (`RestaurantImage.build()` checks `resolveDemoAsset` first).
+2. The demo layer is marked for deletion before any public build.
+3. Deleting it turns every Houston and Atlanta card grey, because
+   `imageUrl` holds `placeholder://restaurant`.
+4. The demo layer ships gated restaurant names and photographs into
+   the binary regardless of what the seed holds (see finding 4).
+
+So it cannot ship, cannot be deleted, and is the only thing making
+photographs work. One exit: **Firebase Storage.** Cheaper than it
+looks, since `assets/demo/` already holds 59 photographs. This is an
+upload script and a field write.
+
+Four constraints, agreed:
+
+- **Key by restaurant id, not name.** `resolveDemoAsset` matches on
+  lowercased name, the same fragility as `LAUNCH_ORDER` matching exact
+  name strings. Both miss silently on ChòpnBlọk's diacritics and on
+  `Corkscrew` versus `CorkScrew`. A lookup that fails by returning
+  nothing, where nothing is a valid state, never reports itself.
+- **Delete the demo layer in the same commit.** Not deprecate, not
+  flip the flag: `demo_image_overrides.dart`, `assets/demo/`, and
+  `pubspec.yaml:63`. Half a migration leaves two lookup paths and the
+  leak stays.
+- **Re-run the after-grep.** `Top Sushi` and `The Better Box` should
+  reach zero and the controls should hold. That takes finding 4 from
+  5 of 7 canaries to 7 of 7.
+- **Do not migrate the 30 Unsplash rows.** Stock photographs standing
+  in for specific real restaurants' food, in cities that are not live.
+  Delete the URLs.
+
+Plan goes to Andrew before it runs, including what `RestaurantImage`
+becomes and its loading and failure states.
 
 ## Image pipeline
 
