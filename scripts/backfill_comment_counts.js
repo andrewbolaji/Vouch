@@ -1,44 +1,74 @@
+#!/usr/bin/env node
+
 /**
  * One-time backfill: set commentCount on each restaurant doc
  * by counting its comments subcollection.
  *
- * Usage:
- *   GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json \
- *   node scripts/backfill_comment_counts.js
+ * Matches every other script in this directory: plain
+ * initializeApp() so Application Default Credentials resolve both
+ * project and credentials the same way, the resolved project
+ * printed up front so a human can check it before confirming, and
+ * --confirm required to write. This used to special-case
+ * GOOGLE_APPLICATION_CREDENTIALS and fall back to a hardcoded
+ * "vouch-dev" project otherwise, which meant a real prod credential
+ * wrote immediately with no gate, and an unset one silently
+ * redirected to a dev project instead of surfacing the ambiguity.
+ * Neither failure mode exists once the project is always visible
+ * and a write always needs --confirm.
  *
- * Or against the emulator:
- *   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
- *   node scripts/backfill_comment_counts.js
+ * Usage:
+ *   node scripts/backfill_comment_counts.js            # dry run
+ *   node scripts/backfill_comment_counts.js --confirm   # live write
+ *
+ * Requires Application Default Credentials for Firestore admin access.
  */
 
-const {initializeApp, cert} = require("firebase-admin/app");
-const {getFirestore} = require("firebase-admin/firestore");
+const admin = require("firebase-admin");
 
-const cred = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-if (cred) {
-  initializeApp({credential: cert(cred)});
-} else {
-  initializeApp({projectId: "vouch-dev"});
-}
+admin.initializeApp();
+const db = admin.firestore();
 
-const db = getFirestore();
+async function main() {
+  const args = process.argv.slice(2);
+  const confirm = args.includes("--confirm");
+  const projectId = admin.app().options.projectId || "(unknown)";
 
-async function backfill() {
+  console.log(`\nBackfill comment counts`);
+  console.log(`Target project: ${projectId}`);
+  console.log(`Mode: ${confirm ? "LIVE WRITE" : "DRY RUN"}\n`);
+
   const restaurants = await db.collection("restaurants").get();
+
+  if (restaurants.empty) {
+    console.log("No restaurant docs found.");
+    process.exit(0);
+  }
+
   let updated = 0;
 
   for (const snap of restaurants.docs) {
     const comments = await snap.ref.collection("comments").count().get();
     const count = comments.data().count;
-    await snap.ref.update({commentCount: count});
-    console.log(`${snap.id}: commentCount = ${count}`);
+    const current = snap.data().commentCount;
+    console.log(
+      `  ${snap.id}: commentCount ${current ?? "(unset)"} -> ${count}`
+    );
+    if (confirm) {
+      await snap.ref.update({commentCount: count});
+    }
     updated++;
   }
 
-  console.log(`Done. Updated ${updated} restaurant(s).`);
+  if (confirm) {
+    console.log(`\nUpdated ${updated} restaurant(s).\n`);
+  } else {
+    console.log(`\nDry run -- no writes. Use --confirm to apply.\n`);
+  }
+
+  process.exit(0);
 }
 
-backfill().catch((err) => {
-  console.error(err);
+main().catch((err) => {
+  console.error("Script failed:", err);
   process.exit(1);
 });

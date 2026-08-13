@@ -25,6 +25,7 @@ import {
 } from "./comment_aggregation";
 import {containsBannedContent} from "./moderation";
 import {deleteUserData} from "./user_cleanup";
+import {deleteRestaurantData} from "./restaurant_cleanup";
 import {recomputeAllRanks} from "./rank_recompute";
 import {
   handleWebhookEvent,
@@ -53,11 +54,14 @@ setGlobalOptions({maxInstances: 10, region: "us-central1"});
 export const onVoteCreated = onDocumentCreated(
   "restaurants/{restaurantId}/votes/{userId}",
   async (event) => {
+    const weight =
+      (event.data?.data()?.weight as number | undefined) ?? 1;
     await recordVoteCreated(
       db,
       event.id,
       event.params.restaurantId,
-      event.params.userId
+      event.params.userId,
+      weight
     );
     await applyVoteCreated(db, event.params.restaurantId);
   }
@@ -66,14 +70,17 @@ export const onVoteCreated = onDocumentCreated(
 export const onVoteDeleted = onDocumentDeleted(
   "restaurants/{restaurantId}/votes/{userId}",
   async (event) => {
+    const deletedData = event.data?.data();
     const voteCreatedAt =
-      (event.data?.data()?.createdAt as Timestamp | undefined) ?? null;
+      (deletedData?.createdAt as Timestamp | undefined) ?? null;
+    const weight = (deletedData?.weight as number | undefined) ?? 1;
     await recordVoteDeleted(
       db,
       event.id,
       event.params.restaurantId,
       event.params.userId,
-      voteCreatedAt
+      voteCreatedAt,
+      weight
     );
     await applyVoteDeleted(db, event.params.restaurantId);
   }
@@ -414,5 +421,25 @@ export const onRevenueCatWebhook = onRequest(
       });
       res.status(500).json({error: "internal"});
     }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 7. onRestaurantDeleted
+//    Firestore trigger on /restaurants/{restaurantId}. Firestore does not
+//    delete subcollections when a parent document is deleted, so votes,
+//    comments, and insiderNotes would otherwise survive indefinitely under
+//    a restaurantId nothing points to. This is the traceable cause of the
+//    163 orphaned vote documents found in production on 2026-08-07: a
+//    launch-order script deleted the restaurant doc without touching its
+//    votes subcollection. Fires for every restaurant deletion, not just
+//    the ones a known script runs, so a future script or a manual console
+//    delete gets the same cleanup.
+// ---------------------------------------------------------------------------
+
+export const onRestaurantDeleted = onDocumentDeleted(
+  "restaurants/{restaurantId}",
+  async (event) => {
+    await deleteRestaurantData(db, event.params.restaurantId);
   }
 );

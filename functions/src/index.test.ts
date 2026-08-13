@@ -21,6 +21,7 @@ import {
   applyCommentDeleted,
 } from "./comment_aggregation";
 import {deleteUserData} from "./user_cleanup";
+import {deleteRestaurantData} from "./restaurant_cleanup";
 import {
   computeScore,
   assignRanks,
@@ -647,6 +648,117 @@ describe("Account deletion cleanup (real deleteUserData)", () => {
 });
 
 // ================================================================
+// Restaurant deletion cleanup (real deleteRestaurantData)
+//
+// Tests call the real deleteRestaurantData function from
+// restaurant_cleanup.ts, the same function that onRestaurantDeleted
+// delegates to.
+//
+// What is NOT tested here: the Firestore trigger wiring itself,
+// whether onRestaurantDeleted actually fires when a restaurant doc
+// is deleted. That is Firebase infrastructure, same caveat as the
+// account deletion suite above.
+// ================================================================
+
+describe("Restaurant deletion cleanup (real deleteRestaurantData)", () => {
+  const restaurantId = "hou-removed";
+
+  beforeEach(async () => {
+    await clearFirestore();
+
+    // The restaurant doc itself is already gone by the time this
+    // runs in production (the trigger fires on delete), so the test
+    // never creates one, only its subcollections.
+    await db
+      .collection("restaurants")
+      .doc(restaurantId)
+      .collection("votes")
+      .doc("alice")
+      .set({createdAt: Timestamp.now(), weight: 1});
+    await db
+      .collection("restaurants")
+      .doc(restaurantId)
+      .collection("votes")
+      .doc("bob")
+      .set({createdAt: Timestamp.now(), weight: 1});
+    await db
+      .collection("restaurants")
+      .doc(restaurantId)
+      .collection("comments")
+      .doc("c1")
+      .set({userId: "alice", userName: "Alice", text: "Great spot"});
+    await db
+      .collection("restaurants")
+      .doc(restaurantId)
+      .collection("insiderNotes")
+      .doc("notes")
+      .set({restaurantId, whatToOrder: "The special"});
+
+    // A different restaurant's data must survive untouched. A
+    // dedicated ID here, not the widely shared "hou-1" fixture other
+    // describe blocks in this file use, because the shared
+    // clearFirestore() helper only deletes top-level restaurant
+    // docs, not their subcollections (the same class of bug this
+    // whole suite exists to catch), so "hou-1"'s votes subcollection
+    // can carry cruft left behind by earlier blocks in this file.
+    await db
+      .collection("restaurants")
+      .doc("hou-untouched")
+      .collection("votes")
+      .doc("alice")
+      .set({createdAt: Timestamp.now(), weight: 1});
+  });
+
+  afterAll(async () => {
+    await clearFirestore();
+  });
+
+  // eslint-disable-next-line max-len
+  test("deletes every vote, comment, and insiderNotes doc for the restaurant", async () => {
+    await deleteRestaurantData(db, restaurantId);
+
+    const votes = await db
+      .collection("restaurants")
+      .doc(restaurantId)
+      .collection("votes")
+      .get();
+    expect(votes.size).toBe(0);
+
+    const comments = await db
+      .collection("restaurants")
+      .doc(restaurantId)
+      .collection("comments")
+      .get();
+    expect(comments.size).toBe(0);
+
+    const notes = await db
+      .collection("restaurants")
+      .doc(restaurantId)
+      .collection("insiderNotes")
+      .get();
+    expect(notes.size).toBe(0);
+  });
+
+  test("does not touch another restaurant's votes", async () => {
+    await deleteRestaurantData(db, restaurantId);
+
+    const aliceVote = await db
+      .collection("restaurants")
+      .doc("hou-untouched")
+      .collection("votes")
+      .doc("alice")
+      .get();
+    expect(aliceVote.exists).toBe(true);
+  });
+
+  test("a restaurant with no orphaned subcollections is a no-op", async () => {
+    await expect(
+      deleteRestaurantData(db, "never-existed")
+    ).resolves.not.toThrow();
+  });
+});
+
+// ================================================================
 // Rank engine: pure score math
 //
 // These test the pure functions in rank_engine.ts directly.
@@ -1203,6 +1315,14 @@ describe("Membership webhook auth validation (pure)", () => {
 
   test("missing Bearer prefix rejected", () => {
     expect(isValidAuth(secret, secret)).toBe(false);
+  });
+
+  // Same length as the correct header, one changed character, so this
+  // has to fail inside timingSafeEqual itself rather than on the
+  // length-mismatch shortcut every other rejection case above hits.
+  test("same-length wrong secret rejected", () => {
+    const sameLengthWrong = `Bearer ${secret.slice(0, -1)}X`;
+    expect(isValidAuth(sameLengthWrong, secret)).toBe(false);
   });
 });
 

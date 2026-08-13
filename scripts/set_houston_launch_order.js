@@ -7,7 +7,12 @@
  * Matches docs by name within cityId=="houston". If any name fails
  * to match exactly one doc, the script aborts before writing anything.
  *
- * Also deletes Houston docs NOT on the launch list (removals).
+ * Also deletes Houston docs NOT on the launch list (removals). A
+ * removal cascades to the restaurant's votes, comments, and
+ * insiderNotes subcollections first (scripts/lib/cascade_delete.js).
+ * Firestore does not delete subcollections when a parent doc is
+ * deleted, so skipping this step is what produced the 163 orphaned
+ * vote documents found in production on 2026-08-07.
  *
  * Usage:
  *   node scripts/set_houston_launch_order.js            # dry run
@@ -17,6 +22,7 @@
  */
 
 const admin = require("firebase-admin");
+const {cascadeDeleteRestaurant} = require("./lib/cascade_delete");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -134,22 +140,34 @@ async function main() {
     }
   }
 
-  // --- Removals ---
-  if (removalDocs.length > 0) {
-    console.log("\nRemovals:");
-    for (const { name, doc } of removalDocs) {
-      console.log(`  DEL  ${name.padEnd(25)} (${doc.id})`);
-      if (confirm) {
-        batch.delete(doc.ref);
-      }
-    }
-  }
-
   if (confirm) {
     await batch.commit();
-    console.log("\nBatch committed.\n");
+    console.log("\nRank batch committed.\n");
   } else {
-    console.log("\nDry run -- no writes. Use --confirm to apply.\n");
+    console.log("\nDry run -- no rank writes. Use --confirm to apply.\n");
+  }
+
+  // --- Removals ---
+  // Cascade deletes votes/comments/insiderNotes before the restaurant
+  // doc itself, so a removal cannot orphan its subcollections the
+  // way it did on 2026-08-07. Run outside the rank batch: recursive
+  // per-restaurant deletes don't fit in a single 500-op batch, and
+  // failing a removal shouldn't roll back the rank assignments above.
+  if (removalDocs.length > 0) {
+    console.log("Removals:");
+    for (const { name, doc } of removalDocs) {
+      const counts = await cascadeDeleteRestaurant(db, doc.ref, { confirm });
+      console.log(
+        `  DEL  ${name.padEnd(25)} (${doc.id}) ` +
+          `votes=${counts.votes} comments=${counts.comments} ` +
+          `insiderNotes=${counts.insiderNotes}`
+      );
+    }
+    if (confirm) {
+      console.log("\nRemovals committed.\n");
+    } else {
+      console.log("\nDry run -- no removals. Use --confirm to apply.\n");
+    }
   }
 
   // Verify: read back and print

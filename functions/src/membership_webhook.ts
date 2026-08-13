@@ -5,6 +5,7 @@
  * index.ts delegates here after validating the auth header.
  */
 
+import {timingSafeEqual} from "crypto";
 import {getAuth} from "firebase-admin/auth";
 import {Firestore} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
@@ -48,6 +49,13 @@ export function tierFromEvent(event: RevenueCatWebhookEvent): string {
  * Validates the webhook Authorization header against the stored
  * secret. RevenueCat sends: Authorization: Bearer <secret>
  *
+ * RevenueCat does not sign webhooks; the shared secret in this header
+ * is their documented mechanism, there is no signature to verify
+ * instead. The comparison itself uses timingSafeEqual rather than
+ * ===, so a byte-by-byte string compare can't leak how many leading
+ * characters of the secret an attacker guessed correctly through
+ * response timing.
+ *
  * @param {string | undefined} header - The Authorization header.
  * @param {string} secret - The expected webhook secret.
  * @return {boolean} Whether the header is valid.
@@ -57,7 +65,14 @@ export function isValidAuth(
   secret: string,
 ): boolean {
   if (!header) return false;
-  return header === `Bearer ${secret}`;
+  const expected = `Bearer ${secret}`;
+  const headerBuf = Buffer.from(header);
+  const expectedBuf = Buffer.from(expected);
+  // timingSafeEqual throws on mismatched lengths, so this check has
+  // to happen first. It leaks length, not content, the same tradeoff
+  // every constant-time string comparison makes.
+  if (headerBuf.length !== expectedBuf.length) return false;
+  return timingSafeEqual(headerBuf, expectedBuf);
 }
 
 /**

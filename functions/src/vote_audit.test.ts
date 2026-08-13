@@ -60,7 +60,7 @@ describe("vote audit trail", () => {
   });
 
   test("a vote create writes exactly one event", async () => {
-    await recordVoteCreated(db, "evt-create-1", "hou-1", "alice");
+    await recordVoteCreated(db, "evt-create-1", "hou-1", "alice", 1);
 
     const snap = await db.collection("voteEvents").get();
     expect(snap.size).toBe(1);
@@ -71,11 +71,24 @@ describe("vote audit trail", () => {
     expect(data.userId).toBe("alice");
     expect(data.restaurantId).toBe("hou-1");
     expect(data.cityId).toBe("houston");
+    expect(data.weight).toBe(1);
     expect(data.occurredAt).toBeDefined();
     expect(snap.docs[0].id).toBe("evt-create-1");
   });
 
-  test("a delete writes one event, captures voteCreatedAt", async () => {
+  // eslint-disable-next-line max-len
+  test("a create records the weight it was given, not a hardcoded 1", async () => {
+    await recordVoteCreated(db, "evt-create-weighted", "hou-1", "alice", 3);
+
+    const snap = await db
+      .collection("voteEvents")
+      .doc("evt-create-weighted")
+      .get();
+    expect(snap.data()?.weight).toBe(3);
+  });
+
+  // eslint-disable-next-line max-len
+  test("a delete writes one event, captures voteCreatedAt and weight", async () => {
     const originalCreatedAt = Timestamp.now();
 
     await recordVoteDeleted(
@@ -83,7 +96,8 @@ describe("vote audit trail", () => {
       "evt-delete-1",
       "hou-1",
       "alice",
-      originalCreatedAt
+      originalCreatedAt,
+      1
     );
 
     const snap = await db.collection("voteEvents").get();
@@ -95,21 +109,22 @@ describe("vote audit trail", () => {
     expect(data.userId).toBe("alice");
     expect(data.restaurantId).toBe("hou-1");
     expect(data.cityId).toBe("houston");
+    expect(data.weight).toBe(1);
     expect(data.voteCreatedAt).toBeDefined();
     expect(data.voteCreatedAt.toMillis())
       .toBe(originalCreatedAt.toMillis());
   });
 
   test("a delete with no createdAt records voteCreatedAt null", async () => {
-    await recordVoteDeleted(db, "evt-delete-2", "hou-1", "alice", null);
+    await recordVoteDeleted(db, "evt-delete-2", "hou-1", "alice", null, 1);
 
     const snap = await db.collection("voteEvents").doc("evt-delete-2").get();
     expect(snap.data()?.voteCreatedAt).toBeNull();
   });
 
   test("a duplicate eventId does not produce two records", async () => {
-    await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice");
-    await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice");
+    await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice", 1);
+    await recordVoteCreated(db, "evt-dup-1", "hou-1", "alice", 1);
 
     const snap = await db.collection("voteEvents").get();
     expect(snap.size).toBe(1);
@@ -120,7 +135,8 @@ describe("vote audit trail", () => {
       db,
       "evt-orphan-1",
       "nonexistent-restaurant",
-      "alice"
+      "alice",
+      1
     );
 
     const snap = await db.collection("voteEvents").doc("evt-orphan-1").get();

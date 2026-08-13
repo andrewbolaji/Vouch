@@ -49,12 +49,17 @@ async function lookupCityId(
  * @param {string} eventId Firestore event id, used as the doc id.
  * @param {string} restaurantId The restaurant doc ID.
  * @param {string} userId The voter's uid.
+ * @param {number} weight The weight field off the vote document that
+ *   triggered this event. Every vote is weight 1 today, but the
+ *   ranking engine's decay formula needs this to ever rebuild a
+ *   score from voteEvents once that stops being true.
  */
 export async function recordVoteCreated(
   db: FirebaseFirestore.Firestore,
   eventId: string,
   restaurantId: string,
-  userId: string
+  userId: string,
+  weight: number
 ): Promise<void> {
   const cityId = await lookupCityId(db, restaurantId);
   await db.collection("voteEvents").doc(eventId).set({
@@ -63,6 +68,7 @@ export async function recordVoteCreated(
     userId,
     restaurantId,
     cityId,
+    weight,
     occurredAt: FieldValue.serverTimestamp(),
   });
 }
@@ -75,13 +81,16 @@ export async function recordVoteCreated(
  * @param {string} userId The voter's uid.
  * @param {Timestamp | null} voteCreatedAt The createdAt field off the
  *   vote document being deleted, so we know how long it existed.
+ * @param {number} weight The weight field off the vote document being
+ *   deleted.
  */
 export async function recordVoteDeleted(
   db: FirebaseFirestore.Firestore,
   eventId: string,
   restaurantId: string,
   userId: string,
-  voteCreatedAt: Timestamp | null
+  voteCreatedAt: Timestamp | null,
+  weight: number
 ): Promise<void> {
   const cityId = await lookupCityId(db, restaurantId);
   await db.collection("voteEvents").doc(eventId).set({
@@ -90,6 +99,7 @@ export async function recordVoteDeleted(
     userId,
     restaurantId,
     cityId,
+    weight,
     occurredAt: FieldValue.serverTimestamp(),
     voteCreatedAt: voteCreatedAt ?? null,
   });
