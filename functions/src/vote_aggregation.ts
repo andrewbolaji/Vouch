@@ -70,6 +70,17 @@ export async function applyVoteDeleted(
  * the same failure mode the restaurant aggregation guards above
  * were added for.
  *
+ * id is written alongside it, and is not redundant. Nothing requires
+ * the profile document to exist before a vote: the vote create rule
+ * checks ownership, email verification, weight and timestamp only,
+ * and ensureUserDoc's one caller swallows its own failures. A
+ * profile this trigger creates with votedRestaurantIds but no id
+ * would fail firestore.rules' id comparison on every subsequent
+ * client update, locking the owner out of their own document
+ * permanently. The rule now tolerates a missing id as well, so this
+ * is the belt to that braces: this stops the malformed document
+ * being written, the rule stops an existing one being fatal.
+ *
  * arrayUnion is idempotent under redelivery, so an at-least-once
  * retry cannot double-add. It is NOT order-independent, and
  * Firestore trigger delivery is unordered: a fast vote then unvote
@@ -88,7 +99,7 @@ export async function addVotedRestaurant(
   restaurantId: string
 ): Promise<void> {
   await db.collection("users").doc(userId).set(
-    {votedRestaurantIds: FieldValue.arrayUnion(restaurantId)},
+    {id: userId, votedRestaurantIds: FieldValue.arrayUnion(restaurantId)},
     {merge: true}
   );
   logger.info(
@@ -113,7 +124,7 @@ export async function removeVotedRestaurant(
   restaurantId: string
 ): Promise<void> {
   await db.collection("users").doc(userId).set(
-    {votedRestaurantIds: FieldValue.arrayRemove(restaurantId)},
+    {id: userId, votedRestaurantIds: FieldValue.arrayRemove(restaurantId)},
     {merge: true}
   );
   logger.info(

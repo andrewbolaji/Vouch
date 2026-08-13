@@ -734,6 +734,43 @@ describe("users", () => {
     );
   });
 
+  // A vote can be cast before the profile document exists: the vote
+  // create rule checks isOwner, isEmailVerified, weight and
+  // createdAt, and never looks at users/{uid}. When that happens the
+  // onVoteCreated trigger's set(..., merge) creates the profile with
+  // votedRestaurantIds and nothing else. If the update rule compares
+  // request.resource.data.id to resource.data.id on such a document,
+  // the missing field denies every future update the owner makes,
+  // permanently: they cannot add the id, because adding it is itself
+  // an update that has to pass the same clause, and ensureUserDoc
+  // takes its doc-exists branch and is denied too.
+  test("a profile with no id field does not lock its owner out", async () => {
+    await seedAsAdmin("users/alice", {
+      votedRestaurantIds: ["hou-1"],
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users/alice"), {
+        displayName: "Alice",
+      })
+    );
+  });
+
+  // The id immutability the clause exists for must survive the
+  // tolerant form: an owner still cannot drop or change it.
+  test("DENIED: dropping an existing id field on update", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "users/alice"), {
+        displayName: "Alice Updated",
+      })
+    );
+  });
+
   // The lock above must not turn into a blanket write freeze on the
   // rest of the document.
   test("unrelated update still succeeds alongside the vote lock", async () => {

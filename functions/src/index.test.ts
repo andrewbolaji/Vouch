@@ -169,6 +169,39 @@ describe("votedRestaurantIds list (real function bodies)", () => {
     expect(snap.data()?.votedRestaurantIds).toEqual(["hou-1"]);
   });
 
+  // Nothing requires the profile to exist before a vote, so this
+  // trigger can be what creates it. A profile created without id
+  // fails firestore.rules' id comparison on every later client
+  // update, locking the owner out of their own document for good.
+  // eslint-disable-next-line max-len
+  test("addVotedRestaurant writes id, so the profile it creates is not locked out", async () => {
+    await addVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.id).toBe("alice");
+  });
+
+  // eslint-disable-next-line max-len
+  test("removeVotedRestaurant writes id for the same reason", async () => {
+    await removeVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.id).toBe("alice");
+  });
+
+  test("id is not clobbered on an existing profile", async () => {
+    await db.collection("users").doc("alice").set({
+      id: "alice",
+      displayName: "Alice",
+    });
+
+    await addVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.id).toBe("alice");
+    expect(data?.displayName).toBe("Alice");
+  });
+
   test("addVotedRestaurant preserves other fields on the doc", async () => {
     await db.collection("users").doc("alice").set({
       id: "alice",
