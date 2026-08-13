@@ -124,6 +124,18 @@ describe("Vote aggregation (real function bodies)", () => {
     const snap = await db.collection("restaurants").doc("hou-1").get();
     expect(snap.data()?.voteCount).toBe(100);
   });
+
+  // onRestaurantDeleted (restaurant_cleanup.ts) deletes a restaurant's
+  // votes after the restaurant doc itself is already gone, that is
+  // what onDocumentDeleted means. Those deletes fire this same
+  // onVoteDeleted trigger, whose body is applyVoteDeleted, against a
+  // restaurantId with no restaurant document left to update.
+  // eslint-disable-next-line max-len
+  test("applyVoteDeleted does not throw when the restaurant doc is already gone", async () => {
+    await expect(
+      applyVoteDeleted(db, "restaurant-that-no-longer-exists")
+    ).resolves.toBeUndefined();
+  });
 });
 
 // ================================================================
@@ -180,6 +192,17 @@ describe("Comment aggregation (real function bodies)", () => {
 
     const snap = await db.collection("restaurants").doc("hou-1").get();
     expect(snap.data()?.commentCount).toBe(5);
+  });
+
+  // Same mechanism as applyVoteDeleted's equivalent test above:
+  // onRestaurantDeleted's own cleanup deletes comments after the
+  // restaurant doc is already gone, which fires this trigger's body
+  // against a restaurantId with nothing left to update.
+  // eslint-disable-next-line max-len
+  test("applyCommentDeleted does not throw when the restaurant doc is already gone", async () => {
+    await expect(
+      applyCommentDeleted(db, "restaurant-that-no-longer-exists")
+    ).resolves.toBeUndefined();
   });
 });
 

@@ -9,6 +9,7 @@ import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/repositories/city_repository.dart';
 import 'package:vouch/repositories/comment_repository.dart';
 import 'package:vouch/repositories/restaurant_repository.dart';
+import 'package:vouch/repositories/vote_repository.dart';
 import 'package:vouch/services/auth_service.dart';
 
 /// Stands in for FirebaseAuth in CommentRepository test doubles that
@@ -179,6 +180,46 @@ class FakeSubmitCommentRepository extends CommentRepository {
       );
 }
 
+/// VoteRepository whose vote/unvote always fail, for testing that
+/// toggleVote rolls its optimistic update back on a real write
+/// failure.
+class ThrowingVoteRepository extends VoteRepository {
+  ThrowingVoteRepository() : super(firestore: FakeFirebaseFirestore());
+
+  @override
+  Future<void> vote(String restaurantId, String userId) =>
+      throw Exception('Simulated network failure');
+
+  @override
+  Future<void> unvote(String restaurantId, String userId) =>
+      throw Exception('Simulated network failure');
+}
+
+/// VoteRepository backed by a fixed, pre-programmed set of voted
+/// restaurant IDs, for testing AppState's server reconciliation on
+/// sign-in without a real Firestore round trip. vote/unvote succeed
+/// as no-ops; this double only needs to prove what AppState does
+/// with hasVoted's answer, not exercise the write path.
+class StubVoteRepository extends VoteRepository {
+  StubVoteRepository(this._serverVotedIds)
+      : super(firestore: FakeFirebaseFirestore());
+
+  final Set<String> _serverVotedIds;
+  final List<String> hasVotedCalls = [];
+
+  @override
+  Future<bool> hasVoted(String restaurantId, String userId) async {
+    hasVotedCalls.add(restaurantId);
+    return _serverVotedIds.contains(restaurantId);
+  }
+
+  @override
+  Future<void> vote(String restaurantId, String userId) async {}
+
+  @override
+  Future<void> unvote(String restaurantId, String userId) async {}
+}
+
 void main() {
   group('AppState', () {
     setUp(() {
@@ -250,14 +291,14 @@ void main() {
       final before = state.restaurantById('hou-1')!.voteCount;
       expect(state.hasVoted('hou-1'), isFalse);
 
-      state.toggleVote('hou-1', userId: 'test-user');
+      await state.toggleVote('hou-1', userId: 'test-user');
       expect(state.hasVoted('hou-1'), isTrue);
       expect(
         state.restaurantById('hou-1')!.voteCount,
         before + 1,
       );
 
-      state.toggleVote('hou-1', userId: 'test-user');
+      await state.toggleVote('hou-1', userId: 'test-user');
       expect(state.hasVoted('hou-1'), isFalse);
       expect(
         state.restaurantById('hou-1')!.voteCount,
@@ -272,7 +313,7 @@ void main() {
       );
 
       // Should not throw
-      state.toggleVote('nonexistent', userId: 'test-user');
+      await state.toggleVote('nonexistent', userId: 'test-user');
       expect(state.hasVoted('nonexistent'), isFalse);
     });
 
@@ -289,6 +330,151 @@ void main() {
       expect(state.hasVoted('hou-1'), isTrue);
       expect(state.hasVoted('nyc-1'), isTrue);
       expect(state.hasVoted('hou-11'), isFalse);
+    });
+
+    test(
+        'toggleVote awaits the write and rolls back local state on '
+        'failure', () async {
+      const restaurant = Restaurant(
+        id: 'hou-1',
+        cityId: 'test-city',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: '',
+        description: '',
+        rank: 1,
+      );
+      final state = AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurant),
+        voteRepo: ThrowingVoteRepository(),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      final before = state.restaurantById('hou-1')!.voteCount;
+      expect(state.hasVoted('hou-1'), isFalse);
+
+      // Rethrows: the caller (the screen) is meant to catch this and
+      // show it, the same contract addComment already has.
+      await expectLater(
+        state.toggleVote('hou-1', userId: 'test-user'),
+        throwsException,
+      );
+
+      // Rolled back: a failed write must not leave the optimistic
+      // flip in place.
+      expect(state.hasVoted('hou-1'), isFalse);
+      expect(state.restaurantById('hou-1')!.voteCount, before);
+    });
+
+    test(
+        'toggleVote rolls back an unvote the same way when the delete '
+        'fails', () async {
+      SharedPreferences.setMockInitialValues({
+        'voted_restaurant_ids': ['hou-1'],
+      });
+      const restaurant = Restaurant(
+        id: 'hou-1',
+        cityId: 'test-city',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: '',
+        description: '',
+        rank: 1,
+        voteCount: 10,
+      );
+      final state = AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurant),
+        voteRepo: ThrowingVoteRepository(),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      expect(state.hasVoted('hou-1'), isTrue);
+      final before = state.restaurantById('hou-1')!.voteCount;
+
+      await expectLater(
+        state.toggleVote('hou-1', userId: 'test-user'),
+        throwsException,
+      );
+
+      expect(state.hasVoted('hou-1'), isTrue);
+      expect(state.restaurantById('hou-1')!.voteCount, before);
+    });
+
+    test(
+        'reconciles local votes against the server when a user signs '
+        'in', () async {
+      const restaurantA = Restaurant(
+        id: 'hou-1',
+        cityId: 'test-city',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: '',
+        description: '',
+        rank: 1,
+      );
+      // Local state (e.g. left over from a previous, different
+      // signed-in user on this device) claims hou-1 is voted. The
+      // server disagrees: it has no vote for this user at all. A new
+      // device / new sign-in must end up matching the server, not
+      // keeping whatever was here before.
+      SharedPreferences.setMockInitialValues({
+        'voted_restaurant_ids': ['hou-1'],
+      });
+      final auth = AuthService.mock();
+      final voteRepo = StubVoteRepository({});
+      final state = AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurantA),
+        voteRepo: voteRepo,
+        authService: auth,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      // Confirms local state before reconciliation, so the assertion
+      // below is proven to be a real change, not a coincidence.
+      expect(state.hasVoted('hou-1'), isTrue);
+
+      auth.setMockUser(
+        const AuthUser(uid: 'real-user', emailVerified: true),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(voteRepo.hasVotedCalls, contains('hou-1'));
+      expect(state.hasVoted('hou-1'), isFalse);
+    });
+
+    test(
+        'reconciles from the server on cold start when already signed '
+        'in', () async {
+      const restaurant = Restaurant(
+        id: 'hou-1',
+        cityId: 'test-city',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: '',
+        description: '',
+        rank: 1,
+      );
+      final auth = AuthService.mock(
+        initialUser: const AuthUser(uid: 'real-user', emailVerified: true),
+      );
+      final voteRepo = StubVoteRepository({'hou-1'});
+      final state = AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurant),
+        voteRepo: voteRepo,
+        authService: auth,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      expect(voteRepo.hasVotedCalls, contains('hou-1'));
+      expect(state.hasVoted('hou-1'), isTrue);
     });
 
     test('setSearchQuery filters cities', () async {

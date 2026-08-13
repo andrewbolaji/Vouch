@@ -10,11 +10,19 @@ class VoteButton extends StatefulWidget {
     required this.voteCount,
     required this.hasVoted,
     required this.onTap,
+    this.isVoting = false,
     super.key,
   });
   final int voteCount;
   final bool hasVoted;
   final VoidCallback onTap;
+
+  /// True while a vote write is in flight. Dims the button and
+  /// ignores taps, so a second tap mid-write cannot fire a second,
+  /// overlapping write, and so a vote that later fails is never seen
+  /// as an instantly, permanently filled-in button, it visibly
+  /// settles once the write actually confirms or fails.
+  final bool isVoting;
 
   @override
   State<VoteButton> createState() => _VoteButtonState();
@@ -45,6 +53,7 @@ class _VoteButtonState extends State<VoteButton>
   }
 
   void _handleTap() {
+    if (widget.isVoting) return;
     unawaited(_controller.forward().then((_) => _controller.reverse()));
     widget.onTap();
   }
@@ -61,35 +70,43 @@ class _VoteButtonState extends State<VoteButton>
           : 'Vote, ${widget.voteCount} votes',
       child: GestureDetector(
         onTap: _handleTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingMd,
-            vertical: AppTheme.spacingSm,
-          ),
-          decoration: BoxDecoration(
-            color: voted
-                ? AppTheme.accent.withValues(alpha: 0.15)
-                : AppTheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-            border: Border.all(
-              color: voted ? AppTheme.accent : AppTheme.divider,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: widget.isVoting ? 0.5 : 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacingMd,
+              vertical: AppTheme.spacingSm,
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: Icon(Icons.arrow_upward_rounded, color: color, size: 18),
+            decoration: BoxDecoration(
+              color: voted
+                  ? AppTheme.accent.withValues(alpha: 0.15)
+                  : AppTheme.surfaceVariant,
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              border: Border.all(
+                color: voted ? AppTheme.accent : AppTheme.divider,
               ),
-              const SizedBox(
-                width: AppTheme.spacingXsSm,
-              ),
-              Text(
-                formatCount(widget.voteCount),
-                style: AppTheme.labelLarge.copyWith(color: color),
-              ),
-            ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Icon(
+                    Icons.arrow_upward_rounded,
+                    color: color,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(
+                  width: AppTheme.spacingXsSm,
+                ),
+                Text(
+                  formatCount(widget.voteCount),
+                  style: AppTheme.labelLarge.copyWith(color: color),
+                ),
+              ],
+            ),
           ),
         ),
       ),

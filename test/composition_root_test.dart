@@ -99,7 +99,7 @@ void main() {
             'write side',
       );
 
-      appState.toggleVote('hou-1', userId: 'test-uid');
+      await appState.toggleVote('hou-1', userId: 'test-uid');
 
       // toggleVote's Firestore write is fire-and-forget
       // (unawaited(_voteRepo.vote(...))); give it a few turns of the

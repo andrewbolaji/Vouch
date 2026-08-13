@@ -8,6 +8,7 @@ import 'package:vouch/data/seed_data.dart';
 import 'package:vouch/models/models.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/repositories/repositories.dart';
+import 'package:vouch/services/auth_service.dart';
 
 const bool kUseFirebase = true;
 
@@ -70,14 +71,17 @@ class AppState extends ChangeNotifier {
     bool? useFirebase,
     bool isPaidTier = false,
     MembershipProvider? membershipProvider,
+    AuthService? authService,
   })  : _cityRepo = cityRepo,
         _restaurantRepo = restaurantRepo,
         _commentRepo = commentRepo,
         _voteRepo = voteRepo,
         _useFirebase = useFirebase ?? kUseFirebase,
         _isPaidTier = isPaidTier,
-        _membershipProvider = membershipProvider {
+        _membershipProvider = membershipProvider,
+        _authService = authService {
     _membershipProvider?.addListener(_onMembershipChanged);
+    _authService?.addListener(_onAuthChanged);
     unawaited(_loadData());
   }
 
@@ -87,7 +91,14 @@ class AppState extends ChangeNotifier {
   final VoteRepository? _voteRepo;
   final bool _useFirebase;
   final MembershipProvider? _membershipProvider;
+  final AuthService? _authService;
   bool _isPaidTier;
+
+  // The uid votes were last reconciled against. Null means either
+  // signed out, or never reconciled this session. Guards against
+  // reconciling the same user's votes on every unrelated
+  // notifyListeners() tick from AuthService.
+  String? _reconciledVotesUid;
 
   static const String _votedKey = 'voted_restaurant_ids';
   static final DateTime _seedDate = DateTime(2026, 4, 27);
@@ -333,9 +344,70 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Reconciles local vote state against the server whenever a new
+  /// user becomes signed in, so a returning user on a new device
+  /// sees their real votes instead of an empty local cache, and a
+  /// user whose write once failed and rolled back does not keep
+  /// seeing a vote that Firestore does not have.
+  ///
+  /// Only fires on an actual uid change, not every AuthService
+  /// notification (loading-state flips, token refreshes), and only
+  /// once restaurants have loaded, since reconciliation has nothing
+  /// to check votes against before then. The post-load case (already
+  /// signed in when AppState is constructed) is handled at the end of
+  /// _loadData instead, since this listener only sees changes, not
+  /// the initial state.
+  void _onAuthChanged() {
+    final uid = _authService?.currentUser?.uid;
+    if (uid == null) {
+      _reconciledVotesUid = null;
+      return;
+    }
+    if (uid == _reconciledVotesUid || _isLoading) return;
+    _reconciledVotesUid = uid;
+    unawaited(_reconcileVotesFromServer(uid));
+  }
+
+  /// Replaces local vote state with what the server actually has for
+  /// [userId], across every currently loaded restaurant. Server
+  /// authoritative, matching how SavedProvider treats saved
+  /// restaurants on sign-in (docs/DECISIONS.md, 2026-06-07): replace,
+  /// not merge, so a vote removed on another device or rolled back
+  /// after a failed write does not survive here.
+  ///
+  /// Only ever GETs a single restaurant/{id}/votes/{userId} doc per
+  /// restaurant, the caller's own doc, never a list query.
+  /// firestore.rules denies list on this subcollection outright,
+  /// scoped get to isOwner(userId) only.
+  Future<void> _reconcileVotesFromServer(String userId) async {
+    if (_voteRepo == null) return;
+    try {
+      final voteRepo = _voteRepo;
+      final results = await Future.wait(
+        _restaurants.map((r) async {
+          final voted = await voteRepo.hasVoted(r.id, userId);
+          return voted ? r.id : null;
+        }),
+      );
+      final serverVoted = results.whereType<String>().toSet();
+      _votedRestaurantIds
+        ..clear()
+        ..addAll(serverVoted);
+      unawaited(_saveVotes());
+      notifyListeners();
+    } on Exception catch (e, stack) {
+      debugPrint('AppState: failed to reconcile votes from server: $e');
+      _recordError('_reconcileVotesFromServer', e, stack);
+      // Leave local state as-is. A failed reconciliation should not
+      // wipe out what the user already sees; only a successful one
+      // replaces it.
+    }
+  }
+
   @override
   void dispose() {
     _membershipProvider?.removeListener(_onMembershipChanged);
+    _authService?.removeListener(_onAuthChanged);
     super.dispose();
   }
 
@@ -349,33 +421,77 @@ class AppState extends ChangeNotifier {
   ///
   /// [userId] must be the signed-in user's UID. The caller is
   /// responsible for gating on sign-in state before calling this.
-  void toggleVote(String restaurantId, {required String userId}) {
+  ///
+  /// Flips local state immediately (optimistic, so the button
+  /// responds without waiting on the network), then awaits the
+  /// Firestore write. If that write fails, the optimistic flip is
+  /// rolled back, so _votedRestaurantIds and SharedPreferences can
+  /// never disagree with what Firestore actually has, and rethrows
+  /// so the caller can show it: a failed vote must not leave the
+  /// button filled in, matching how addComment already treats a
+  /// failed write as the caller's problem to surface, not something
+  /// to swallow here.
+  Future<void> toggleVote(
+    String restaurantId, {
+    required String userId,
+  }) async {
     final index = _restaurants.indexWhere(
       (r) => r.id == restaurantId,
     );
     if (index == -1) return;
 
     final restaurant = _restaurants[index];
-    if (_votedRestaurantIds.contains(restaurantId)) {
+    final wasVoted = _votedRestaurantIds.contains(restaurantId);
+
+    if (wasVoted) {
       _votedRestaurantIds.remove(restaurantId);
       _restaurants[index] = restaurant.copyWith(
         voteCount: restaurant.voteCount - 1,
       );
-      if (_useFirebase && _voteRepo != null) {
-        unawaited(_voteRepo.unvote(restaurantId, userId));
-      }
     } else {
       _votedRestaurantIds.add(restaurantId);
       _restaurants[index] = restaurant.copyWith(
         voteCount: restaurant.voteCount + 1,
       );
       unawaited(HapticFeedback.lightImpact());
-      if (_useFirebase && _voteRepo != null) {
-        unawaited(_voteRepo.vote(restaurantId, userId));
-      }
     }
     notifyListeners();
     unawaited(_saveVotes());
+
+    if (!_useFirebase || _voteRepo == null) return;
+
+    try {
+      if (wasVoted) {
+        await _voteRepo.unvote(restaurantId, userId);
+      } else {
+        await _voteRepo.vote(restaurantId, userId);
+      }
+    } on Exception catch (e, stack) {
+      // Roll back. Re-look-up the index: _restaurants may have been
+      // replaced by a refresh() while this write was in flight.
+      final currentIndex = _restaurants.indexWhere(
+        (r) => r.id == restaurantId,
+      );
+      if (wasVoted) {
+        _votedRestaurantIds.add(restaurantId);
+        if (currentIndex != -1) {
+          _restaurants[currentIndex] = _restaurants[currentIndex].copyWith(
+            voteCount: _restaurants[currentIndex].voteCount + 1,
+          );
+        }
+      } else {
+        _votedRestaurantIds.remove(restaurantId);
+        if (currentIndex != -1) {
+          _restaurants[currentIndex] = _restaurants[currentIndex].copyWith(
+            voteCount: _restaurants[currentIndex].voteCount - 1,
+          );
+        }
+      }
+      notifyListeners();
+      unawaited(_saveVotes());
+      _recordError('toggleVote', e, stack);
+      rethrow;
+    }
   }
 
   Future<void> _saveVotes() async {
@@ -530,6 +646,16 @@ class AppState extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+
+    // Covers the cold-start case: already signed in when AppState is
+    // constructed, so _onAuthChanged's listener never fires (nothing
+    // changed, the app just started). _onAuthChanged covers signing
+    // in during a session that started signed out.
+    final uid = _authService?.currentUser?.uid;
+    if (_useFirebase && uid != null && uid != _reconciledVotesUid) {
+      _reconciledVotesUid = uid;
+      unawaited(_reconcileVotesFromServer(uid));
+    }
   }
 
   Future<void> _loadFromFirestore() async {

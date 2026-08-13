@@ -88,6 +88,7 @@ class VouchApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AppState(
             membershipProvider: membershipProvider,
+            authService: authService,
             cityRepo: CityRepository(firestore: firestoreOverride),
             restaurantRepo: RestaurantRepository(
               firestore: firestoreOverride,

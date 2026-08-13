@@ -362,13 +362,42 @@ describe("votes", () => {
     );
   });
 
-  test("authenticated user can read a vote doc (hasVoted check)", async () => {
+  test("user can get their own vote doc (hasVoted check)", async () => {
+    await seedAsAdmin("restaurants/hou-1/votes/alice", {
+      createdAt: new Date(),
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      getDoc(doc(db, "restaurants/hou-1/votes/alice"))
+    );
+  });
+
+  // Was previously allowed, justified by a code comment saying
+  // "Reads allowed so clients can check hasVoted via a single doc
+  // get." That justification did not match the app: AppState's real
+  // hasVoted read local SharedPreferences-backed state only, never
+  // this path, so nothing in the app actually needed one user to
+  // read another user's vote. Fixed 2026-08-13.
+  test("DENIED: authenticated user cannot get another user's vote doc", async () => {
     await seedAsAdmin("restaurants/hou-1/votes/alice", {
       createdAt: new Date(),
     });
     const db = freeUser("bob").firestore();
-    await assertSucceeds(
+    await assertFails(
       getDoc(doc(db, "restaurants/hou-1/votes/alice"))
+    );
+  });
+
+  test("DENIED: authenticated user cannot list the votes collection", async () => {
+    await seedAsAdmin("restaurants/hou-1/votes/alice", {
+      createdAt: new Date(),
+    });
+    await seedAsAdmin("restaurants/hou-1/votes/bob", {
+      createdAt: new Date(),
+    });
+    const db = freeUser("bob").firestore();
+    await assertFails(
+      getDocs(collection(db, "restaurants/hou-1/votes"))
     );
   });
 

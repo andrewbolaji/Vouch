@@ -64,11 +64,19 @@ service cloud.firestore {
       //
       // Users can create and delete their own vote doc only.
       // No updates allowed.
-      // Reads allowed so clients can check hasVoted via
-      // a single doc get.
+      //
+      // get is scoped to the caller's own doc, so a client can
+      // check its own hasVoted via a single doc get. list is
+      // denied outright: nothing in the app enumerates other
+      // users' votes for a restaurant, and a prior version of
+      // this rule allowed any authenticated user to get any
+      // other user's vote doc, justified by a hasVoted check
+      // the app never actually performed that way (AppState's
+      // real hasVoted read local state only). Fixed 2026-08-13.
       // ---------------------------------------------------
       match /votes/{userId} {
-        allow read: if isAuthenticated();
+        allow get: if isOwner(userId);
+        allow list: if false;
         allow create: if isOwner(userId)
           && isEmailVerified()
           && request.resource.data.weight == 1

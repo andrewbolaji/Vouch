@@ -7,6 +7,7 @@ import 'package:vouch/core/error/app_exception.dart';
 import 'package:vouch/core/utils/block_filter.dart';
 import 'package:vouch/core/utils/format_utils.dart';
 import 'package:vouch/models/comment.dart';
+import 'package:vouch/models/restaurant.dart';
 import 'package:vouch/providers/app_state.dart';
 import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/providers/report_provider.dart';
@@ -46,6 +47,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   String? _replyingToId;
   String? _replyingToUserName;
   bool _isSubmittingComment = false;
+  bool _isVoting = false;
   Set<String> _blockedUserIds = {};
 
   UserRepository get _userRepo {
@@ -91,6 +93,57 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  /// Handles a vote button tap: sign-in redirect, then an optimistic
+  /// toggle that awaits Firestore and shows an error if it fails.
+  ///
+  /// _isVoting disables the button and dims it while the write is in
+  /// flight, the same treatment _isSubmittingComment already gives
+  /// comment submission, so a second tap mid-write cannot fire a
+  /// second, overlapping write. On failure, AppState.toggleVote has
+  /// already rolled its own optimistic state back by the time this
+  /// catch runs, so the button reflects the true (unvoted, or still
+  /// voted) state and a SnackBar explains why, matching how a
+  /// rejected comment is surfaced. A failed vote never leaves the
+  /// button filled in.
+  Future<void> _handleVoteTap({
+    required AppState appState,
+    required AuthService auth,
+    required Restaurant restaurant,
+    required bool wasVoted,
+  }) async {
+    final uid = auth.currentUser?.uid;
+    if (uid == null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
+      );
+      return;
+    }
+    if (_isVoting) return;
+
+    setState(() => _isVoting = true);
+    try {
+      await appState.toggleVote(restaurant.id, userId: uid);
+      if (!mounted) return;
+      final isAdding = !wasVoted;
+      if (isAdding) {
+        context.read<AnalyticsService>().logVoteCast(
+              restaurantId: restaurant.id,
+              cityId: restaurant.cityId,
+            );
+      }
+    } on Exception catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Could not save your vote. Try again.'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isVoting = false);
+    }
   }
 
   @override
@@ -239,28 +292,13 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       VoteButton(
                         voteCount: restaurant.voteCount,
                         hasVoted: hasVoted,
-                        onTap: () {
-                          final uid = auth.currentUser?.uid;
-                          if (uid == null) {
-                            unawaited(Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const SignInScreen(),
-                              ),
-                            ));
-                            return;
-                          }
-                          final isAdding = !hasVoted;
-                          appState.toggleVote(
-                            widget.restaurantId,
-                            userId: uid,
-                          );
-                          if (isAdding) {
-                            context.read<AnalyticsService>().logVoteCast(
-                              restaurantId: widget.restaurantId,
-                              cityId: restaurant.cityId,
-                            );
-                          }
-                        },
+                        isVoting: _isVoting,
+                        onTap: () => unawaited(_handleVoteTap(
+                          appState: appState,
+                          auth: auth,
+                          restaurant: restaurant,
+                          wasVoted: hasVoted,
+                        )),
                       ),
                       const SizedBox(width: AppTheme.spacingSm),
                       _CommentActionButton(
