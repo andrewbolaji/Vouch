@@ -46,6 +46,66 @@ how many votes the city has cast, not by how long the city has been
 open. A city nobody has voted in has learned nothing, and waiting
 does not change that.
 
+## Two correctness properties, confirmed
+
+Both are invisible if right and fatal if wrong, so they are recorded
+here rather than assumed.
+
+### The baseline derives from `displayOrder`, never from live `rank`
+
+**Confirmed.** `positionValue` below takes `displayOrder` and nothing
+else. `rank` is never read as an input to the baseline anywhere in
+this design.
+
+This is not a preference. `rank` is the **output** of the computation
+the baseline feeds. Deriving the baseline from current `rank` would
+mean the baseline that produced today's order becomes an input to
+tomorrow's, which is positive feedback: the order locks itself in,
+votes can never dislodge it, and the only thing that ever releases it
+is the decay. A restaurant that rose on real votes would then be
+defended by a baseline it earned by rising, which is precisely
+backwards.
+
+`displayOrder` is safe to read because nothing in the pipeline writes
+it. It is set once by the launch-order scripts and read thereafter.
+`rank_recompute.ts` writes `rank`, `rankScore` and `voteCount`, and
+must never be extended to write `displayOrder`.
+
+### The baseline weight is monotonically non-increasing
+
+**Required, with a test.** `baselineWeight` must never rise between
+two runs of the same city.
+
+Driving decay from lifetime city votes gives this for free, because
+that count only grows. But "for free" is exactly how the
+composition-root class of bug gets in: the property holds because of
+something two layers away, nobody asserts it, and then somebody
+changes the something. A weight that can rise is a list that
+un-learns, and it must be impossible rather than merely unlikely.
+
+The test is a property test over the pure function, not an
+integration test:
+
+```ts
+// baselineWeight must never increase as votes accumulate.
+test("baseline weight is monotonically non-increasing", () => {
+  let previous = Infinity;
+  for (let votes = 0; votes <= 1000; votes++) {
+    const w = baselineWeight(votes, 10);
+    expect(w).toBeLessThanOrEqual(previous);
+    expect(w).toBeGreaterThanOrEqual(0);
+    previous = w;
+  }
+  expect(baselineWeight(200, 10)).toBe(0);
+  expect(baselineWeight(10_000, 10)).toBe(0);
+});
+```
+
+The clamp at zero is asserted in the same test because
+`1 - votes/expiry` goes negative past expiry, and a negative baseline
+would actively penalise a curated restaurant for its position, which
+is the opposite of the intent and would be very hard to notice.
+
 ## The constants
 
 ```ts
@@ -55,10 +115,14 @@ does not change that.
  * Deliberately expressed as "how many fresh votes does it take to
  * move one place," because that is the sentence the product has to
  * be able to say out loud. A fresh vote is worth exactly 1.0
- * (computeScore, age 0), so a step of 1.0 means one place costs one
- * vote.
+ * (computeScore, age 0), so a step of 2.0 means one place costs two.
+ *
+ * Set to 2.0 rather than 1.0 on manipulation cost, not on feel. At
+ * 1.0, nine friends buys rank 1 on launch day. At 2.0 it is
+ * seventeen. See "Constant 1" below for the full table, including why
+ * 3.0 is rejected.
  */
-export const BASELINE_STEP = 1.0;
+export const BASELINE_STEP = 2.0;
 
 /**
  * City votes per restaurant at which the baseline reaches zero.
@@ -95,33 +159,31 @@ named under Properties below.
 
 ## Worked numbers, Houston, n = 10, expiry = 200
 
-| cityVotes | weight | rank 1 baseline | rank 5 | rank 10 |
-|---|---|---|---|---|
-| 0 | (guard fires, see below) | | | |
-| 20 | 0.90 | 9.00 | 5.40 | 0.90 |
-| 50 | 0.75 | 7.50 | 4.50 | 0.75 |
-| 100 | 0.50 | 5.00 | 3.00 | 0.50 |
-| 180 | 0.10 | 1.00 | 0.60 | 0.10 |
-| **200** | **0.00** | **0.00** | **0.00** | **0.00** |
+At `BASELINE_STEP = 2.0`:
+
+| cityVotes | weight | rank 1 baseline | rank 5 | rank 10 | one place costs |
+|---|---|---|---|---|---|
+| 0 | (guard fires, see below) | | | | |
+| 20 | 0.90 | 18.00 | 10.80 | 1.80 | 1.80 |
+| 50 | 0.75 | 15.00 | 9.00 | 1.50 | 1.50 |
+| 100 | 0.50 | 10.00 | 6.00 | 1.00 | 1.00 |
+| 180 | 0.10 | 2.00 | 1.20 | 0.20 | 0.20 |
+| **200** | **0.00** | **0.00** | **0.00** | **0.00** | **0.00** |
 
 **The inversion, before and after.** One fresh vote on the curated
 rank 10, city at 20 votes:
 
 - Today: `0.997` against `0.000`. Rank 10 becomes rank 1.
-- With the baseline: rank 10 scores `0.90 + 0.997 = 1.897`. Rank 9
-  scores `1.80`. It passes one place, not nine.
+- With the baseline: rank 10 scores `1.80 + 0.997 = 2.797`. Rank 9
+  scores `3.60`. It moves **no** places on one vote, and needs two.
 
-**Climbing.** For a restaurant to go from curated 10 to curated 1 at
-20 city votes it needs to beat `9.00`, so roughly 9 fresh votes more
-than the incumbent. At 100 city votes that is 5. At 200 it is zero,
-and position is irrelevant.
+**Climbing.** From curated 10 to curated 1 needs 9 net votes at
+`STEP = 1.0` and 17 at `2.0`. See the table under Constant 1, which
+solves for the feedback rather than estimating it.
 
-**Time to expiry.** 200 votes at 10 per day is 20 days. That is the
-"weeks" the brief asks for. If real traffic makes this too slow or
-too fast, `BASELINE_EXPIRY_VOTES_PER_RESTAURANT` is the single number
-to turn, and it should be turned on measured vote rate rather than on
-a guess. **This has not been measured; there are zero votes in
-production today.**
+**Time to expiry.** Answered properly under Constant 2. It is
+unmeasured, the plausible range is three weeks to three months, and
+that uncertainty is why the opening-list string is a requirement.
 
 ## A restaurant with no baseline
 
@@ -141,9 +203,10 @@ newcomer must out-vote a decaying thumb. At 20 city votes it needs
 about 1 net vote to pass curated rank 10, about 6 to pass curated
 rank 5, and about 9 to reach rank 1. That is climbable, which is the
 test the brief sets ("if the baseline takes hundreds of votes to
-expire, the open list is decorative"). At `BASELINE_STEP = 1.0` and
-20 votes per restaurant it is not decorative. At a step of 5.0, or an
-expiry of 200 votes per restaurant, it would be. Those two constants
+expire, the open list is decorative"). At `BASELINE_STEP = 2.0` and
+20 votes per restaurant it is not decorative: 17 net votes from last
+to first. At a step of 5.0, or an expiry of 200 votes per restaurant,
+it would be. Those two constants
 are where this design can be quietly ruined, which is why they are
 named constants with this paragraph attached.
 
@@ -241,25 +304,194 @@ pairing for the gated band on the open web.
 
 1. The guard. Standalone, smallest, and it protects the launch case
    on its own even if nothing else lands.
-2. The constants and the pure `baselineFor()` function in
+2. The constants, the pure `baselineWeight()` and `baselineFor()`
+   functions in
    `rank_engine.ts`, with the zero-vote and one-vote fixtures from the
-   Fix A tests extended to assert the new scores. Red first.
+   Fix A tests extended to assert the new scores, plus the
+   monotonicity property test above. Red first.
 3. Wire it into `recomputeAllRanks`, plus `baselineScore` on the
    write.
-4. The new anomaly log.
-5. The teaser projection in the same batch.
+4. The new anomaly log, and `baselineWeight` written to the city
+   document so the screen can render the opening-list line without a
+   second implementation of the curve.
+5. The opening-list string on the city screen, which is a requirement
+   rather than polish.
+6. The teaser projection in the same batch.
 
 Steps 1 and 2 are independently shippable and independently valuable.
 
-## Open questions for Andrew
+## Constant 1: what rank 1 costs in friends
 
-1. **`BASELINE_STEP = 1.0`**, so one curated place costs one fresh
-   vote. Right feel, or should a place cost more?
-2. **`BASELINE_EXPIRY_VOTES_PER_RESTAURANT = 20`**, so Houston's
-   baseline is gone after 200 city votes. Unmeasured, and it is the
-   number most likely to be wrong.
-3. **Scaling with `n`.** Atlanta's rank 1 gets a baseline of 17.0
-   against Houston's 10.0. The alternative is a fixed top value
-   interpolated down, which compresses the steps in a larger city and
-   makes adjacent positions cheaper to swap there. I prefer scaling
-   with `n` and want it confirmed rather than assumed.
+"Climbability" was the wrong frame and it produced the wrong
+question. The right one: **what does rank 1 cost in friends?**
+
+Money cannot buy rank on Vouch, and that is enforced at the rules
+layer. Friends buying rank is the same product failure in a cheaper
+currency, and during the launch window the baseline is the only thing
+standing in its way, because volume is too low for anything else to
+be.
+
+### What already limits it, measured
+
+| Control | State | Where |
+|---|---|---|
+| One vote per user per restaurant | **Structural, not a check** | `firestore.rules:77` `match /votes/{userId}` with `allow create: if isOwner(userId)`. The document id **is** the uid, so a second vote is the same path. |
+| Cannot change a vote | Enforced | `allow update: if false` |
+| Verified email required | Enforced | `isEmailVerified()` on create |
+| App Check | **Activated, NOT enforced** | `lib/main.dart:34` says "monitor-only (enforcement is a separate console step)". Zero `enforceAppCheck` matches in `functions/src/`. |
+| Rate limit on vote creation | **None** | |
+
+So the attack cost is **one account with a verified email per vote.**
+That is a real barrier against a script and almost none against ten
+friends, which is exactly the case that matters. App Check being
+monitor-only means it currently contributes nothing here.
+
+### The table
+
+Net fresh votes the challenger needs, solved rather than estimated,
+because the challenger's own votes raise `cityVotes` and therefore
+lower everyone's baseline including the incumbent's.
+
+**Launch. The challenger is the only voter in the city and the
+incumbent has no votes.** This is the exposed case.
+
+| `BASELINE_STEP` | rank 10 to rank 1 | rank 5 to rank 1 | one place |
+|---|---|---|---|
+| 1.0 | **9** | 4 | 1 |
+| 2.0 | **17** | 8 | 2 |
+| 3.0 | **24** | 12 | 3 |
+
+**Warm. The city has 100 organic votes and the incumbent holds 15.**
+
+| `BASELINE_STEP` | rank 10 to rank 1 | rank 5 to rank 1 | one place |
+|---|---|---|---|
+| 1.0 | 19 | 17 | 1 |
+| 2.0 | 23 | 19 | 1 |
+| 3.0 | 26 | 20 | 2 |
+
+The warm rows converge because the incumbent's real votes dominate
+the baseline. That is the healthy regime, and it is the regime the
+expiry constant exists to reach.
+
+### Recommendation: 2.0
+
+The launch row is the whole argument. At 1.0, **nine friends buys
+rank 1 on day one**, and nine people is nothing. At 2.0 it is
+seventeen, which doubles the cost of a friends-and-family push while
+leaving "twenty net votes from last to first" comfortably inside the
+weeks target the brief set.
+
+**A correction to my own reasoning here, because the first version of
+this argument was wrong.** I initially rejected 3.0 on the grounds
+that a single vote would no longer move a restaurant a place. Once
+the numbers were computed rather than reasoned about, that turns out
+to be true of 2.0 as well: at launch weight `0.90`, one place costs
+`STEP * 0.90`, so a single `0.997` vote clears it at 1.0 and clears
+neither 2.0 nor 3.0.
+
+The real distinction is when a single vote starts mattering, and it
+is a function of the weight rather than of the step alone:
+
+| | one vote moves a place at |
+|---|---|
+| 1.0 | launch, weight 0.90 |
+| 2.0 | weight 0.50 and below, about 100 city votes |
+| 3.0 | weight 0.33 and below, about 134 city votes |
+
+So 2.0 means a single vote moves nothing for roughly the first half
+of the opening period, then moves a place for the rest of it, then
+means everything once the baseline is gone. That is a real cost and
+it is the honest reason to prefer 2.0 over 3.0 rather than the
+cleaner claim I made first: 3.0 extends the dead period by another
+third, and the opening-list string has to carry the explanation for
+however long it lasts.
+
+**2.0 makes rank 1 cost seventeen people rather than nine, at the
+price of a single vote being invisible until the city reaches about
+100 votes.** That trade is the recommendation, stated with its cost
+rather than without it.
+
+## Constant 2: wall clock, and a hard UI requirement
+
+The constant is defensible. Whether it is **honest** depends entirely
+on how long 200 votes takes, and that is unmeasured: production holds
+zero votes today.
+
+The arithmetic, so Andrew can substitute his own numbers:
+
+| Share of installs that vote | Votes each | Installs to reach 200 |
+|---|---|---|
+| 10% | 2 | 1,000 |
+| 25% | 2 | **400** |
+| 50% | 2 | 200 |
+
+At 25% voting twice each, that is 0.5 votes per install:
+
+| Installs per day | Days to expiry |
+|---|---|
+| 5 | 80 |
+| 20 | 20 |
+| 50 | 8 |
+
+So the honest answer is a range from three weeks to nearly three
+months, and nobody knows which. **That uncertainty is why the
+following is a requirement rather than a nicety.**
+
+### While the baseline is above zero, the city screen says so
+
+Not optional, and not a polish item to defer.
+
+While `baselineWeight > 0`, the city screen carries a line saying the
+list is still opening. When the weight reaches zero, the line
+disappears and the list is simply ranked by locals.
+
+Draft copy, for Andrew to rewrite in his own voice:
+
+> **Opening list.** Ranked by locals as votes come in.
+
+And on expiry, nothing at all. The absence is the signal.
+
+That one string is the difference between a thumb on the scale and a
+lie. It costs nothing, it makes the mechanism visible to the people
+it affects, and it converts the expiry constant from a number nobody
+sees into a promise the app visibly keeps.
+
+It also removes the pressure on constant 2. A longer expiry stops
+being dishonest once the app is telling the truth the whole way, so
+Andrew can choose the number on product grounds rather than on how
+much silence he is willing to tolerate.
+
+**Design note.** The screen needs `baselineWeight` to render this,
+and it must not recompute it: that would be a second implementation
+of the curve, drifting against the first. `recomputeAllRanks` should
+write the weight to the city document as `baselineWeight` in the same
+batch, alongside the per-restaurant `baselineScore`. One writer, one
+number, read-only everywhere else.
+
+## Constant 3: scale with `n`, confirmed
+
+**The step is the user-facing quantity.** "One vote moves you one
+place" has to mean the same thing in Houston and in Atlanta, and
+scaling the baseline with city size is what preserves it.
+
+The alternative, a fixed top value interpolated down, compresses the
+steps in a larger city: a vote in Atlanta would be worth nearly two
+places while a vote in Houston is worth one. That is arbitrary, and
+it makes the list more volatile exactly where there is more of it to
+be volatile about.
+
+Atlanta expiring at 340 votes against Houston's 200 is a consequence
+rather than a side effect. A longer list is a larger editorial claim
+and needs proportionally more signal before its curation should stop
+mattering.
+
+## What is still open
+
+Only the two numbers, and both now have a table under them rather
+than a feeling:
+
+1. **`BASELINE_STEP`**, recommended **2.0**. Nine friends versus
+   seventeen for rank 1 on launch day.
+2. **`BASELINE_EXPIRY_VOTES_PER_RESTAURANT`**, currently 20.
+   Unmeasured, and with the opening-list string in place it is now a
+   product choice rather than an honesty risk.
