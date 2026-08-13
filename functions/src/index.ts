@@ -252,6 +252,58 @@ export const submitComment = onCall(async (request) => {
     );
   }
 
+  // Target validation. This callable is the only path that can create
+  // a comment (firestore.rules denies direct client creates), so
+  // nothing else is going to check these.
+  //
+  // An unchecked restaurantId writes to
+  // restaurants/{garbage}/comments/{id}, where the parent document
+  // does not exist. Every read path the app has starts from a
+  // restaurant, so that comment is unreachable forever, and
+  // onCommentCreated fires applyCommentCreated against a missing
+  // document.
+  const restaurantRef = db.collection("restaurants").doc(restaurantId);
+  const restaurantSnap = await restaurantRef.get();
+  if (!restaurantSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "That restaurant does not exist."
+    );
+  }
+
+  if (parentId) {
+    // The parent must exist, must live under this same restaurant,
+    // and must itself be top level.
+    //
+    // The one-level rule is not a style preference, it is what the
+    // read path can express. CommentRepository.getPage fetches
+    // parentId == null and getReplies fetches parentId == commentId,
+    // so nothing ever queries for the children of a reply. A reply to
+    // a reply would be written successfully and then be permanently
+    // invisible to every user including its author.
+    const parentSnap = await restaurantRef
+      .collection("comments")
+      .doc(parentId)
+      .get();
+
+    if (!parentSnap.exists) {
+      // Deliberately the same message whether the parent is missing
+      // entirely or lives under a different restaurant. Distinguishing
+      // them would confirm to a caller that a given comment id exists
+      // somewhere, and the caller has no legitimate use for that.
+      throw new HttpsError(
+        "not-found",
+        "That comment is no longer available."
+      );
+    }
+    if (parentSnap.data()?.parentId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "You can only reply to a top level comment."
+      );
+    }
+  }
+
   const userSnap = await db.collection("users").doc(uid).get();
   const userName = (userSnap.data()?.displayName as string | undefined) ?? "";
   if (userName.trim().length === 0) {

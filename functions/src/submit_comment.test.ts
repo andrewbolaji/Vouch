@@ -288,3 +288,132 @@ describe("submitComment", () => {
     expect(replies.size).toBe(0);
   });
 });
+
+// ==================================================================
+// Finding 8: target validation.
+//
+// submitComment took restaurantId and parentId on trust. It is the
+// only path that can create a comment, since firestore.rules denies
+// direct client creates outright, so nothing else was going to check
+// them.
+//
+// Two consequences, both of which produce data that no read path can
+// ever return:
+//
+//   restaurantId  a comment written under an id no restaurant has
+//                 creates restaurants/{garbage}/comments/{id}. The
+//                 parent document does not exist, so the comment is
+//                 unreachable from every query the app makes, and
+//                 onCommentCreated fires against a missing document.
+//
+//   parentId      CommentRepository.getPage fetches parentId == null
+//                 and getReplies fetches parentId == commentId, so
+//                 the UI is exactly one level deep. A reply whose
+//                 parent is itself a reply is never queried by
+//                 anything and is permanently invisible. A reply
+//                 pointing at a comment on a different restaurant is
+//                 written into the wrong thread.
+// ==================================================================
+describe("submitComment target validation", () => {
+  const uid = "commenter-2";
+
+  beforeEach(async () => {
+    await clearFirestore();
+    await db.collection("users").doc(uid).set({
+      id: uid,
+      displayName: "TestUser",
+      email: "test@example.com",
+      membershipTier: "free",
+    });
+    await db.collection("restaurants").doc("tv-r1").set({id: "tv-r1", rank: 1});
+    await db.collection("restaurants").doc("tv-r2").set({id: "tv-r2", rank: 2});
+  });
+
+  test("rejects a restaurantId that does not exist", async () => {
+    await expect(
+      submitComment.run(
+        request({restaurantId: "no-such-restaurant", text: "hi"}, authFor(uid))
+      )
+    ).rejects.toMatchObject({code: "not-found"});
+
+    // And nothing was written under the bogus path.
+    const orphans = await db
+      .collection("restaurants")
+      .doc("no-such-restaurant")
+      .collection("comments")
+      .get();
+    expect(orphans.empty).toBe(true);
+  });
+
+  test("rejects a parentId that does not exist", async () => {
+    await expect(
+      submitComment.run(
+        request(
+          {restaurantId: "tv-r1", text: "reply", parentId: "no-such-comment"},
+          authFor(uid)
+        )
+      )
+    ).rejects.toMatchObject({code: "not-found"});
+  });
+
+  test("rejects a parentId belonging to a different restaurant", async () => {
+    const parent = await submitComment.run(
+      request({restaurantId: "tv-r2", text: "on r2"}, authFor(uid))
+    );
+
+    await expect(
+      submitComment.run(
+        request(
+          {restaurantId: "tv-r1", text: "reply", parentId: parent.id},
+          authFor(uid)
+        )
+      )
+    ).rejects.toMatchObject({code: "not-found"});
+  });
+
+  test("rejects a reply to a reply", async () => {
+    const top = await submitComment.run(
+      request({restaurantId: "tv-r1", text: "top level"}, authFor(uid))
+    );
+    const reply = await submitComment.run(
+      request(
+        {restaurantId: "tv-r1", text: "reply", parentId: top.id},
+        authFor(uid)
+      )
+    );
+
+    // Nothing queries parentId == <a reply's id>, so this comment
+    // would exist and be permanently invisible.
+    await expect(
+      submitComment.run(
+        request(
+          {restaurantId: "tv-r1", text: "nested", parentId: reply.id},
+          authFor(uid)
+        )
+      )
+    ).rejects.toMatchObject({code: "invalid-argument"});
+  });
+
+  test("still accepts a valid top-level comment and a valid reply", async () => {
+    const top = await submitComment.run(
+      request({restaurantId: "tv-r1", text: "top level"}, authFor(uid))
+    );
+    expect(top.id).toBeTruthy();
+
+    const reply = await submitComment.run(
+      request(
+        {restaurantId: "tv-r1", text: "a reply", parentId: top.id},
+        authFor(uid)
+      )
+    );
+    expect(reply.id).toBeTruthy();
+
+    const stored = await db
+      .collection("restaurants")
+      .doc("tv-r1")
+      .collection("comments")
+      .doc(reply.id)
+      .get();
+    expect(stored.data()?.parentId).toBe(top.id);
+  });
+});
