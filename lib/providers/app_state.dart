@@ -68,6 +68,7 @@ class AppState extends ChangeNotifier {
     RestaurantRepository? restaurantRepo,
     CommentRepository? commentRepo,
     VoteRepository? voteRepo,
+    UserRepository? userRepo,
     bool? useFirebase,
     bool isPaidTier = false,
     MembershipProvider? membershipProvider,
@@ -76,11 +77,13 @@ class AppState extends ChangeNotifier {
         _restaurantRepo = restaurantRepo,
         _commentRepo = commentRepo,
         _voteRepo = voteRepo,
+        _userRepo = userRepo,
         _useFirebase = useFirebase ?? kUseFirebase,
         _isPaidTier = isPaidTier,
         _membershipProvider = membershipProvider,
         _authService = authService {
     _membershipProvider?.addListener(_onMembershipChanged);
+    _lastKnownUid = _authService?.currentUser?.uid;
     _authService?.addListener(_onAuthChanged);
     unawaited(_loadData());
   }
@@ -89,6 +92,7 @@ class AppState extends ChangeNotifier {
   final RestaurantRepository? _restaurantRepo;
   final CommentRepository? _commentRepo;
   final VoteRepository? _voteRepo;
+  final UserRepository? _userRepo;
   final bool _useFirebase;
   final MembershipProvider? _membershipProvider;
   final AuthService? _authService;
@@ -100,7 +104,27 @@ class AppState extends ChangeNotifier {
   // notifyListeners() tick from AuthService.
   String? _reconciledVotesUid;
 
-  static const String _votedKey = 'voted_restaurant_ids';
+  /// The uid AuthService last reported, tracked independently of
+  /// reconciliation so sign-out can clear this device's cache in
+  /// every mode, including the ones where reconciliation never runs.
+  String? _lastKnownUid;
+
+  /// Legacy, un-scoped vote cache key. Deleted on sight rather than
+  /// migrated: it is shared across every account that has ever
+  /// signed in on the device, which is the leak the uid-scoped key
+  /// below exists to close, so carrying its contents forward would
+  /// carry the leak forward too.
+  static const String _legacyVotedKey = 'voted_restaurant_ids';
+
+  /// Per-uid vote cache key, matching saved_restaurant_ids_$uid and
+  /// suggestion_remaining_$uid (docs/DECISIONS.md, 2026-06-07:
+  /// "Never read cross-user, never merged"). Votes were the one
+  /// member of that family left un-scoped, so a signed-out user saw
+  /// the previous account's votes and two accounts on one device
+  /// shared a cache. Same class of leak as the finding 7 rule, one
+  /// layer down.
+  static String _votedKeyFor(String uid) => 'voted_restaurant_ids_$uid';
+
   static final DateTime _seedDate = DateTime(2026, 4, 27);
 
   List<City> _cities = [];
@@ -359,8 +383,22 @@ class AppState extends ChangeNotifier {
   /// the initial state.
   void _onAuthChanged() {
     final uid = _authService?.currentUser?.uid;
+    // Tracked separately from _reconciledVotesUid on purpose. Sign-out
+    // must clear this device's cache whether or not a server
+    // reconciliation ever ran: reconciliation is skipped entirely
+    // when useFirebase is false, so keying the clear off it would
+    // leave the previous account's votes on screen and on disk in
+    // exactly the offline and seed cases where nothing else would
+    // overwrite them.
+    if (uid == _lastKnownUid) return;
+    final previousUid = _lastKnownUid;
+    _lastKnownUid = uid;
+
     if (uid == null) {
       _reconciledVotesUid = null;
+      if (previousUid != null) {
+        unawaited(_clearVotesForSignOut(previousUid));
+      }
       return;
     }
     if (uid == _reconciledVotesUid || _isLoading) return;
@@ -368,28 +406,27 @@ class AppState extends ChangeNotifier {
     unawaited(_reconcileVotesFromServer(uid));
   }
 
-  /// Replaces local vote state with what the server actually has for
-  /// [userId], across every currently loaded restaurant. Server
-  /// authoritative, matching how SavedProvider treats saved
-  /// restaurants on sign-in (docs/DECISIONS.md, 2026-06-07): replace,
-  /// not merge, so a vote removed on another device or rolled back
-  /// after a failed write does not survive here.
+  /// Replaces local vote state with the server's own list for
+  /// [userId]. Server authoritative, matching how SavedProvider
+  /// treats saved restaurants on sign-in (docs/DECISIONS.md,
+  /// 2026-06-07): replace, not merge, so a vote removed on another
+  /// device or rolled back after a failed write does not survive.
   ///
-  /// Only ever GETs a single restaurant/{id}/votes/{userId} doc per
-  /// restaurant, the caller's own doc, never a list query.
-  /// firestore.rules denies list on this subcollection outright,
-  /// scoped get to isOwner(userId) only.
+  /// One document read, users/{uid}, not one read per restaurant.
+  /// The field is maintained by the vote triggers via the Admin SDK
+  /// and is denied to client writes by firestore.rules.
+  ///
+  /// This list can be wrong, not merely stale: arrayUnion and
+  /// arrayRemove are idempotent under redelivery but not
+  /// order-independent, and Firestore trigger delivery is unordered,
+  /// so a fast vote then unvote whose events land reversed converges
+  /// to "voted" when the truth is "not voted".
+  /// [repairVoteStateForRestaurant] is what corrects that, per
+  /// restaurant, at the moment the user can actually see it.
   Future<void> _reconcileVotesFromServer(String userId) async {
-    if (_voteRepo == null) return;
     try {
-      final voteRepo = _voteRepo;
-      final results = await Future.wait(
-        _restaurants.map((r) async {
-          final voted = await voteRepo.hasVoted(r.id, userId);
-          return voted ? r.id : null;
-        }),
-      );
-      final serverVoted = results.whereType<String>().toSet();
+      final userRepo = _userRepo ?? UserRepository();
+      final serverVoted = await userRepo.getVotedIds(userId);
       _votedRestaurantIds
         ..clear()
         ..addAll(serverVoted);
@@ -401,6 +438,42 @@ class AppState extends ChangeNotifier {
       // Leave local state as-is. A failed reconciliation should not
       // wipe out what the user already sees; only a successful one
       // replaces it.
+    }
+  }
+
+  /// Corrects the cached vote state for one restaurant against the
+  /// authoritative votes subcollection, using a single scoped get of
+  /// the caller's own vote document.
+  ///
+  /// Called when a restaurant's detail screen opens, which is the
+  /// only place the vote button is rendered, so this repairs exactly
+  /// the entry the user is about to look at and act on.
+  ///
+  /// This is load-bearing, not cosmetic. If the cached list wrongly
+  /// says not-voted, the button invites a tap; VoteRepository.vote
+  /// then writes to a vote document that already exists, which
+  /// firestore.rules classifies as an update, and updates on that
+  /// path are denied outright. Without this repair the user is stuck
+  /// in a repeating error on a restaurant they already voted for,
+  /// with no way to reach the delete that would clear it.
+  Future<void> repairVoteStateForRestaurant(String restaurantId) async {
+    if (!_useFirebase || _voteRepo == null) return;
+    final uid = _authService?.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final serverVoted = await _voteRepo.hasVoted(restaurantId, uid);
+      final localVoted = _votedRestaurantIds.contains(restaurantId);
+      if (serverVoted == localVoted) return;
+      if (serverVoted) {
+        _votedRestaurantIds.add(restaurantId);
+      } else {
+        _votedRestaurantIds.remove(restaurantId);
+      }
+      unawaited(_saveVotes());
+      notifyListeners();
+    } on Exception catch (e, stack) {
+      debugPrint('AppState: failed to repair vote state: $e');
+      _recordError('repairVoteStateForRestaurant', e, stack);
     }
   }
 
@@ -495,10 +568,15 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _saveVotes() async {
+    final uid = _authService?.currentUser?.uid;
+    // Signed out means there is no owner to file these under. A vote
+    // requires a signed-in uid to exist at all, so there is nothing
+    // legitimate to persist here.
+    if (uid == null) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(
-        _votedKey,
+        _votedKeyFor(uid),
         _votedRestaurantIds.toList(),
       );
     } on Exception catch (e, stack) {
@@ -510,13 +588,39 @@ class AppState extends ChangeNotifier {
   Future<void> _loadVotes() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final ids = prefs.getStringList(_votedKey);
+      // Drop the legacy shared key wherever it is still on disk,
+      // whether or not anyone is signed in right now.
+      if (prefs.containsKey(_legacyVotedKey)) {
+        await prefs.remove(_legacyVotedKey);
+      }
+      final uid = _authService?.currentUser?.uid;
+      if (uid == null) return;
+      final ids = prefs.getStringList(_votedKeyFor(uid));
       if (ids != null) {
         _votedRestaurantIds.addAll(ids);
       }
     } on Exception catch (e, stack) {
       debugPrint('AppState: failed to load votes: $e');
       _recordError('_loadVotes', e, stack);
+    }
+  }
+
+  /// Clears this device's cached vote state for the signed-out user.
+  ///
+  /// Both halves matter: the stored key so the next account on this
+  /// device cannot read it, and the in-memory set so the buttons
+  /// stop showing the previous account's votes without waiting for a
+  /// reload. Clearing only the key, which is what account deletion
+  /// used to do, leaves the filled-in buttons on screen.
+  Future<void> _clearVotesForSignOut(String uid) async {
+    _votedRestaurantIds.clear();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_votedKeyFor(uid));
+    } on Exception catch (e, stack) {
+      debugPrint('AppState: failed to clear votes on sign-out: $e');
+      _recordError('_clearVotesForSignOut', e, stack);
     }
   }
 

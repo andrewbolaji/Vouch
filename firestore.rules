@@ -113,9 +113,21 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid);
-      // Cannot change the id field on update
+      // Cannot change the id field on update.
+      //
+      // votedRestaurantIds is trigger-owned: the onVoteCreated /
+      // onVoteDeleted triggers maintain it via the Admin SDK, which
+      // bypasses these rules. A client changing it here could only
+      // lie to its own UI (rank reads the votes subcollection, never
+      // this field), but leaving it client-writable would mean the
+      // one field the client is supposed to treat as server truth is
+      // the one field it can forge. The .get(..., []) form is
+      // required so this clause still evaluates on documents written
+      // before the field existed, where a bare field access errors.
       allow update: if isOwner(uid)
-        && request.resource.data.id == resource.data.id;
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.get('votedRestaurantIds', [])
+           == resource.data.get('votedRestaurantIds', []);
 
       // ---------------------------------------------------
       // suggestionCounts subcollection

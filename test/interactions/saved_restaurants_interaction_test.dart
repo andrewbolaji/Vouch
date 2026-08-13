@@ -23,6 +23,11 @@ class _FakeUserRepo implements UserRepository {
   @override
   Future<List<String>> getSavedIds(String uid) async =>
       List.from(_data[uid] ?? []);
+
+  // This fake exists for the saved-restaurants flow; votes are not
+  // part of what it stands in for.
+  @override
+  Future<List<String>> getVotedIds(String uid) async => [];
   @override
   Future<void> updateSaved(
     String uid,

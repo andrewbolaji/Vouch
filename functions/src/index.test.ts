@@ -15,7 +15,12 @@ import {
   FieldValue,
   Timestamp,
 } from "firebase-admin/firestore";
-import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
+import {
+  applyVoteCreated,
+  applyVoteDeleted,
+  addVotedRestaurant,
+  removeVotedRestaurant,
+} from "./vote_aggregation";
 import {
   applyCommentCreated,
   applyCommentDeleted,
@@ -135,6 +140,105 @@ describe("Vote aggregation (real function bodies)", () => {
     await expect(
       applyVoteDeleted(db, "restaurant-that-no-longer-exists")
     ).resolves.toBeUndefined();
+  });
+});
+
+// ================================================================
+// Per-user votedRestaurantIds list
+//
+// The list the client reads once on sign-in instead of one read per
+// restaurant in the catalogue. Maintained by the same vote triggers
+// that write voteEvents, via the Admin SDK, so firestore.rules can
+// deny client writes to it outright.
+// ================================================================
+
+describe("votedRestaurantIds list (real function bodies)", () => {
+  beforeEach(async () => {
+    await clearFirestore();
+  });
+
+  afterAll(async () => {
+    await clearFirestore();
+  });
+
+  test("addVotedRestaurant creates the user doc if absent", async () => {
+    await addVotedRestaurant(db, "alice", "hou-1");
+
+    const snap = await db.collection("users").doc("alice").get();
+    expect(snap.exists).toBe(true);
+    expect(snap.data()?.votedRestaurantIds).toEqual(["hou-1"]);
+  });
+
+  test("addVotedRestaurant preserves other fields on the doc", async () => {
+    await db.collection("users").doc("alice").set({
+      id: "alice",
+      displayName: "Alice",
+      membershipTier: "localsPass",
+    });
+
+    await addVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.displayName).toBe("Alice");
+    expect(data?.membershipTier).toBe("localsPass");
+    expect(data?.votedRestaurantIds).toEqual(["hou-1"]);
+  });
+
+  test("removeVotedRestaurant removes only that ID", async () => {
+    await addVotedRestaurant(db, "alice", "hou-1");
+    await addVotedRestaurant(db, "alice", "hou-2");
+
+    await removeVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.votedRestaurantIds).toEqual(["hou-2"]);
+  });
+
+  // arrayUnion/arrayRemove are set operations, so an at-least-once
+  // trigger redelivery of the same event cannot double-add or
+  // double-remove. This is the property that makes a nightly
+  // reconciliation unnecessary for this field, unlike voteCount's
+  // FieldValue.increment.
+  test("a redelivered add is idempotent", async () => {
+    await addVotedRestaurant(db, "alice", "hou-1");
+    await addVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.votedRestaurantIds).toEqual(["hou-1"]);
+  });
+
+  test("a redelivered remove is idempotent", async () => {
+    await addVotedRestaurant(db, "alice", "hou-1");
+    await removeVotedRestaurant(db, "alice", "hou-1");
+    await removeVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.votedRestaurantIds).toEqual([]);
+  });
+
+  // Idempotent is not the same as order-independent, and Firestore
+  // trigger delivery is unordered. A fast vote then unvote whose
+  // events arrive reversed converges to "voted" when the truth is
+  // "not voted". This test pins that real, known failure mode: it is
+  // why the client repairs this list per restaurant on read rather
+  // than trusting it, and it is the reason a nightly job would not
+  // help (the list is wrong, not stale).
+  // eslint-disable-next-line max-len
+  test("out-of-order delivery converges to the wrong answer, by design of the fix", async () => {
+    // True sequence: vote, then unvote. Delivered reversed.
+    await removeVotedRestaurant(db, "alice", "hou-1");
+    await addVotedRestaurant(db, "alice", "hou-1");
+
+    const data = (await db.collection("users").doc("alice").get()).data();
+    expect(data?.votedRestaurantIds).toEqual(["hou-1"]);
+  });
+
+  test("removeVotedRestaurant creates the user doc if absent", async () => {
+    await removeVotedRestaurant(db, "alice", "hou-1");
+
+    const snap = await db.collection("users").doc("alice").get();
+    expect(snap.exists).toBe(true);
+    expect(snap.data()?.votedRestaurantIds).toEqual([]);
   });
 });
 

@@ -17,7 +17,12 @@ import * as auth from "firebase-functions/v1/auth";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue, Timestamp} from "firebase-admin/firestore";
-import {applyVoteCreated, applyVoteDeleted} from "./vote_aggregation";
+import {
+  applyVoteCreated,
+  applyVoteDeleted,
+  addVotedRestaurant,
+  removeVotedRestaurant,
+} from "./vote_aggregation";
 import {recordVoteCreated, recordVoteDeleted} from "./vote_audit";
 import {
   applyCommentCreated,
@@ -64,6 +69,13 @@ export const onVoteCreated = onDocumentCreated(
       weight
     );
     await applyVoteCreated(db, event.params.restaurantId);
+    // Last, so a failure maintaining this convenience list cannot
+    // take out the audit record or the count above it.
+    await addVotedRestaurant(
+      db,
+      event.params.userId,
+      event.params.restaurantId
+    );
   }
 );
 
@@ -83,6 +95,12 @@ export const onVoteDeleted = onDocumentDeleted(
       weight
     );
     await applyVoteDeleted(db, event.params.restaurantId);
+    // Last, for the same reason as onVoteCreated above.
+    await removeVotedRestaurant(
+      db,
+      event.params.userId,
+      event.params.restaurantId
+    );
   }
 );
 

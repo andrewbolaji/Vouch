@@ -175,4 +175,25 @@ class UserRepository {
       throw mapFirestoreException(e);
     }
   }
+
+  /// Returns the restaurant IDs this user has voted for.
+  ///
+  /// One document read, replacing a per-restaurant read of the votes
+  /// subcollection on every signed-in launch. The field is written
+  /// only by the onVoteCreated/onVoteDeleted triggers, so it is
+  /// server truth from the client's point of view, subject to the
+  /// ordering caveat that makes AppState repair it per restaurant on
+  /// read. There is no matching write method here on purpose:
+  /// firestore.rules denies client writes to this field.
+  Future<List<String>> getVotedIds(String uid) async {
+    try {
+      final doc = await _usersRef.doc(uid).get();
+      if (!doc.exists) return [];
+      final data = doc.data()!;
+      final raw = data['votedRestaurantIds'] as List<dynamic>? ?? [];
+      return raw.cast<String>();
+    } on FirebaseException catch (e) {
+      throw mapFirestoreException(e);
+    }
+  }
 }

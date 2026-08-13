@@ -46,6 +46,11 @@ class FakeUserRepository implements UserRepository {
     return List.from(_saves[uid] ?? []);
   }
 
+  // This fake exists for SavedProvider; votes are not part of what
+  // it stands in for.
+  @override
+  Future<List<String>> getVotedIds(String uid) async => [];
+
   @override
   Future<void> updateSaved(
     String uid,

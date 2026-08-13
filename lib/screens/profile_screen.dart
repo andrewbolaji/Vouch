@@ -468,6 +468,11 @@ class ProfileScreen extends StatelessWidget {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('saved_restaurant_ids_$uid');
       await prefs.remove('suggestion_remaining_$uid');
+      await prefs.remove('voted_restaurant_ids_$uid');
+      // The pre-uid-scoping key, in case this device still carries
+      // one. AppState clears it on load too; removing it here as
+      // well costs nothing and closes the account-deletion path
+      // specifically.
       await prefs.remove('voted_restaurant_ids');
       await prefs.remove('notifications_ranking_alerts');
       await prefs.remove('notifications_new_cities');

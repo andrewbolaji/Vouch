@@ -95,6 +95,7 @@ class VouchApp extends StatelessWidget {
             ),
             commentRepo: CommentRepository(firestore: firestoreOverride),
             voteRepo: VoteRepository(firestore: firestoreOverride),
+            userRepo: UserRepository(firestore: firestoreOverride),
           ),
         ),
         ChangeNotifierProvider.value(value: membershipProvider),

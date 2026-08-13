@@ -15,7 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserProfile {
 
- String get id; String get displayName; String get email;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get lastActiveAt; String? get photoUrl; String get membershipTier; List<String> get savedRestaurantIds; List<String> get blockedUserIds;
+ String get id; String get displayName; String get email;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get lastActiveAt; String? get photoUrl; String get membershipTier; List<String> get savedRestaurantIds; List<String> get blockedUserIds;// Maintained by the onVoteCreated/onVoteDeleted triggers, never
+// by the client: firestore.rules denies client writes to this
+// field. Read once on sign-in so the app knows which vote
+// buttons to fill in without one read per restaurant.
+ List<String> get votedRestaurantIds;
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +32,16 @@ $UserProfileCopyWith<UserProfile> get copyWith => _$UserProfileCopyWithImpl<User
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.membershipTier, membershipTier) || other.membershipTier == membershipTier)&&const DeepCollectionEquality().equals(other.savedRestaurantIds, savedRestaurantIds)&&const DeepCollectionEquality().equals(other.blockedUserIds, blockedUserIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.membershipTier, membershipTier) || other.membershipTier == membershipTier)&&const DeepCollectionEquality().equals(other.savedRestaurantIds, savedRestaurantIds)&&const DeepCollectionEquality().equals(other.blockedUserIds, blockedUserIds)&&const DeepCollectionEquality().equals(other.votedRestaurantIds, votedRestaurantIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,email,createdAt,lastActiveAt,photoUrl,membershipTier,const DeepCollectionEquality().hash(savedRestaurantIds),const DeepCollectionEquality().hash(blockedUserIds));
+int get hashCode => Object.hash(runtimeType,id,displayName,email,createdAt,lastActiveAt,photoUrl,membershipTier,const DeepCollectionEquality().hash(savedRestaurantIds),const DeepCollectionEquality().hash(blockedUserIds),const DeepCollectionEquality().hash(votedRestaurantIds));
 
 @override
 String toString() {
-  return 'UserProfile(id: $id, displayName: $displayName, email: $email, createdAt: $createdAt, lastActiveAt: $lastActiveAt, photoUrl: $photoUrl, membershipTier: $membershipTier, savedRestaurantIds: $savedRestaurantIds, blockedUserIds: $blockedUserIds)';
+  return 'UserProfile(id: $id, displayName: $displayName, email: $email, createdAt: $createdAt, lastActiveAt: $lastActiveAt, photoUrl: $photoUrl, membershipTier: $membershipTier, savedRestaurantIds: $savedRestaurantIds, blockedUserIds: $blockedUserIds, votedRestaurantIds: $votedRestaurantIds)';
 }
 
 
@@ -48,7 +52,7 @@ abstract mixin class $UserProfileCopyWith<$Res>  {
   factory $UserProfileCopyWith(UserProfile value, $Res Function(UserProfile) _then) = _$UserProfileCopyWithImpl;
 @useResult
 $Res call({
- String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds
+ String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds, List<String> votedRestaurantIds
 });
 
 
@@ -65,7 +69,7 @@ class _$UserProfileCopyWithImpl<$Res>
 
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? email = null,Object? createdAt = null,Object? lastActiveAt = null,Object? photoUrl = freezed,Object? membershipTier = null,Object? savedRestaurantIds = null,Object? blockedUserIds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? email = null,Object? createdAt = null,Object? lastActiveAt = null,Object? photoUrl = freezed,Object? membershipTier = null,Object? savedRestaurantIds = null,Object? blockedUserIds = null,Object? votedRestaurantIds = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -76,6 +80,7 @@ as DateTime,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore:
 as String?,membershipTier: null == membershipTier ? _self.membershipTier : membershipTier // ignore: cast_nullable_to_non_nullable
 as String,savedRestaurantIds: null == savedRestaurantIds ? _self.savedRestaurantIds : savedRestaurantIds // ignore: cast_nullable_to_non_nullable
 as List<String>,blockedUserIds: null == blockedUserIds ? _self.blockedUserIds : blockedUserIds // ignore: cast_nullable_to_non_nullable
+as List<String>,votedRestaurantIds: null == votedRestaurantIds ? _self.votedRestaurantIds : votedRestaurantIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }
@@ -161,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds,  List<String> votedRestaurantIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserProfile() when $default != null:
-return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds);case _:
+return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds,_that.votedRestaurantIds);case _:
   return orElse();
 
 }
@@ -182,10 +187,10 @@ return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.las
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds,  List<String> votedRestaurantIds)  $default,) {final _that = this;
 switch (_that) {
 case _UserProfile():
-return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds);case _:
+return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds,_that.votedRestaurantIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +207,10 @@ return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.las
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String email, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime lastActiveAt,  String? photoUrl,  String membershipTier,  List<String> savedRestaurantIds,  List<String> blockedUserIds,  List<String> votedRestaurantIds)?  $default,) {final _that = this;
 switch (_that) {
 case _UserProfile() when $default != null:
-return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds);case _:
+return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.lastActiveAt,_that.photoUrl,_that.membershipTier,_that.savedRestaurantIds,_that.blockedUserIds,_that.votedRestaurantIds);case _:
   return null;
 
 }
@@ -217,7 +222,7 @@ return $default(_that.id,_that.displayName,_that.email,_that.createdAt,_that.las
 @JsonSerializable()
 
 class _UserProfile implements UserProfile {
-  const _UserProfile({required this.id, required this.displayName, required this.email, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.lastActiveAt, this.photoUrl, this.membershipTier = 'free', final  List<String> savedRestaurantIds = const [], final  List<String> blockedUserIds = const []}): _savedRestaurantIds = savedRestaurantIds,_blockedUserIds = blockedUserIds;
+  const _UserProfile({required this.id, required this.displayName, required this.email, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.lastActiveAt, this.photoUrl, this.membershipTier = 'free', final  List<String> savedRestaurantIds = const [], final  List<String> blockedUserIds = const [], final  List<String> votedRestaurantIds = const []}): _savedRestaurantIds = savedRestaurantIds,_blockedUserIds = blockedUserIds,_votedRestaurantIds = votedRestaurantIds;
   factory _UserProfile.fromJson(Map<String, dynamic> json) => _$UserProfileFromJson(json);
 
 @override final  String id;
@@ -241,6 +246,21 @@ class _UserProfile implements UserProfile {
   return EqualUnmodifiableListView(_blockedUserIds);
 }
 
+// Maintained by the onVoteCreated/onVoteDeleted triggers, never
+// by the client: firestore.rules denies client writes to this
+// field. Read once on sign-in so the app knows which vote
+// buttons to fill in without one read per restaurant.
+ final  List<String> _votedRestaurantIds;
+// Maintained by the onVoteCreated/onVoteDeleted triggers, never
+// by the client: firestore.rules denies client writes to this
+// field. Read once on sign-in so the app knows which vote
+// buttons to fill in without one read per restaurant.
+@override@JsonKey() List<String> get votedRestaurantIds {
+  if (_votedRestaurantIds is EqualUnmodifiableListView) return _votedRestaurantIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_votedRestaurantIds);
+}
+
 
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
@@ -255,16 +275,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.membershipTier, membershipTier) || other.membershipTier == membershipTier)&&const DeepCollectionEquality().equals(other._savedRestaurantIds, _savedRestaurantIds)&&const DeepCollectionEquality().equals(other._blockedUserIds, _blockedUserIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.membershipTier, membershipTier) || other.membershipTier == membershipTier)&&const DeepCollectionEquality().equals(other._savedRestaurantIds, _savedRestaurantIds)&&const DeepCollectionEquality().equals(other._blockedUserIds, _blockedUserIds)&&const DeepCollectionEquality().equals(other._votedRestaurantIds, _votedRestaurantIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,email,createdAt,lastActiveAt,photoUrl,membershipTier,const DeepCollectionEquality().hash(_savedRestaurantIds),const DeepCollectionEquality().hash(_blockedUserIds));
+int get hashCode => Object.hash(runtimeType,id,displayName,email,createdAt,lastActiveAt,photoUrl,membershipTier,const DeepCollectionEquality().hash(_savedRestaurantIds),const DeepCollectionEquality().hash(_blockedUserIds),const DeepCollectionEquality().hash(_votedRestaurantIds));
 
 @override
 String toString() {
-  return 'UserProfile(id: $id, displayName: $displayName, email: $email, createdAt: $createdAt, lastActiveAt: $lastActiveAt, photoUrl: $photoUrl, membershipTier: $membershipTier, savedRestaurantIds: $savedRestaurantIds, blockedUserIds: $blockedUserIds)';
+  return 'UserProfile(id: $id, displayName: $displayName, email: $email, createdAt: $createdAt, lastActiveAt: $lastActiveAt, photoUrl: $photoUrl, membershipTier: $membershipTier, savedRestaurantIds: $savedRestaurantIds, blockedUserIds: $blockedUserIds, votedRestaurantIds: $votedRestaurantIds)';
 }
 
 
@@ -275,7 +295,7 @@ abstract mixin class _$UserProfileCopyWith<$Res> implements $UserProfileCopyWith
   factory _$UserProfileCopyWith(_UserProfile value, $Res Function(_UserProfile) _then) = __$UserProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds
+ String id, String displayName, String email,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime lastActiveAt, String? photoUrl, String membershipTier, List<String> savedRestaurantIds, List<String> blockedUserIds, List<String> votedRestaurantIds
 });
 
 
@@ -292,7 +312,7 @@ class __$UserProfileCopyWithImpl<$Res>
 
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? email = null,Object? createdAt = null,Object? lastActiveAt = null,Object? photoUrl = freezed,Object? membershipTier = null,Object? savedRestaurantIds = null,Object? blockedUserIds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? email = null,Object? createdAt = null,Object? lastActiveAt = null,Object? photoUrl = freezed,Object? membershipTier = null,Object? savedRestaurantIds = null,Object? blockedUserIds = null,Object? votedRestaurantIds = null,}) {
   return _then(_UserProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -303,6 +323,7 @@ as DateTime,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore:
 as String?,membershipTier: null == membershipTier ? _self.membershipTier : membershipTier // ignore: cast_nullable_to_non_nullable
 as String,savedRestaurantIds: null == savedRestaurantIds ? _self._savedRestaurantIds : savedRestaurantIds // ignore: cast_nullable_to_non_nullable
 as List<String>,blockedUserIds: null == blockedUserIds ? _self._blockedUserIds : blockedUserIds // ignore: cast_nullable_to_non_nullable
+as List<String>,votedRestaurantIds: null == votedRestaurantIds ? _self._votedRestaurantIds : votedRestaurantIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }

@@ -69,10 +69,18 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     // runs it once this build has finished.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final appState = context.read<AppState>();
       unawaited(
-        context.read<AppState>().loadCommentsForRestaurant(
-              widget.restaurantId,
-            ),
+        appState.loadCommentsForRestaurant(widget.restaurantId),
+      );
+      // One scoped get against this user's own vote doc, correcting
+      // the cached list for the one restaurant now on screen. Needed
+      // because the cached list can converge to the wrong answer
+      // under out-of-order trigger delivery, and a wrongly
+      // not-voted button leads to a denied update the user cannot
+      // get out of. See AppState.repairVoteStateForRestaurant.
+      unawaited(
+        appState.repairVoteStateForRestaurant(widget.restaurantId),
       );
     });
   }

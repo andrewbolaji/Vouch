@@ -26,6 +26,11 @@ _UserProfile _$UserProfileFromJson(Map<String, dynamic> json) => _UserProfile(
           ?.map((e) => e as String)
           .toList() ??
       const [],
+  votedRestaurantIds:
+      (json['votedRestaurantIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$UserProfileToJson(_UserProfile instance) =>
@@ -39,4 +44,5 @@ Map<String, dynamic> _$UserProfileToJson(_UserProfile instance) =>
       'membershipTier': instance.membershipTier,
       'savedRestaurantIds': instance.savedRestaurantIds,
       'blockedUserIds': instance.blockedUserIds,
+      'votedRestaurantIds': instance.votedRestaurantIds,
     };

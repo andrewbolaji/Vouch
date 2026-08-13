@@ -9,6 +9,7 @@ import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/repositories/city_repository.dart';
 import 'package:vouch/repositories/comment_repository.dart';
 import 'package:vouch/repositories/restaurant_repository.dart';
+import 'package:vouch/repositories/user_repository.dart';
 import 'package:vouch/repositories/vote_repository.dart';
 import 'package:vouch/services/auth_service.dart';
 
@@ -196,10 +197,9 @@ class ThrowingVoteRepository extends VoteRepository {
 }
 
 /// VoteRepository backed by a fixed, pre-programmed set of voted
-/// restaurant IDs, for testing AppState's server reconciliation on
-/// sign-in without a real Firestore round trip. vote/unvote succeed
-/// as no-ops; this double only needs to prove what AppState does
-/// with hasVoted's answer, not exercise the write path.
+/// restaurant IDs. Backs the per-restaurant on-read repair path
+/// (hasVoted), which is the only place AppState still reads the
+/// votes subcollection. vote/unvote succeed as no-ops.
 class StubVoteRepository extends VoteRepository {
   StubVoteRepository(this._serverVotedIds)
       : super(firestore: FakeFirebaseFirestore());
@@ -218,6 +218,24 @@ class StubVoteRepository extends VoteRepository {
 
   @override
   Future<void> unvote(String restaurantId, String userId) async {}
+}
+
+/// UserRepository returning a fixed votedRestaurantIds list, for
+/// testing the one-document sign-in reconciliation. Records calls so
+/// a test can prove the read happened at all, and that it happened
+/// once rather than once per restaurant.
+class StubUserRepository extends UserRepository {
+  StubUserRepository(this._votedIds)
+      : super(firestore: FakeFirebaseFirestore());
+
+  final List<String> _votedIds;
+  final List<String> getVotedIdsCalls = [];
+
+  @override
+  Future<List<String>> getVotedIds(String uid) async {
+    getVotedIdsCalls.add(uid);
+    return List.from(_votedIds);
+  }
 }
 
 void main() {
@@ -319,10 +337,15 @@ void main() {
 
     test('vote persistence round-trip', () async {
       SharedPreferences.setMockInitialValues({
-        'voted_restaurant_ids': ['hou-1', 'nyc-1'],
+        'voted_restaurant_ids_test-user': ['hou-1', 'nyc-1'],
       });
 
-      final state = AppState(useFirebase: false);
+      final state = AppState(
+        useFirebase: false,
+        authService: AuthService.mock(
+          initialUser: const AuthUser(uid: 'test-user'),
+        ),
+      );
       await Future<void>.delayed(
         const Duration(milliseconds: 600),
       );
@@ -330,6 +353,98 @@ void main() {
       expect(state.hasVoted('hou-1'), isTrue);
       expect(state.hasVoted('nyc-1'), isTrue);
       expect(state.hasVoted('hou-11'), isFalse);
+    });
+
+    // The vote cache used to live under a single un-scoped key, so
+    // it survived sign-out and was readable by the next account on
+    // the device. Same class of leak as the finding 7 vote-read
+    // rule, one layer down.
+    // Seeded under the un-scoped key on purpose: that is what a
+    // device upgraded from the previous build actually has on disk,
+    // and it is the exact state an un-scoped read would leak.
+    test('a signed-out AppState reads no cached votes', () async {
+      SharedPreferences.setMockInitialValues({
+        'voted_restaurant_ids': ['hou-1'],
+      });
+
+      final state = AppState(
+        useFirebase: false,
+        authService: AuthService.mock(),
+      );
+      await Future<void>.delayed(
+        const Duration(milliseconds: 600),
+      );
+
+      expect(state.hasVoted('hou-1'), isFalse);
+    });
+
+    test('one account cannot read another account cache', () async {
+      SharedPreferences.setMockInitialValues({
+        'voted_restaurant_ids': ['hou-1'],
+        'voted_restaurant_ids_alice': ['hou-1'],
+      });
+
+      final state = AppState(
+        useFirebase: false,
+        authService: AuthService.mock(
+          initialUser: const AuthUser(uid: 'bob'),
+        ),
+      );
+      await Future<void>.delayed(
+        const Duration(milliseconds: 600),
+      );
+
+      expect(state.hasVoted('hou-1'), isFalse);
+    });
+
+    test('the legacy un-scoped key is deleted, not migrated', () async {
+      SharedPreferences.setMockInitialValues({
+        'voted_restaurant_ids': ['hou-1'],
+      });
+
+      final state = AppState(
+        useFirebase: false,
+        authService: AuthService.mock(
+          initialUser: const AuthUser(uid: 'test-user'),
+        ),
+      );
+      await Future<void>.delayed(
+        const Duration(milliseconds: 600),
+      );
+
+      // Not carried forward: its contents belong to whoever last
+      // used this device, which is exactly what scoping fixes.
+      expect(state.hasVoted('hou-1'), isFalse);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey('voted_restaurant_ids'), isFalse);
+    });
+
+    test('sign-out clears in-memory votes, not just the key', () async {
+      SharedPreferences.setMockInitialValues({
+        'voted_restaurant_ids_test-user': ['hou-1'],
+      });
+      final auth = AuthService.mock(
+        initialUser: const AuthUser(uid: 'test-user'),
+      );
+      final state = AppState(useFirebase: false, authService: auth);
+      await Future<void>.delayed(
+        const Duration(milliseconds: 600),
+      );
+      expect(state.hasVoted('hou-1'), isTrue);
+
+      auth.setMockUser(null);
+      await Future<void>.delayed(
+        const Duration(milliseconds: 50),
+      );
+
+      // Buttons must stop showing the previous account's votes
+      // immediately, without waiting for a reload.
+      expect(state.hasVoted('hou-1'), isFalse);
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.containsKey('voted_restaurant_ids_test-user'),
+        isFalse,
+      );
     });
 
     test(
@@ -372,7 +487,7 @@ void main() {
         'toggleVote rolls back an unvote the same way when the delete '
         'fails', () async {
       SharedPreferences.setMockInitialValues({
-        'voted_restaurant_ids': ['hou-1'],
+        'voted_restaurant_ids_test-user': ['hou-1'],
       });
       const restaurant = Restaurant(
         id: 'hou-1',
@@ -389,6 +504,12 @@ void main() {
         cityRepo: StubCityRepository(),
         restaurantRepo: StubRestaurantRepository(restaurant),
         voteRepo: ThrowingVoteRepository(),
+        // Server list agrees the vote exists, so reconciliation does
+        // not wipe the state this test is about to roll back.
+        userRepo: StubUserRepository(['hou-1']),
+        authService: AuthService.mock(
+          initialUser: const AuthUser(uid: 'test-user'),
+        ),
       );
       await Future<void>.delayed(const Duration(milliseconds: 600));
 
@@ -416,35 +537,31 @@ void main() {
         description: '',
         rank: 1,
       );
-      // Local state (e.g. left over from a previous, different
-      // signed-in user on this device) claims hou-1 is voted. The
-      // server disagrees: it has no vote for this user at all. A new
-      // device / new sign-in must end up matching the server, not
-      // keeping whatever was here before.
+      // Local state, left over from a previous signed-in user on
+      // this device, claims hou-1 is voted. The server's own list
+      // for the account now signing in disagrees. Sign-in must end
+      // up matching the server, not keeping what was here before.
       SharedPreferences.setMockInitialValues({
-        'voted_restaurant_ids': ['hou-1'],
+        'voted_restaurant_ids_real-user': ['hou-1'],
       });
       final auth = AuthService.mock();
-      final voteRepo = StubVoteRepository({});
+      final userRepo = StubUserRepository([]);
       final state = AppState(
         useFirebase: true,
         cityRepo: StubCityRepository(),
         restaurantRepo: StubRestaurantRepository(restaurantA),
-        voteRepo: voteRepo,
+        voteRepo: StubVoteRepository({}),
+        userRepo: userRepo,
         authService: auth,
       );
       await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      // Confirms local state before reconciliation, so the assertion
-      // below is proven to be a real change, not a coincidence.
-      expect(state.hasVoted('hou-1'), isTrue);
 
       auth.setMockUser(
         const AuthUser(uid: 'real-user', emailVerified: true),
       );
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(voteRepo.hasVotedCalls, contains('hou-1'));
+      expect(userRepo.getVotedIdsCalls, contains('real-user'));
       expect(state.hasVoted('hou-1'), isFalse);
     });
 
@@ -463,18 +580,124 @@ void main() {
       final auth = AuthService.mock(
         initialUser: const AuthUser(uid: 'real-user', emailVerified: true),
       );
-      final voteRepo = StubVoteRepository({'hou-1'});
+      final userRepo = StubUserRepository(['hou-1']);
       final state = AppState(
         useFirebase: true,
         cityRepo: StubCityRepository(),
         restaurantRepo: StubRestaurantRepository(restaurant),
-        voteRepo: voteRepo,
+        voteRepo: StubVoteRepository({'hou-1'}),
+        userRepo: userRepo,
         authService: auth,
       );
       await Future<void>.delayed(const Duration(milliseconds: 600));
 
-      expect(voteRepo.hasVotedCalls, contains('hou-1'));
+      expect(userRepo.getVotedIdsCalls, contains('real-user'));
       expect(state.hasVoted('hou-1'), isTrue);
+    });
+
+    // The whole point of the users/{uid} list: one read regardless of
+    // catalogue size, instead of one hasVoted read per restaurant.
+    test('sign-in reconciliation costs exactly one document read',
+        () async {
+      const restaurant = Restaurant(
+        id: 'hou-1',
+        cityId: 'test-city',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: '',
+        description: '',
+        rank: 1,
+      );
+      final auth = AuthService.mock(
+        initialUser: const AuthUser(uid: 'real-user', emailVerified: true),
+      );
+      final userRepo = StubUserRepository(['hou-1']);
+      final voteRepo = StubVoteRepository({'hou-1'});
+      AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurant),
+        voteRepo: voteRepo,
+        userRepo: userRepo,
+        authService: auth,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      expect(userRepo.getVotedIdsCalls, hasLength(1));
+      // Reconciliation must not touch the votes subcollection at
+      // all; only the on-read repair does, and nothing opened a
+      // detail screen here.
+      expect(voteRepo.hasVotedCalls, isEmpty);
+    });
+
+    // The stuck-user case. Cached list wrongly says not-voted, so
+    // the button invites a tap, but the vote doc already exists and
+    // firestore.rules denies an update on that path, leaving no way
+    // out. The repair corrects the button before that can happen.
+    test(
+        'on-read repair corrects a stale not-voted cache against the '
+        'server', () async {
+      const restaurant = Restaurant(
+        id: 'hou-1',
+        cityId: 'test-city',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: '',
+        description: '',
+        rank: 1,
+      );
+      final auth = AuthService.mock(
+        initialUser: const AuthUser(uid: 'real-user', emailVerified: true),
+      );
+      // Server list is empty (the wrong answer, e.g. an unvote and a
+      // vote whose trigger events landed reversed), but the votes
+      // subcollection, the real source of truth, has the vote.
+      final state = AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurant),
+        voteRepo: StubVoteRepository({'hou-1'}),
+        userRepo: StubUserRepository([]),
+        authService: auth,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      // Proves the cache really is wrong before the repair, so the
+      // assertion after it is a real correction.
+      expect(state.hasVoted('hou-1'), isFalse);
+
+      await state.repairVoteStateForRestaurant('hou-1');
+
+      expect(state.hasVoted('hou-1'), isTrue);
+    });
+
+    test('on-read repair clears a stale voted cache', () async {
+      const restaurant = Restaurant(
+        id: 'hou-1',
+        cityId: 'test-city',
+        name: 'Mensho',
+        cuisine: 'Ramen',
+        imageUrl: '',
+        description: '',
+        rank: 1,
+      );
+      final auth = AuthService.mock(
+        initialUser: const AuthUser(uid: 'real-user', emailVerified: true),
+      );
+      final state = AppState(
+        useFirebase: true,
+        cityRepo: StubCityRepository(),
+        restaurantRepo: StubRestaurantRepository(restaurant),
+        voteRepo: StubVoteRepository({}),
+        userRepo: StubUserRepository(['hou-1']),
+        authService: auth,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      expect(state.hasVoted('hou-1'), isTrue);
+
+      await state.repairVoteStateForRestaurant('hou-1');
+
+      expect(state.hasVoted('hou-1'), isFalse);
     });
 
     test('setSearchQuery filters cities', () async {

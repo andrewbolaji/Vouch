@@ -16,6 +16,11 @@ abstract class UserProfile with _$UserProfile {
     @Default('free') String membershipTier,
     @Default([]) List<String> savedRestaurantIds,
     @Default([]) List<String> blockedUserIds,
+    // Maintained by the onVoteCreated/onVoteDeleted triggers, never
+    // by the client: firestore.rules denies client writes to this
+    // field. Read once on sign-in so the app knows which vote
+    // buttons to fill in without one read per restaurant.
+    @Default([]) List<String> votedRestaurantIds,
   }) = _UserProfile;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) =>

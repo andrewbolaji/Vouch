@@ -698,6 +698,59 @@ describe("users", () => {
     );
   });
 
+  // votedRestaurantIds is maintained by the onVoteCreated /
+  // onVoteDeleted triggers via the Admin SDK. A client forging it
+  // could only mislead its own UI, but it is the one field the
+  // client is meant to treat as server truth, so it must not be
+  // client-writable. Seeded without the field on purpose: the rule
+  // uses the .get(..., []) form specifically so it still evaluates
+  // against documents written before this field existed.
+  test("DENIED: user cannot add a votedRestaurantIds entry", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      email: "alice@test.com",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users/alice"), {
+        votedRestaurantIds: ["hou-1"],
+      })
+    );
+  });
+
+  test("DENIED: user cannot alter an existing votedRestaurantIds", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      email: "alice@test.com",
+      votedRestaurantIds: ["hou-1"],
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users/alice"), {
+        votedRestaurantIds: ["hou-1", "hou-2"],
+      })
+    );
+  });
+
+  // The lock above must not turn into a blanket write freeze on the
+  // rest of the document.
+  test("unrelated update still succeeds alongside the vote lock", async () => {
+    await seedAsAdmin("users/alice", {
+      id: "alice",
+      displayName: "Alice",
+      email: "alice@test.com",
+      votedRestaurantIds: ["hou-1"],
+    });
+    const db = freeUser("alice").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users/alice"), {
+        displayName: "Alice Updated",
+      })
+    );
+  });
+
   test("DENIED: user cannot update another user's doc", async () => {
     await seedAsAdmin("users/bob", {
       id: "bob",
