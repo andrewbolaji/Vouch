@@ -10,7 +10,7 @@ Every command below was run here, except the last block (needs a Firebase login 
 
 ```bash
 flutter pub get
-flutter test --exclude-tags=golden   # 328 tests, ~40s, no emulator needed
+flutter test --exclude-tags=golden   # 349 tests, ~30s, no emulator needed
 ```
 
 The other suites need the Firestore emulator, hence Java on PATH:
@@ -19,9 +19,9 @@ The other suites need the Firestore emulator, hence Java on PATH:
 export PATH="$(brew --prefix openjdk)/bin:$PATH"
 
 firebase emulators:exec --only firestore,auth --project vouch-test \
-  'cd functions && npx jest --forceExit'        # 63 tests
+  'cd functions && npx jest --forceExit'        # 135 tests
 
-(cd test-rules && npm run test:emulator)       # 79 tests
+(cd test-rules && npm run test:emulator)       # 91 tests
 ```
 
 Lint and build:

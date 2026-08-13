@@ -7,7 +7,7 @@ Curated Top 10 restaurant rankings, one definitive list per city, voted on by lo
 - **One list per city.** Each city has a single curated Top 10, so the list stays definitive instead of endless.  
 - **Locals vote.** One vote per user is enforced at the database layer, and a daily time-decay ranking keeps lists current.  
 - **Three-tier membership.** A server-side paywall gates premium features. Entitlements are enforced with custom auth claims and a Cloud Function that strips premium fields for non-members, so the client is never trusted with access decisions.  
-- **Built to ship.** 452 automated tests, including Firestore security-rules tests and Cloud Function suites.
+- **Built to ship.** 575 automated tests, including Firestore security-rules tests and Cloud Function suites.
 
 ## Tech stack
 
@@ -46,13 +46,13 @@ flutter run
 ### Running tests
 
 ```bash
-# Flutter/Dart tests (310 tests)
+# Flutter/Dart tests (349 tests)
 flutter test
 
-# Cloud Function tests (63 tests)
+# Cloud Function tests (135 tests)
 cd functions && npm test
 
-# Firestore security rules tests (79 tests, requires Firebase emulator)
+# Firestore security rules tests (91 tests, requires Firebase emulator)
 cd test-rules && npm test
 ```
 

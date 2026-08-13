@@ -1092,6 +1092,42 @@ describe("Rank recompute integration (real recomputeAllRanks)", () => {
     expect(empty.data()?.rank).toBe(4);
     expect(empty.data()?.rankScore).toBe(0);
   });
+
+  // eslint-disable-next-line max-len
+  test("a deliberately wrong voteCount is corrected to the real vote doc count", async () => {
+    // voteCount claims 999, as if applyVoteCreated's FieldValue.increment
+    // had double counted under a Cloud Functions retry, or drifted any
+    // other way. The votes subcollection, the actual source of truth,
+    // has exactly 2 docs.
+    await db.collection("restaurants").doc("rest-wrong-count").set({
+      id: "rest-wrong-count",
+      cityId: "test-city",
+      name: "Wrong Count Restaurant",
+      rank: 1,
+      voteCount: 999,
+    });
+    for (let i = 0; i < 2; i++) {
+      await db
+        .collection("restaurants")
+        .doc("rest-wrong-count")
+        .collection("votes")
+        .doc(`user-wc${i}`)
+        .set({
+          createdAt: Timestamp.fromDate(
+            new Date(now.getTime() - i * msPerDay)
+          ),
+          weight: 1,
+        });
+    }
+
+    await recomputeAllRanks(db, now);
+
+    const doc = await db
+      .collection("restaurants")
+      .doc("rest-wrong-count")
+      .get();
+    expect(doc.data()?.voteCount).toBe(2);
+  });
 });
 
 // ================================================================

@@ -22,9 +22,14 @@ import 'package:vouch/theme/app_theme.dart';
 /// Runtime fetching is disabled so tests never attempt network
 /// access.
 ///
-/// Baselines are validated on this machine (macOS arm64). Flutter goldens
-/// can produce pixel differences across OS, architecture, or Flutter
-/// version. This is a known limitation, documented here.
+/// Baselines are CI-authoritative: generated and validated on
+/// ubuntu-latest by .github/workflows/update-goldens.yml, not on a
+/// developer machine. Flutter goldens produce pixel differences
+/// across OS, architecture, and font rendering, so running these
+/// locally on macOS is expected to fail against the Linux baselines.
+/// That failure is not a regression; it just means the golden run is
+/// only meaningful on that CI runner. Confirmed by running this
+/// suite locally: all 5 golden tests fail here on macOS arm64.
 Future<void> setUpGoldens() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;

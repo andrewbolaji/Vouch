@@ -2,8 +2,19 @@
  * Rank recomputation orchestrator.
  *
  * Reads vote subcollections from Firestore, delegates score math
- * to rank_engine.ts, and batch-writes updated rank + rankScore
- * to restaurant docs.
+ * to rank_engine.ts, and batch-writes updated rank + rankScore +
+ * voteCount to restaurant docs.
+ *
+ * voteCount is also maintained incrementally by
+ * vote_aggregation.ts on every vote create/delete, via
+ * FieldValue.increment with no idempotency guard against Cloud
+ * Functions' at-least-once retry delivery, so a retried trigger
+ * invocation could double count it there. Writing the true count
+ * here every night, computed from the same vote subcollection read
+ * this function already does for scoring, corrects any such drift
+ * by morning at zero extra read cost. See docs/DECISIONS.md for why
+ * this replaces adding a transaction or dedup marker to the
+ * increment path instead.
  *
  * Called by the scheduled Cloud Function and directly by tests.
  */
@@ -69,10 +80,11 @@ export async function recomputeAllRanks(
 
     // Compute scores
     const scored: ScoredRestaurant[] = [];
+    const trueVoteCountById = new Map<string, number>();
 
     for (const restDoc of restaurantsSnap.docs) {
-      const restData = restDoc.data();
       const votesSnap = await restDoc.ref.collection("votes").get();
+      trueVoteCountById.set(restDoc.id, votesSnap.size);
 
       const votes: VoteRecord[] = votesSnap.docs
         .map((vDoc) => {
@@ -91,21 +103,26 @@ export async function recomputeAllRanks(
       scored.push({
         id: restDoc.id,
         score,
-        voteCount: (restData.voteCount as number) ?? 0,
-        name: (restData.name as string) ?? "",
+        // The true count from the read above, not the possibly
+        // stale restaurant.voteCount field, so the tie-break in
+        // assignRanks (score, then voteCount, then name) sorts on
+        // the same number this function is about to write back.
+        voteCount: votesSnap.size,
+        name: (restDoc.data().name as string) ?? "",
       });
     }
 
     // Assign ranks
     const ranked = assignRanks(scored);
 
-    // Batch-write new ranks
+    // Batch-write new ranks and the true, reconciled voteCount
     const batch = db.batch();
     for (const r of ranked) {
       const ref = db.collection("restaurants").doc(r.id);
       batch.update(ref, {
         rank: r.rank,
         rankScore: Math.round(r.score * 1000) / 1000,
+        voteCount: trueVoteCountById.get(r.id) ?? 0,
       });
     }
     await batch.commit();

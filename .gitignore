@@ -79,3 +79,6 @@ macos/Pods/
 # Root-level generated lock files
 /macos/Podfile.lock
 /package-lock.json
+
+# Golden test diff artifacts, regenerated on every local golden run
+/test/goldens/failures/
