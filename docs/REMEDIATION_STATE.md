@@ -64,7 +64,8 @@ The absent-`displayOrder` branch is now dead in production, so
 | 8 | Landed. `submitComment` validated `restaurantId` and `parentId` on trust, and it is the only path that can create a comment, so nothing else was going to check them. Now: the restaurant must exist, and a `parentId` must exist under **that same restaurant** and must itself be top level. The one-level rule is what the read path can express, not a style choice: `getPage` fetches `parentId == null` and `getReplies` fetches `parentId == commentId`, so a reply to a reply would be written and then be permanently invisible to everyone including its author. | |
 | 9 | Landed. Cascade guard so applyVoteDeleted/applyCommentDeleted do not throw NOT_FOUND when the parent restaurant is already gone. | `1c7639a` |
 | 10 (Fix A) | Landed. Tie-break changed from `name.localeCompare` to `displayOrder` asc, then `id`. Absent displayOrder sorts last. `rank_recompute.ts` now passes the field through, without which the change was inert. | `9f0e512` |
-| 10 (Fix B) | **Design written, not built. Constants decided: `BASELINE_STEP = 2.0`, expiry 20 per restaurant, scaling with `n`.** `docs/FIX_B_DESIGN.md`. Baseline derived from `displayOrder`, added as a separate score term, never routed through vote weight. Linear decay to exactly zero at `n * 20` city votes. Absent `displayOrder` gets no baseline. Andrew's zero-vote guard as the outer layer. Carries the deferred teaser projection into the same batch. | |
+| 10 (Fix B) | **Built through step 5 of 6.** `0c596f8` the zero-vote guard, `3c06e72` the constants, `baselineWeight()`, `baselineFor()`, the wiring into `recomputeAllRanks`, `baselineScore` per restaurant and `cities.baselineWeight` per city, `4f7eaec` the per-run baseline log with its expiry countdown, `0dd0020` the opening-list disclosure on the city screen. Step 6, the teaser projection, is **blocked**, see "Deferred into Fix B" below. Design below is unchanged and still accurate. | `0c596f8`, `3c06e72`, `4f7eaec`, `0dd0020` |
+| 10 (Fix B, original design note) | **Design written.** Constants decided: `BASELINE_STEP = 2.0`, expiry 20 per restaurant, scaling with `n`.** `docs/FIX_B_DESIGN.md`. Baseline derived from `displayOrder`, added as a separate score term, never routed through vote weight. Linear decay to exactly zero at `n * 20` city votes. Absent `displayOrder` gets no baseline. Andrew's zero-vote guard as the outer layer. Carries the deferred teaser projection into the same batch. | |
 | 15 | **New, not started, read only so far.** `waitlistSignup` has no rate limit and no size limit on `city` or `source`, so a script can write unbounded rows each inflatable toward Firestore's 1 MiB document limit. Dedup is structural and strong (doc id is the normalised email), so repeated addresses are harmless; unique ones are not. Write cost is one time, **storage cost is recurring** and is the real damage. Cheap fix: cap the two string fields, add a per IP counter. See `docs/FINDING_14_APP_CHECK.md`. | |
 | 14 | **New, LAUNCH BLOCKING, report delivered, nothing enabled.** App Check is activated but unenforced on every service (`firestore`, `identitytoolkit`, `oauth2`, `places` all `UNENFORCED`, read from the Admin API). So a vote costs an email address rather than a person, and every number in the Fix B manipulation table assumes it costs a person. `firestore.rules` enforcing `weight == 1` protects nothing against a script. See `docs/FINDING_14_APP_CHECK.md`. Hard blocker inside it: `cloud_functions` is not in `pubspec.yaml`, both callables are hand-rolled HTTP POSTs with no `X-Firebase-AppCheck` header, so enforcing them today breaks commenting and suggestions outright. | |
 | 13 | **New, not started.** Location data is unusable on the 40 scaffold restaurants, independent of the content question and not fixed by deleting a description. All 40 carry `latitude: 0, longitude: 0`, which is a real point in the Gulf of Guinea, so any map, distance or nearby feature reads all 40 as being in the same place off the coast of Africa. Five carry a non-address in `RestaurantLocation.address`, including `"Various, Chicago, IL"`, which is **displayed to users today** at `restaurant_detail_screen.dart`. Atlanta is clean: 17 of 17 have real Places coordinates. Fix is a Places pass keyed by `placeId`, which Atlanta already has and the scaffold cities do not. | |
@@ -74,7 +75,11 @@ Other landed work: `39c3edf` voteCount nightly reconciliation plus
 docs; `f4c7fa9` profile lockout fix, vote-list backfill script, deploy
 order rule; `48df7c3` votedRestaurantIds one-read design; `0dd9416`
 UserProfile stops serializing votedRestaurantIds; `74c6bec` project
-pinned in every script.
+pinned in every script; `075c322` functions lint back to zero
+problems, which is not cosmetic: `npm run lint` is a predeploy step in
+`firebase.json` and had been failing since `7a693f2` on one 81
+character line, so any `firebase deploy --only functions:...` would
+have stopped at the gate before deploying anything.
 
 ## Finding 10: measured, not reasoned
 
@@ -448,6 +453,37 @@ one publicly readable teaser document per city holding
 in sync by construction rather than by a job that can fall behind.
 
 That batch is only open during Fix B. Build it there, not on its own.
+
+### Blocked, found 2026-08-16 while building it
+
+**There is no neighbourhood anywhere in the data.** `Restaurant` has
+`cuisine` but no neighbourhood field, and the nearest candidate,
+`RestaurantLocation.name`, is not one. In Houston's seed it holds
+`Chinatown` and `South Main`, which are neighbourhoods, alongside
+`Richmond Ave` and `Westheimer`, which are streets, and `Spring`,
+which is a separate city. Publishing that column as "neighbourhood"
+would publish three different kinds of thing under one label, and it
+would do it on the public, unauthenticated read surface where it is
+the first thing a prospective subscriber sees.
+
+So the projection cannot be built as specified. Two calls, both
+Andrew's:
+
+1. **Where neighbourhood comes from.** A new field backfilled per
+   restaurant (Atlanta's 17 have `placeId` and could be filled from
+   Places, the scaffold cities cannot, see finding 13), or the teaser
+   ships as `{rank, cuisine}` only and the column is dropped.
+2. **Whether the locked row changes at all.** Today it is rank plus a
+   fixed-width redaction bar (`_LockedRestaurantPlaceholder`,
+   finding 11). Showing cuisine and neighbourhood there is a paywall
+   conversion decision, not a data one, and the write path is worth
+   nothing until it is made.
+
+The write half could ship ahead of the read half, since the argument
+for building it inside the rank batch holds either way. It has not,
+because a public collection written for a consumer that may never
+exist is the same shape of unread work this remediation keeps
+finding.
 
 ## Image pipeline: a deadlock, and therefore a hard blocker
 
