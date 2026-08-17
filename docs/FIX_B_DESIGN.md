@@ -304,18 +304,25 @@ pairing for the gated band on the open web.
 
 1. ~~The guard.~~ **Landed.** `rank_recompute.ts`, skips before the
    batch is built when `cityVoteTotal === 0`.
-2. The constants, the pure `baselineWeight()` and `baselineFor()`
+2. ~~The constants, the pure `baselineWeight()` and `baselineFor()`
    functions in
    `rank_engine.ts`, with the zero-vote and one-vote fixtures from the
    Fix A tests extended to assert the new scores, plus the
-   monotonicity property test above. Red first.
-3. Wire it into `recomputeAllRanks`, plus `baselineScore` on the
-   write.
-4. The new anomaly log, and `baselineWeight` written to the city
+   monotonicity property test above. Red first.~~ **Landed**, `3c06e72`.
+3. ~~Wire it into `recomputeAllRanks`, plus `baselineScore` on the
+   write.~~ **Landed**, `3c06e72`. Keyed on `displayOrder`, proven by
+   a fixture where `rank` and `displayOrder` disagree, because arity
+   cannot catch a caller passing the wrong one.
+4. ~~The new anomaly log, and `baselineWeight` written to the city
    document so the screen can render the opening-list line without a
-   second implementation of the curve.
-5. The opening-list string on the city screen, which is a requirement
-   rather than polish.
+   second implementation of the curve.~~ **Landed**, the city write in
+   `3c06e72` and the log in `4f7eaec`.
+5. ~~The opening-list string on the city screen, which is a requirement
+   rather than polish.~~ **Landed**. `OpeningListNotice`, rendered
+   while `city.isOpeningList`. `City.baselineWeight` defaults to 1
+   rather than 0, because the recompute skips a zero-vote city
+   entirely and so never writes the field on exactly the cities whose
+   curation is fully in force.
 6. The teaser projection in the same batch.
 
 Steps 1 and 2 are independently shippable and independently valuable.

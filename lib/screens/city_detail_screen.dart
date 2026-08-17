@@ -9,6 +9,7 @@ import 'package:vouch/providers/membership_provider.dart';
 import 'package:vouch/screens/restaurant_detail_screen.dart';
 import 'package:vouch/screens/upgrade_screen.dart';
 import 'package:vouch/theme/app_theme.dart';
+import 'package:vouch/widgets/opening_list_notice.dart';
 import 'package:vouch/widgets/paywall_gate.dart';
 import 'package:vouch/widgets/restaurant_card.dart';
 
@@ -124,6 +125,14 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 city.description,
                 style: AppTheme.bodyMedium,
               ),
+              // Above the list rather than below it, because it is
+              // the frame the list should be read in and not a
+              // footnote about it. Disappears on its own when the
+              // curated weight reaches zero.
+              if (city.isOpeningList) ...[
+                const SizedBox(height: AppTheme.spacingSm),
+                OpeningListNotice(baselineWeight: city.baselineWeight),
+              ],
               const SizedBox(height: AppTheme.spacingLg),
               // Segmented toggle (square, matches cards)
               Row(
