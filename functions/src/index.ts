@@ -493,12 +493,80 @@ export const waitlistSignup = onRequest(
 
 const revenueCatWebhookSecret = defineSecret("REVENUECAT_WEBHOOK_SECRET");
 
-// Optional on purpose. An unset secret reads as an empty string and
-// leaves signature verification switched off, which is what lets this
-// deploy safely before Andrew has generated it.
-const revenueCatSigningSecret = defineSecret(
-  "REVENUECAT_WEBHOOK_SIGNING_SECRET"
-);
+// ===========================================================
+// TWO FEATURES ARE BUILT AND SWITCHED OFF HERE. READ THIS BEFORE
+// ADDING ANOTHER SECRET, AND BEFORE ASSUMING A DEPLOY IS SAFE.
+//
+// Calling defineSecret() for a secret that does not exist in Secret
+// Manager makes `firebase deploy` fail, and it fails for the WHOLE
+// CODEBASE, not just the function that uses it. Measured 2026-08-18:
+//
+//   firebase deploy --only functions:recomputeRanks --dry-run
+//   Error: In non-interactive mode but have no value for the secret:
+//   REVENUECAT_REST_API_KEY
+//
+// recomputeRanks neither uses nor knows about that secret. The CLI
+// validates every declared secret while it analyses the source, long
+// before it filters down to the function being deployed. So a
+// reference to a secret that has not been created yet does not block
+// one deploy, it blocks all of them, including an emergency fix to
+// the ranking engine.
+//
+// That is not hypothetical: commits a594b6d and 2679757 left this
+// repo unable to deploy anything for a day. It went unnoticed because
+// the single deploy performed in between was run from a worktree at
+// an earlier commit, which is the one path that could not have
+// revealed it.
+//
+// Three things were measured while fixing it, and each one is a trap:
+//
+//  1. It is the defineSecret() CALL that registers the requirement,
+//     not the `secrets: [...]` array. Declaring a secret and then
+//     leaving it out of every function fails exactly the same way.
+//  2. Shell environment variables do NOT reach the CLI's source
+//     analysis. `VOUCH_X=true firebase deploy` cannot switch anything
+//     that is read with process.env at module scope. Verified with a
+//     module-scope probe that throws when the variable is set: it
+//     never fired under the CLI, and fired immediately under
+//     `node -e "require('./lib/index.js')"`.
+//  3. A functions/.env file does not reach it either, verified the
+//     same way.
+//
+// So the switches below are plain constants. Enabling a feature is a
+// one line code change in the same commit that creates its secret,
+// which is reviewable, greppable, and cannot silently fail to take
+// effect the way an environment variable can.
+//
+// To enable reconciliation (finding 5, part 2):
+//   1. firebase functions:secrets:set REVENUECAT_REST_API_KEY
+//   2. flip RECONCILE_ENABLED to true
+//   3. firebase deploy --only functions:reconcileMembership
+//
+// To enable signature verification (finding 5, part 3):
+//   1. Confirm REVENUECAT_SIGNATURE_HEADER against RevenueCat's docs
+//   2. firebase functions:secrets:set REVENUECAT_WEBHOOK_SIGNING_SECRET
+//   3. flip SIGNATURE_ENABLED to true
+//   4. firebase deploy --only functions:onRevenueCatWebhook
+//
+// Each is a plain `false`, so TypeScript narrows the secret it
+// guards to null and the compiler proves the disabled path cannot
+// reach a secret that was never declared. Flipping one to true is
+// what re-widens it.
+// ===========================================================
+
+/** Part 2 of finding 5. Requires REVENUECAT_REST_API_KEY to exist. */
+const RECONCILE_ENABLED = false;
+
+/** Part 3 of finding 5. Requires REVENUECAT_WEBHOOK_SIGNING_SECRET. */
+const SIGNATURE_ENABLED = false;
+
+const revenueCatSigningSecret = SIGNATURE_ENABLED ?
+  defineSecret("REVENUECAT_WEBHOOK_SIGNING_SECRET") :
+  null;
+
+const revenueCatRestApiKey = RECONCILE_ENABLED ?
+  defineSecret("REVENUECAT_REST_API_KEY") :
+  null;
 
 // APP CHECK MUST NEVER BE ENFORCED ON THIS FUNCTION.
 //
@@ -517,7 +585,9 @@ const revenueCatSigningSecret = defineSecret(
 export const onRevenueCatWebhook = onRequest(
   {
     cors: false,
-    secrets: [revenueCatWebhookSecret, revenueCatSigningSecret],
+    secrets: revenueCatSigningSecret ?
+      [revenueCatWebhookSecret, revenueCatSigningSecret] :
+      [revenueCatWebhookSecret],
   },
   async (req, res) => {
     if (req.method !== "POST") {
@@ -544,7 +614,7 @@ export const onRevenueCatWebhook = onRequest(
     // Skipping when the secret is unset is the whole hold mechanism.
     // It is logged at warn every time, so "we never turned it on" is
     // visible in the logs rather than remembered.
-    const signingSecret = revenueCatSigningSecret.value();
+    const signingSecret = revenueCatSigningSecret?.value() ?? "";
     if (signingSecret) {
       const signature = req.headers[REVENUECAT_SIGNATURE_HEADER];
       const provided = Array.isArray(signature) ? signature[0] : signature;
@@ -638,14 +708,27 @@ export const onRestaurantDeleted = onDocumentDeleted(
 //    account it does not own.
 // ---------------------------------------------------------------------------
 
-const revenueCatRestApiKey = defineSecret("REVENUECAT_REST_API_KEY");
-
 /** Reconciliations one user may request in a UTC day. */
 export const MAX_RECONCILES_PER_DAY = 5;
 
 export const reconcileMembership = onCall(
-  {secrets: [revenueCatRestApiKey]},
+  {secrets: revenueCatRestApiKey ? [revenueCatRestApiKey] : []},
   async (request) => {
+    // Refuses rather than pretending. With the switch off the secret
+    // is not attached, so there is nothing to ask RevenueCat with,
+    // and answering "you have no subscription" would be the exact lie
+    // revenuecat_api.ts is built to avoid.
+    if (!revenueCatRestApiKey) {
+      logger.error(
+        "[reconcile] called while disabled. Set REVENUECAT_REST_API_KEY " +
+        "and redeploy with VOUCH_ENABLE_RC_RECONCILE=true."
+      );
+      throw new HttpsError(
+        "failed-precondition",
+        "Membership refresh is not available yet. Please contact support."
+      );
+    }
+
     if (!request.auth) {
       throw new HttpsError(
         "unauthenticated",
