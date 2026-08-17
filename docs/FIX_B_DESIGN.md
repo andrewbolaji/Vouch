@@ -323,7 +323,30 @@ pairing for the gated band on the open web.
    rather than 0, because the recompute skips a zero-vote city
    entirely and so never writes the field on exactly the cities whose
    curation is fully in force.
-6. The teaser projection in the same batch.
+6. The teaser projection in the same batch. **Deferred, both halves
+   together, until Houston's content is real.** Not blocked, and not
+   partially built: deliberately not started.
+
+   The reasoning that decided it. Writing the projection without the
+   client that reads it would ship a public collection for a consumer
+   that may never exist, which is the defect this remediation keeps
+   finding, authored on purpose this time. `getInsiderNotes` sat with
+   zero call sites for three months while its data, its reader and
+   its widget all existed. "The rank batch is already open" is a real
+   argument for where the write belongs, but it is not an argument
+   for when: reopening that batch later costs almost nothing next to
+   what an unread collection costs.
+
+   It also needs `neighborhood`, which does not exist yet. See
+   `docs/DECISIONS.md`, 2026-08-16: a real field on the restaurant
+   document, filled in by hand for Houston's ten, empty everywhere
+   else, and never inferred from `RestaurantLocation.name`.
+
+   When it is built: one publicly readable document per city holding
+   `{rank, cuisine, neighborhood}` for `kGatedRankStart` to
+   `kGatedRankEnd`, written inside the same batch that sets rank, and
+   rendering nothing where `neighborhood` is absent rather than
+   falling back to a field that means something else.
 
 Steps 1 and 2 are independently shippable and independently valuable.
 

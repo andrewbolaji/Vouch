@@ -64,9 +64,9 @@ The absent-`displayOrder` branch is now dead in production, so
 | 8 | Landed. `submitComment` validated `restaurantId` and `parentId` on trust, and it is the only path that can create a comment, so nothing else was going to check them. Now: the restaurant must exist, and a `parentId` must exist under **that same restaurant** and must itself be top level. The one-level rule is what the read path can express, not a style choice: `getPage` fetches `parentId == null` and `getReplies` fetches `parentId == commentId`, so a reply to a reply would be written and then be permanently invisible to everyone including its author. | |
 | 9 | Landed. Cascade guard so applyVoteDeleted/applyCommentDeleted do not throw NOT_FOUND when the parent restaurant is already gone. | `1c7639a` |
 | 10 (Fix A) | Landed. Tie-break changed from `name.localeCompare` to `displayOrder` asc, then `id`. Absent displayOrder sorts last. `rank_recompute.ts` now passes the field through, without which the change was inert. | `9f0e512` |
-| 10 (Fix B) | **Built through step 5 of 6.** `0c596f8` the zero-vote guard, `3c06e72` the constants, `baselineWeight()`, `baselineFor()`, the wiring into `recomputeAllRanks`, `baselineScore` per restaurant and `cities.baselineWeight` per city, `4f7eaec` the per-run baseline log with its expiry countdown, `0dd0020` the opening-list disclosure on the city screen. Step 6, the teaser projection, is **blocked**, see "Deferred into Fix B" below. Design below is unchanged and still accurate. | `0c596f8`, `3c06e72`, `4f7eaec`, `0dd0020` |
-| 10 (Fix B, original design note) | **Design written.** Constants decided: `BASELINE_STEP = 2.0`, expiry 20 per restaurant, scaling with `n`.** `docs/FIX_B_DESIGN.md`. Baseline derived from `displayOrder`, added as a separate score term, never routed through vote weight. Linear decay to exactly zero at `n * 20` city votes. Absent `displayOrder` gets no baseline. Andrew's zero-vote guard as the outer layer. Carries the deferred teaser projection into the same batch. | |
-| 15 | **New, not started, read only so far.** `waitlistSignup` has no rate limit and no size limit on `city` or `source`, so a script can write unbounded rows each inflatable toward Firestore's 1 MiB document limit. Dedup is structural and strong (doc id is the normalised email), so repeated addresses are harmless; unique ones are not. Write cost is one time, **storage cost is recurring** and is the real damage. Cheap fix: cap the two string fields, add a per IP counter. See `docs/FINDING_14_APP_CHECK.md`. | |
+| 10 (Fix B) | **Built through step 5 of 6.** `0c596f8` the zero-vote guard, `3c06e72` the constants, `baselineWeight()`, `baselineFor()`, the wiring into `recomputeAllRanks`, `baselineScore` per restaurant and `cities.baselineWeight` per city, `4f7eaec` the per-run baseline log with its expiry countdown, `0dd0020` the opening-list disclosure on the city screen. Step 6, the teaser projection, is **deferred whole** until Houston's content is real, see "Deferred into Fix B" below. Fix B is complete at step 5 for launch purposes. Design below is unchanged and still accurate. | `0c596f8`, `3c06e72`, `4f7eaec`, `0dd0020` |
+| 10 (Fix B, original design note) | **Design written.** Constants decided: `BASELINE_STEP = 2.0`, expiry 20 per restaurant, scaling with `n`. `docs/FIX_B_DESIGN.md`. Baseline derived from `displayOrder`, added as a separate score term, never routed through vote weight. Linear decay to exactly zero at `n * 20` city votes. Absent `displayOrder` gets no baseline. Andrew's zero-vote guard as the outer layer. Carries the deferred teaser projection into the same batch. | |
+| 15 | **Landed**, `210c5db`. Three caps as named constants with their reasons in `functions/src/waitlist.ts`: `MAX_WAITLIST_FIELD_CHARS = 100` on `city` and `source`, `MAX_EMAIL_CHARS = 254` (beyond the brief, and needed: `EMAIL_RE` matches a megabyte and the address becomes the document id, so an oversized one used to return a 500 rather than a rejection), and `MAX_SIGNUPS_PER_IP_PER_DAY = 20` in a transaction. Refuses rather than truncates. The allowance is spent after validation, so garbage cannot exhaust the quota of people behind the same carrier NAT. `waitlistIpCounts` denied explicitly in `firestore.rules`, with four rules tests proved to be wired to the rule and not to the default deny. Two things left open, neither of them code in this repo: the Firestore TTL policy on `waitlistIpCounts` has not been run (command in `DECISIONS.md`), and `site/index.html:318` now shows the wrong sentence for a 400 on an oversized city and for a 429. The five old "Waitlist signup logic" tests were deleted, not moved: none of them called `waitlistSignup`, and all five passed with the new validation removed. | `210c5db` |
 | 14 | **New, LAUNCH BLOCKING, report delivered, nothing enabled.** App Check is activated but unenforced on every service (`firestore`, `identitytoolkit`, `oauth2`, `places` all `UNENFORCED`, read from the Admin API). So a vote costs an email address rather than a person, and every number in the Fix B manipulation table assumes it costs a person. `firestore.rules` enforcing `weight == 1` protects nothing against a script. See `docs/FINDING_14_APP_CHECK.md`. Hard blocker inside it: `cloud_functions` is not in `pubspec.yaml`, both callables are hand-rolled HTTP POSTs with no `X-Firebase-AppCheck` header, so enforcing them today breaks commenting and suggestions outright. | |
 | 13 | **New, not started.** Location data is unusable on the 40 scaffold restaurants, independent of the content question and not fixed by deleting a description. All 40 carry `latitude: 0, longitude: 0`, which is a real point in the Gulf of Guinea, so any map, distance or nearby feature reads all 40 as being in the same place off the coast of Africa. Five carry a non-address in `RestaurantLocation.address`, including `"Various, Chicago, IL"`, which is **displayed to users today** at `restaurant_detail_screen.dart`. Atlanta is clean: 17 of 17 have real Places coordinates. Fix is a Places pass keyed by `placeId`, which Atlanta already has and the scaffold cities do not. | |
 | 11 | Landed. Section guard and locked row count both came from `top6to10`, always empty for a free user, so the paywall and the only paid-tier entry point on the screen never rendered. Both now come from rank constants. Locked rows are rank plus a fixed-width redaction bar, no gated field. Six paywall tests rewritten to assert the rule, not the roster. | `2e4efea` |
@@ -484,6 +484,72 @@ for building it inside the rank batch holds either way. It has not,
 because a public collection written for a consumer that may never
 exist is the same shape of unread work this remediation keeps
 finding.
+
+## `RestaurantLocation.name`: where it renders today, and what it claims
+
+Asked after the teaser finding: if that field holds three kinds of
+thing, is the mislabel already live somewhere nobody looked. Read
+only, nothing changed.
+
+**One renderer, and it is reachable by everybody.**
+`restaurant_detail_screen.dart:412` renders a section headed
+`Locations`, then one `LocationCard` per entry.
+`location_card.dart:34` puts `location.name` as the bold first line
+beside a map-pin icon, with `location.address` in caption type
+directly beneath it. Nothing else displays it: not `RestaurantCard`,
+not the city screen, not the home screen. The section sits on the
+detail screen for ranks 1 to `kFreeTierMaxRank`, so a signed-out free
+user sees it.
+
+**The values, from the scripts that wrote production.**
+
+| Kind | Houston values |
+|---|---|
+| Neighbourhood or district | `Chinatown`, `Midtown`, `Galleria / Uptown` |
+| Street or freeway | `Richmond Ave`, `Westheimer`, `Southwest Freeway`, `South Main` |
+| Area outside the city | `Cypress Creek` |
+| A different municipality | `Spring` |
+
+Scaffold cities additionally carry `Multiple locations` paired with
+the address `Various, New York, NY`, which is finding 13's non-address
+problem in the same widget.
+
+**Provenance confirms the ambiguity was upstream of the code.**
+`seed_atlanta.js:350` sets `name: candidate.area || "Atlanta"`, read
+from a CSV column titled `Area`
+(`data/atlanta_candidates_seedready.csv`). Houston's equivalent column
+is titled `Area / City` in
+`data/houston_candidates_seedready.csv`, which says it out loud, and
+that file is header-only with zero rows, so Houston's values were
+hardcoded in `seed_production.js` instead.
+
+**The answer: the strong mislabel is not live.** Three things hold it
+back, and all three are absent on the teaser surface, which is why the
+same field was refusable there and tolerable here.
+
+1. **The heading is `Locations`, not `Neighborhood`.** It is generic
+   enough to be true of a neighbourhood, a street and a suburb alike.
+   Nothing on the screen claims the value is a neighbourhood.
+2. **The address sits directly under every value**, so each card
+   corrects itself. A reader who sees `Spring` also sees
+   `26608 Keith St, Spring, TX 77373`.
+3. **One restaurant is on screen at a time.** The values never form a
+   column under one heading, which is exactly what a teaser would have
+   done, and a column is what turns an inconsistent field into a
+   category claim.
+
+**What is live is the weak version**, and it is worth knowing rather
+than fixing: a field with three meanings rendered as though it had
+one, bounded by the address beneath it. The two cases that actually
+misinform are `Spring`, which reads as a Houston area until you read
+the address, and Atlanta's `|| "Atlanta"` fallback, which would print
+the city's own name as a branch label and say nothing at all. Atlanta
+is not shipping.
+
+**Consequence for the `neighborhood` field when it lands.** Render it
+as its own thing. Do not retrofit meaning onto `location.name`, and do
+not relabel the `Locations` section: the generic heading is currently
+the only reason the existing values are not a lie.
 
 ## Image pipeline: a deadlock, and therefore a hard blocker
 

@@ -118,3 +118,48 @@ This is standing rule 3c ("verify that your verification commands
 actually verify") with a worked example attached. See also 3e, on the
 difference between a path existing and a path being reachable, which
 is the same class of mistake in a different register.
+
+---
+
+## A seam that depends on how many test files are running is not a seam
+
+The same lesson as the grep example, in a different medium, and it
+cost an hour rather than a day only because the full suite was run
+before committing rather than after.
+
+**The problem.** Fix B step 4 added a log line, and the thing a log
+can get wrong is describing a curve the run did not use. So the test
+had to read what was actually logged. Three seams were available and
+two of them are traps.
+
+1. **`jest.spyOn(logger, "info")` on `firebase-functions/logger`.**
+   Throws outright: `TypeError: Cannot redefine property: info`. Its
+   exports are non-configurable getters. This one fails loudly and is
+   therefore harmless.
+2. **`jest.spyOn(process.stdout, "write")`.** This is the trap. It
+   passed when `index.test.ts` ran alone and failed in the full suite,
+   because Jest buffers console output per file once more than one
+   file is in the run, so nothing reaches the real stdout to be
+   intercepted. Run it the way a developer checks one file and it is
+   green. Run it the way CI does and it is red.
+3. **Mocking the module** (`jest.mock("firebase-functions/logger",
+   ...)`, keeping every export real except `info` and `warn`, and
+   asserting the call). Behaves identically at any suite size.
+
+**The rule.** A test that passes or fails depending on how it was
+invoked is not testing the code, it is testing the harness. Before
+trusting a seam, ask what else has to be true for it to work: if the
+answer includes "how many test files are in this run", "whether the
+reporter is verbose", "whether this ran first", or "whether the
+machine is fast", find a different seam.
+
+**The tell.** The stdout version does not fail with a wrong value. It
+fails with an empty capture, which reads as "the code did not log" and
+sends you looking for the bug in the production code. A seam failing
+silently in one direction is worse than one that throws, which is
+exactly why option 1, the one that crashed immediately, was the safe
+failure and option 2 was the dangerous one.
+
+Landed at `4f7eaec`. The reasoning is repeated in a comment on the
+helper in `functions/src/index.test.ts`, because the next person to
+touch it will be reading that file, not this one.
