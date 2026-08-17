@@ -32,9 +32,11 @@ export const MEMBERSHIP_STATE_COLLECTION = "membershipState";
  *
  * Only needs to outlive RevenueCat's retry window by a comfortable
  * margin, since its whole job is to recognise a retry. 30 days is
- * that margin. Like the waitlist counters, the field does nothing
- * until a Firestore TTL policy exists on the collection; the command
- * is in docs/DECISIONS.md.
+ * that margin. The field does nothing on its own: Firestore only acts
+ * on it where a TTL policy exists for the collection group. That
+ * policy was enabled and verified ACTIVE on 2026-08-17, and the
+ * command is recorded in docs/DECISIONS.md so a new environment can
+ * be brought to the same state.
  */
 export const WEBHOOK_EVENT_TTL_DAYS = 30;
 

@@ -292,10 +292,13 @@ carrier NAT.
 
 **Two things this leaves open, neither of them code in this repo.**
 
-1. **The TTL policy is not configured.** `waitlistIpCounts` documents
-   carry `expiresAt`, and Firestore ignores that field until a policy
-   exists on the collection group. The command is in
-   `docs/DECISIONS.md`. Until it runs, the counters accumulate.
+1. ~~The TTL policy is not configured.~~ **Run and verified
+   2026-08-17.** `gcloud firestore fields ttls list` reports
+   `state: ACTIVE` for `waitlistIpCounts/expiresAt`. Verified by
+   read-back rather than by the command's own success message, which
+   says "Updated field" whether or not the policy ever leaves
+   `CREATING`, and a policy stuck at `CREATING` deletes nothing while
+   looking done.
 2. **The marketing site's copy no longer matches the responses**, and
    `site/` is off limits to this work. `site/index.html:318` maps
    every 400 to "That email does not look right", which is now wrong

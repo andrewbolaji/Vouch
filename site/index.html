@@ -315,6 +315,8 @@
       var cityLabel=city?city:'your city';
       if(res.status===200&&d.ok&&d.duplicate){ok.textContent='You are already on the list. We will keep you posted.';form.reset();}
       else if(res.status===200&&d.ok){ok.textContent='You are on the list for '+cityLabel+'. We will email you the day it opens.';form.reset();}
+      else if(res.status===429){ok.style.color='var(--flame)';ok.textContent='Too many signups from your network today. Please try again tomorrow.';}
+      else if(res.status===400&&d.error==='field_too_long'){ok.style.color='var(--flame)';ok.textContent='That city name is too long. Try a shorter one.';}
       else if(res.status===400){ok.style.color='var(--flame)';ok.textContent='That email does not look right. Check it and try again.';}
       else{ok.style.color='var(--flame)';ok.textContent='Something went wrong. Please try again in a moment.';}
     }).catch(function(){
