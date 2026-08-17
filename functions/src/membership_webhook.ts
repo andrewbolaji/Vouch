@@ -5,7 +5,7 @@
  * index.ts delegates here after validating the auth header.
  */
 
-import {createHmac, timingSafeEqual} from "crypto";
+import {createHmac, randomUUID, timingSafeEqual} from "crypto";
 import {getAuth} from "firebase-admin/auth";
 import {Firestore, Timestamp} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
@@ -39,6 +39,28 @@ export const MEMBERSHIP_STATE_COLLECTION = "membershipState";
  * be brought to the same state.
  */
 export const WEBHOOK_EVENT_TTL_DAYS = 30;
+
+/**
+ * Per-user lease held while Auth and Firestore membership writes run.
+ *
+ * The HTTP function uses the platform's default 60 second timeout. A
+ * five minute lease therefore cannot expire while a live invocation is
+ * still able to write, but a process that dies cannot block retries
+ * forever. RevenueCat receives a 500 while the lease is active and
+ * retries the event later.
+ */
+export const WEBHOOK_PROCESSING_LEASE_MS = 5 * 60 * 1000;
+
+/** A retryable collision with another membership event for this user. */
+export class WebhookProcessingBusyError extends Error {
+  /**
+   * @param {string} uid User whose membership update owns the lease.
+   */
+  constructor(uid: string) {
+    super(`Another membership event is already being processed for ${uid}`);
+    this.name = "WebhookProcessingBusyError";
+  }
+}
 
 /**
  * Maps a set of RevenueCat entitlement IDs to the Firestore
@@ -277,8 +299,12 @@ export async function processWebhookEvent(
 
   const eventRef = db.collection(WEBHOOK_EVENTS_COLLECTION).doc(eventId);
   const stateRef = db.collection(MEMBERSHIP_STATE_COLLECTION).doc(uid);
+  const processingToken = randomUUID();
   const expiresAt = Timestamp.fromDate(
     new Date(now.getTime() + WEBHOOK_EVENT_TTL_DAYS * 24 * 60 * 60 * 1000)
+  );
+  const processingLeaseUntil = Timestamp.fromDate(
+    new Date(now.getTime() + WEBHOOK_PROCESSING_LEASE_MS)
   );
 
   const decision = await db.runTransaction(async (tx) => {
@@ -309,6 +335,12 @@ export async function processWebhookEvent(
       return "stale" as const;
     }
 
+    const activeLease = stateSnap.data()?.processingLeaseUntil as
+      Timestamp | undefined;
+    if (activeLease && activeLease.toMillis() > now.getTime()) {
+      return "busy" as const;
+    }
+
     tx.set(eventRef, {
       eventId,
       uid,
@@ -317,6 +349,12 @@ export async function processWebhookEvent(
       status: "claimed",
       expiresAt,
     });
+    tx.set(stateRef, {
+      uid,
+      processingEventId: eventId,
+      processingToken,
+      processingLeaseUntil,
+    }, {merge: true});
     return "apply" as const;
   });
 
@@ -337,19 +375,40 @@ export async function processWebhookEvent(
     return {tier: tierFromEvent(event), uid, notApplied: "stale"};
   }
 
+  if (decision === "busy") {
+    logger.warn(
+      "[webhook] user is already being updated, retrying later: " +
+      `id=${eventId}, uid=${uid}`
+    );
+    throw new WebhookProcessingBusyError(uid);
+  }
+
   const result = await handleWebhookEvent(db, event);
 
-  // Marked done only now, after the writes landed.
-  const batch = db.batch();
-  batch.set(eventRef, {status: "done", tier: result.tier}, {merge: true});
-  if (typeof timestampMs === "number") {
-    batch.set(
-      stateRef,
-      {uid, lastEventTimestampMs: timestampMs, tier: result.tier},
-      {merge: true}
-    );
-  }
-  await batch.commit();
+  // Mark done and release the per-user lease atomically. The token
+  // check prevents a process that somehow outlived its lease from
+  // finalizing over the newer invocation that acquired it next.
+  await db.runTransaction(async (tx) => {
+    const stateSnap = await tx.get(stateRef);
+    if (stateSnap.data()?.processingToken !== processingToken) {
+      throw new Error(
+        `Membership processing lease was lost before finalizing ${eventId}`
+      );
+    }
+
+    tx.set(eventRef, {status: "done", tier: result.tier}, {merge: true});
+    const state: Record<string, unknown> = {
+      uid,
+      tier: result.tier,
+      processingEventId: null,
+      processingToken: null,
+      processingLeaseUntil: null,
+    };
+    if (typeof timestampMs === "number") {
+      state.lastEventTimestampMs = timestampMs;
+    }
+    tx.set(stateRef, state, {merge: true});
+  });
 
   return result;
 }

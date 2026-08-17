@@ -20,10 +20,10 @@ class MembershipProvider extends ChangeNotifier {
     AuthService? authService,
     bool? simulatePurchases,
     MembershipRepository? membershipRepo,
-  })  : _currentTier = initialTier,
-        _authService = authService,
-        _membershipRepo = membershipRepo,
-        _simulatePurchases = simulatePurchases ?? kSimulatePurchases {
+  }) : _currentTier = initialTier,
+       _authService = authService,
+       _membershipRepo = membershipRepo,
+       _simulatePurchases = simulatePurchases ?? kSimulatePurchases {
     _authService?.addListener(_onAuthChanged);
   }
 
@@ -196,13 +196,7 @@ class MembershipProvider extends ChangeNotifier {
 
   Future<void> restorePurchases() async {
     final entitlements = await RevenueCatService.restorePurchases();
-    final tier = _tierFromEntitlements(entitlements);
-    // Force a single token refresh so Firestore rules see the claim.
-    if (!_simulatePurchases && _authService != null) {
-      await _authService.forceTokenRefresh();
-    }
-    _currentTier = tier;
-    notifyListeners();
+    await _applyEntitlements(entitlements);
   }
 
   /// Recomputes tier and pending state from live entitlements and the
@@ -214,6 +208,14 @@ class MembershipProvider extends ChangeNotifier {
   /// back up still confirming.
   Future<void> refreshEntitlements() async {
     final entitlements = await RevenueCatService.getActiveEntitlements();
+    await _applyEntitlements(entitlements);
+  }
+
+  /// Applies RevenueCat's answer only when it agrees with the custom
+  /// claim Firestore rules enforce. Restore and launch refresh must share
+  /// this gate: treating a restored entitlement as paid before its claim
+  /// exists unlocks a UI whose first gated read is then denied by the rules.
+  Future<void> _applyEntitlements(Set<String> entitlements) async {
     final entitledTier = _tierFromEntitlements(entitlements);
 
     // No entitlement at all: nothing to confirm, nothing pending.
@@ -275,12 +277,15 @@ class MembershipProvider extends ChangeNotifier {
       '$kClaimPollMaxRetries retries, proceeding',
     );
     try {
-      unawaited(FirebaseCrashlytics.instance.recordError(
-        Exception('claim poll exhausted after $kClaimPollMaxRetries retries'),
-        StackTrace.current,
-        reason: 'MembershipProvider: _pollForMembershipClaim '
-            '(expected=$expectedClaim)',
-      ));
+      unawaited(
+        FirebaseCrashlytics.instance.recordError(
+          Exception('claim poll exhausted after $kClaimPollMaxRetries retries'),
+          StackTrace.current,
+          reason:
+              'MembershipProvider: _pollForMembershipClaim '
+              '(expected=$expectedClaim)',
+        ),
+      );
     } on Exception catch (_) {
       // Crashlytics unavailable (unit tests).
     }

@@ -8,7 +8,7 @@
 
 import {initializeApp, getApps, deleteApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
-import {getFirestore} from "firebase-admin/firestore";
+import {getFirestore, Timestamp} from "firebase-admin/firestore";
 
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
@@ -20,6 +20,7 @@ if (getApps().length === 0) {
 // eslint-disable-next-line import/first
 import {
   processWebhookEvent,
+  WebhookProcessingBusyError,
   WEBHOOK_EVENTS_COLLECTION,
   MEMBERSHIP_STATE_COLLECTION,
 } from "./membership_webhook";
@@ -153,6 +154,34 @@ describe("processWebhookEvent: duplicates", () => {
     expect(result.notApplied).toBeUndefined();
     expect(await claimFor("dedupe-1")).toBe("localsPass");
   });
+
+  test("an expired processing lease does not block recovery", async () => {
+    await db.collection(WEBHOOK_EVENTS_COLLECTION).doc("evt-expired").set({
+      eventId: "evt-expired",
+      uid: "dedupe-1",
+      type: "INITIAL_PURCHASE",
+      status: "claimed",
+    });
+    await db.collection(MEMBERSHIP_STATE_COLLECTION).doc("dedupe-1").set({
+      uid: "dedupe-1",
+      processingEventId: "evt-abandoned",
+      processingToken: "abandoned-token",
+      processingLeaseUntil: Timestamp.fromDate(
+        new Date(now.getTime() - 1)
+      ),
+    });
+
+    const result = await processWebhookEvent(db, {
+      id: "evt-expired",
+      type: "INITIAL_PURCHASE",
+      app_user_id: "dedupe-1",
+      entitlement_ids: ["city_insider"],
+      event_timestamp_ms: 4_000,
+    }, now);
+
+    expect(result.notApplied).toBeUndefined();
+    expect(await claimFor("dedupe-1")).toBe("cityInsider");
+  });
 });
 
 describe("processWebhookEvent: the retry-after-resubscribe case", () => {
@@ -216,6 +245,76 @@ describe("processWebhookEvent: the retry-after-resubscribe case", () => {
 
       expect(later.notApplied).toBeUndefined();
       expect(await claimFor("order-1")).toBe("free");
+    });
+
+  test("an older in-flight event cannot overwrite a newer event",
+    async () => {
+      const authInstance = getAuth();
+      const originalSetClaims = authInstance.setCustomUserClaims.bind(
+        authInstance
+      );
+      let releaseOlder!: () => void;
+      let signalOlderStarted!: () => void;
+      const olderBlocked = new Promise<void>((resolve) => {
+        releaseOlder = resolve;
+      });
+      const olderStarted = new Promise<void>((resolve) => {
+        signalOlderStarted = resolve;
+      });
+
+      const setClaims = jest.spyOn(authInstance, "setCustomUserClaims")
+        .mockImplementation(async (uid, claims) => {
+          const tier = (claims as {membershipTier?: string} | null)
+            ?.membershipTier;
+          if (tier === "free") {
+            signalOlderStarted();
+            await olderBlocked;
+          }
+          return originalSetClaims(uid, claims);
+        });
+
+      try {
+        const older = processWebhookEvent(db, {
+          id: "evt-concurrent-expiration",
+          type: "EXPIRATION",
+          app_user_id: "order-1",
+          entitlement_ids: [],
+          event_timestamp_ms: 1_000,
+        }, now);
+
+        await olderStarted;
+        const newer = processWebhookEvent(db, {
+          id: "evt-concurrent-purchase",
+          type: "INITIAL_PURCHASE",
+          app_user_id: "order-1",
+          entitlement_ids: ["locals_pass"],
+          event_timestamp_ms: 2_000,
+        }, now);
+
+        await expect(newer).rejects.toBeInstanceOf(
+          WebhookProcessingBusyError
+        );
+
+        releaseOlder();
+        await older;
+
+        // RevenueCat retries the 500 response after the older invocation
+        // releases the per-user lease. The newer event then applies.
+        await processWebhookEvent(db, {
+          id: "evt-concurrent-purchase",
+          type: "INITIAL_PURCHASE",
+          app_user_id: "order-1",
+          entitlement_ids: ["locals_pass"],
+          event_timestamp_ms: 2_000,
+        }, now);
+
+        expect(await claimFor("order-1")).toBe("localsPass");
+        const user = await db.collection("users").doc("order-1").get();
+        expect(user.data()?.membershipTier).toBe("localsPass");
+      } finally {
+        releaseOlder();
+        setClaims.mockRestore();
+      }
     });
 
   test("the watermark is the newest applied, and is server-only",
