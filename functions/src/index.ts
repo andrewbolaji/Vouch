@@ -35,6 +35,8 @@ import {recomputeAllRanks} from "./rank_recompute";
 import {
   processWebhookEvent,
   isValidAuth,
+  verifyWebhookSignature,
+  REVENUECAT_SIGNATURE_HEADER,
   RevenueCatWebhookEvent,
 } from "./membership_webhook";
 import {
@@ -491,6 +493,13 @@ export const waitlistSignup = onRequest(
 
 const revenueCatWebhookSecret = defineSecret("REVENUECAT_WEBHOOK_SECRET");
 
+// Optional on purpose. An unset secret reads as an empty string and
+// leaves signature verification switched off, which is what lets this
+// deploy safely before Andrew has generated it.
+const revenueCatSigningSecret = defineSecret(
+  "REVENUECAT_WEBHOOK_SIGNING_SECRET"
+);
+
 // APP CHECK MUST NEVER BE ENFORCED ON THIS FUNCTION.
 //
 // Its caller is RevenueCat's servers, not the app. There is no
@@ -506,7 +515,10 @@ const revenueCatWebhookSecret = defineSecret("REVENUECAT_WEBHOOK_SECRET");
 // isValidAuth below, plus the signature verification tracked as
 // finding 5. Not App Check.
 export const onRevenueCatWebhook = onRequest(
-  {cors: false, secrets: [revenueCatWebhookSecret]},
+  {
+    cors: false,
+    secrets: [revenueCatWebhookSecret, revenueCatSigningSecret],
+  },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).json({error: "method_not_allowed"});
@@ -517,6 +529,41 @@ export const onRevenueCatWebhook = onRequest(
     if (!isValidAuth(req.headers.authorization, secret)) {
       res.status(401).json({error: "unauthorized"});
       return;
+    }
+
+    // Second layer, and inert until the signing secret exists.
+    //
+    // Held deliberately rather than shipped enabled. This is the only
+    // piece of finding 5 that can reject live traffic if it is
+    // misconfigured, and the failure is silent from inside the app: a
+    // rejected webhook means subscribers stop being upgraded and
+    // nothing in the client can tell. So it arrives on its own, after
+    // the secret is set and after REVENUECAT_SIGNATURE_HEADER has been
+    // confirmed against RevenueCat's documentation.
+    //
+    // Skipping when the secret is unset is the whole hold mechanism.
+    // It is logged at warn every time, so "we never turned it on" is
+    // visible in the logs rather than remembered.
+    const signingSecret = revenueCatSigningSecret.value();
+    if (signingSecret) {
+      const signature = req.headers[REVENUECAT_SIGNATURE_HEADER];
+      const provided = Array.isArray(signature) ? signature[0] : signature;
+      if (!verifyWebhookSignature(req.rawBody, provided, signingSecret)) {
+        logger.error(
+          "[webhook] rejected: signature did not verify. If this is " +
+          "every request rather than one, check " +
+          "REVENUECAT_SIGNATURE_HEADER against RevenueCat's docs " +
+          "before assuming an attack."
+        );
+        res.status(401).json({error: "bad_signature"});
+        return;
+      }
+    } else {
+      logger.warn(
+        "[webhook] signature verification is OFF: " +
+        "REVENUECAT_WEBHOOK_SIGNING_SECRET is not set. The bearer " +
+        "secret is the only thing authenticating this request."
+      );
     }
 
     try {

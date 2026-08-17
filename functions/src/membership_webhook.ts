@@ -5,7 +5,7 @@
  * index.ts delegates here after validating the auth header.
  */
 
-import {timingSafeEqual} from "crypto";
+import {createHmac, timingSafeEqual} from "crypto";
 import {getAuth} from "firebase-admin/auth";
 import {Firestore, Timestamp} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
@@ -70,9 +70,19 @@ export function tierFromEvent(event: RevenueCatWebhookEvent): string {
  * Validates the webhook Authorization header against the stored
  * secret. RevenueCat sends: Authorization: Bearer <secret>
  *
- * RevenueCat does not sign webhooks; the shared secret in this header
- * is their documented mechanism, there is no signature to verify
- * instead. The comparison itself uses timingSafeEqual rather than
+ * This is the first of two layers and remains the only one in force
+ * until REVENUECAT_WEBHOOK_SIGNING_SECRET is set, at which point
+ * verifyWebhookSignature below runs as well. An earlier version of
+ * this comment said RevenueCat does not sign webhooks and that the
+ * shared secret was the only mechanism available; that was the state
+ * of the integration rather than a fact about RevenueCat, and finding
+ * 5 is the correction.
+ *
+ * A shared secret in a header is replayable and is only as good as
+ * the transport. A signature over the body is not, which is why the
+ * second layer is worth having even though this one stays.
+ *
+ * The comparison itself uses timingSafeEqual rather than
  * ===, so a byte-by-byte string compare can't leak how many leading
  * characters of the secret an attacker guessed correctly through
  * response timing.
@@ -94,6 +104,59 @@ export function isValidAuth(
   // every constant-time string comparison makes.
   if (headerBuf.length !== expectedBuf.length) return false;
   return timingSafeEqual(headerBuf, expectedBuf);
+}
+
+/**
+ * The header RevenueCat sends the webhook signature in.
+ *
+ * CONFIRM THIS AGAINST REVENUECAT'S OWN DOCUMENTATION BEFORE THE
+ * SIGNING SECRET IS SET. It is written here as a named constant
+ * precisely so that confirming it is a one line change rather than an
+ * archaeology exercise, and because a header name that is wrong fails
+ * in the worst possible way: every real webhook is rejected, every
+ * subscriber stops being upgraded, and the app reports nothing at all
+ * because the failure is on RevenueCat's side of the wire.
+ *
+ * Verification stays inert until REVENUECAT_WEBHOOK_SIGNING_SECRET
+ * exists, so this constant being wrong cannot break anything today.
+ */
+export const REVENUECAT_SIGNATURE_HEADER = "x-revenuecat-signature";
+
+/**
+ * Verifies an HMAC-SHA256 signature over the exact bytes received.
+ *
+ * The raw body, never the re-serialised one. `JSON.stringify(req.body)`
+ * is not guaranteed to reproduce the bytes RevenueCat hashed: key
+ * order, unicode escaping and whitespace all survive the wire and do
+ * not survive a parse-and-reprint. A signature check computed over a
+ * reconstruction verifies the reconstruction.
+ *
+ * Accepts a bare hex digest or a `sha256=` prefixed one, because
+ * both conventions are common and rejecting the wrong one would look
+ * exactly like a forged request.
+ *
+ * @param {Buffer} rawBody The exact bytes of the request body.
+ * @param {string|undefined} header The signature header value.
+ * @param {string} secret The shared signing secret.
+ * @return {boolean} Whether the signature matches.
+ */
+export function verifyWebhookSignature(
+  rawBody: Buffer | undefined,
+  header: string | undefined,
+  secret: string,
+): boolean {
+  if (!rawBody || !header || !secret) return false;
+
+  const provided = header.startsWith("sha256=") ? header.slice(7) : header;
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+
+  const providedBuf = Buffer.from(provided.toLowerCase());
+  const expectedBuf = Buffer.from(expected);
+  // Same tradeoff as isValidAuth: timingSafeEqual throws on differing
+  // lengths, so the length check has to come first and leaks length
+  // rather than content.
+  if (providedBuf.length !== expectedBuf.length) return false;
+  return timingSafeEqual(providedBuf, expectedBuf);
 }
 
 /**
