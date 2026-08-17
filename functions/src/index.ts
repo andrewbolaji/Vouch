@@ -37,6 +37,12 @@ import {
   isValidAuth,
   RevenueCatWebhookEvent,
 } from "./membership_webhook";
+import {
+  checkSignupInput,
+  clientIpFrom,
+  recordSignupAttempt,
+  MAX_SIGNUPS_PER_IP_PER_DAY,
+} from "./waitlist";
 
 initializeApp();
 const db = getFirestore();
@@ -416,12 +422,30 @@ export const waitlistSignup = onRequest(
         return;
       }
 
-      if (!email || !EMAIL_RE.test(email.trim())) {
-        res.status(400).json({ok: false, error: "invalid_email"});
+      const checked = checkSignupInput({email, city, source}, EMAIL_RE);
+      if (!checked.ok) {
+        res.status(400).json({ok: false, error: checked.error});
         return;
       }
 
-      const normalized = email.trim().toLowerCase();
+      // The IP allowance is spent before the waitlist read, so that
+      // the number of Firestore operations one address can cause is
+      // bounded rather than only the number of rows it can leave
+      // behind. A request that never gets past validation costs no
+      // Firestore operations at all and so is not counted.
+      const ip = clientIpFrom(req);
+      const attempt = await recordSignupAttempt(db, ip, new Date());
+      if (!attempt.allowed) {
+        logger.warn(
+          `[waitlist] rate limited: ${ip ?? "unknown IP"} has used its ` +
+          `${MAX_SIGNUPS_PER_IP_PER_DAY} signups today. If this is a real ` +
+          "person behind carrier NAT, this log is the only evidence."
+        );
+        res.status(429).json({ok: false, error: "rate_limited"});
+        return;
+      }
+
+      const normalized = checked.email;
       // Firestore doc IDs cannot contain '/'. Replace with '__'.
       const docId = normalized.replace(/\//g, "__");
       const docRef = db.collection("waitlist").doc(docId);
@@ -434,8 +458,8 @@ export const waitlistSignup = onRequest(
 
       await docRef.set({
         email: normalized,
-        city: city?.trim() || null,
-        source: source || "landing",
+        city: checked.city,
+        source: checked.source,
         createdAt: FieldValue.serverTimestamp(),
       });
 

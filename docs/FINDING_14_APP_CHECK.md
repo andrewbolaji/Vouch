@@ -278,6 +278,42 @@ project nobody is watching the bill on.
 like 100 characters, and add a per IP counter. The size cap alone
 removes the recurring component and is a two line change.
 
+#### Fixed 2026-08-16
+
+Built as approved, in `functions/src/waitlist.ts`, with the constants
+and their reasons in `docs/DECISIONS.md`. Three caps rather than two:
+`email` needed its own, because `EMAIL_RE` matches a megabyte and the
+address becomes the document id, so an oversized one used to arrive
+as a 500 from Firestore's 1500 byte id limit rather than as a
+rejection. The caps refuse rather than truncate. The IP counter is 20
+per UTC day, in a transaction, spent after validation so garbage
+requests cannot exhaust the allowance of the people behind the same
+carrier NAT.
+
+**Two things this leaves open, neither of them code in this repo.**
+
+1. **The TTL policy is not configured.** `waitlistIpCounts` documents
+   carry `expiresAt`, and Firestore ignores that field until a policy
+   exists on the collection group. The command is in
+   `docs/DECISIONS.md`. Until it runs, the counters accumulate.
+2. **The marketing site's copy no longer matches the responses**, and
+   `site/` is off limits to this work. `site/index.html:318` maps
+   every 400 to "That email does not look right", which is now wrong
+   for `field_too_long`, and 429 falls into the catch-all "Something
+   went wrong. Please try again in a moment", which tells a
+   rate-limited person to retry immediately when the allowance is
+   daily. Neither is a broken signup, both are a wrong sentence.
+
+**The tests that were there did not test this.** The five cases under
+"Waitlist signup logic" in `index.test.ts` built their own document
+ids, wrote their own documents and asserted that Firestore stored
+what they wrote; the honeypot case simulated the handler with an
+`if (!website)` in the test body. All five passed against an endpoint
+with no caps and no rate limit, and all five still passed with the
+new validation removed, which was measured rather than assumed. They
+are deleted, and `waitlist.test.ts` calls `waitlistSignup(req, res)`
+instead.
+
 ### `places.googleapis.com`: not called from the client, but enabled
 
 **Places is never called from the app.** Zero references in `lib/`.

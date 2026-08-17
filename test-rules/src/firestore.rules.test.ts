@@ -1340,6 +1340,69 @@ describe("waitlist", () => {
   });
 });
 
+// ================================================================
+// WAITLIST IP COUNTS (finding 15's rate limit, admin-only)
+//
+// The write denial is the one that matters: the document holds the
+// count, so a client that could write it could reset its own limit
+// and the rate limit would be decorative. The read denial matters
+// too, for a different reason: the documents are keyed by IP address
+// and carry signup volume.
+// ================================================================
+
+describe("waitlistIpCounts", () => {
+  test("DENIED: unauthenticated user cannot read the counters", async () => {
+    await seedAsAdmin("waitlistIpCounts/2026-08-16_203.0.113.7", {
+      ip: "203.0.113.7",
+      dateKey: "2026-08-16",
+      count: 3,
+    });
+    const db = unauthenticated().firestore();
+    await assertFails(
+      getDoc(doc(db, "waitlistIpCounts/2026-08-16_203.0.113.7"))
+    );
+  });
+
+  test("DENIED: unauthenticated user cannot reset a counter", async () => {
+    await seedAsAdmin("waitlistIpCounts/2026-08-16_203.0.113.7", {
+      ip: "203.0.113.7",
+      dateKey: "2026-08-16",
+      count: 20,
+    });
+    const db = unauthenticated().firestore();
+    await assertFails(
+      setDoc(doc(db, "waitlistIpCounts/2026-08-16_203.0.113.7"), {
+        ip: "203.0.113.7",
+        dateKey: "2026-08-16",
+        count: 0,
+      })
+    );
+  });
+
+  test("DENIED: authenticated user cannot read the counters", async () => {
+    await seedAsAdmin("waitlistIpCounts/2026-08-16_203.0.113.7", {
+      ip: "203.0.113.7",
+      dateKey: "2026-08-16",
+      count: 3,
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      getDoc(doc(db, "waitlistIpCounts/2026-08-16_203.0.113.7"))
+    );
+  });
+
+  test("DENIED: authenticated user cannot reset a counter", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "waitlistIpCounts/2026-08-16_203.0.113.7"), {
+        ip: "203.0.113.7",
+        dateKey: "2026-08-16",
+        count: 0,
+      })
+    );
+  });
+});
+
 describe("voteEvents", () => {
   test("DENIED: unauthenticated user cannot read voteEvents", async () => {
     await seedAsAdmin("voteEvents/evt-1", {

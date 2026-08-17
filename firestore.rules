@@ -204,6 +204,25 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------
+    // waitlistIpCounts - admin-only (Cloud Function via Admin SDK)
+    //
+    // The per IP, per day signup counters behind finding 15's rate
+    // limit. Written by waitlistSignup through the Admin SDK, which
+    // bypasses rules.
+    //
+    // Stated explicitly rather than left to the default deny. Reading
+    // it would expose signup volume and the IP addresses of people
+    // who joined the waitlist, and writing it would let a caller
+    // reset its own counter, which is the whole limit. An unlisted
+    // collection is denied today and is one careless catch-all away
+    // from not being.
+    // -------------------------------------------------------
+    match /waitlistIpCounts/{docId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------
     // voteEvents - admin-only (Cloud Function via Admin SDK)
     //
     // Append-only vote audit trail. No client can read or write,
