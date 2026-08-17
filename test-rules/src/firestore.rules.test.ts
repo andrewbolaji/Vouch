@@ -1403,6 +1403,87 @@ describe("waitlistIpCounts", () => {
   });
 });
 
+// ================================================================
+// WEBHOOK EVENTS AND MEMBERSHIP STATE (finding 5, admin-only)
+//
+// The write denials are the load bearing ones. membershipState holds
+// the watermark that decides whether an incoming subscription event
+// is too old to apply; a user who could rewind their own watermark
+// could replay an old EXPIRATION onto themselves, and a user who
+// could mark an event done could make a downgrade disappear.
+// ================================================================
+
+describe("webhookEvents", () => {
+  test("DENIED: a user cannot read the subscription event log",
+    async () => {
+      await seedAsAdmin("webhookEvents/evt-1", {
+        eventId: "evt-1",
+        uid: "alice",
+        type: "INITIAL_PURCHASE",
+        status: "done",
+      });
+      const db = freeUser("alice").firestore();
+      await assertFails(getDoc(doc(db, "webhookEvents/evt-1")));
+    });
+
+  test("DENIED: a user cannot mark an event done", async () => {
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "webhookEvents/evt-2"), {
+        eventId: "evt-2",
+        uid: "alice",
+        status: "done",
+      })
+    );
+  });
+
+  test("DENIED: unauthenticated access is refused both ways", async () => {
+    const db = unauthenticated().firestore();
+    await assertFails(getDoc(doc(db, "webhookEvents/evt-1")));
+    await assertFails(setDoc(doc(db, "webhookEvents/evt-3"), {status: "done"}));
+  });
+});
+
+describe("membershipState", () => {
+  test("DENIED: a user cannot read their own watermark", async () => {
+    await seedAsAdmin("membershipState/alice", {
+      uid: "alice",
+      lastEventTimestampMs: 5000,
+      tier: "localsPass",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(getDoc(doc(db, "membershipState/alice")));
+  });
+
+  test("DENIED: a user cannot rewind their own watermark", async () => {
+    // The attack the denial exists for: rewind the watermark, and an
+    // old EXPIRATION stops looking stale and applies.
+    await seedAsAdmin("membershipState/alice", {
+      uid: "alice",
+      lastEventTimestampMs: 5000,
+      tier: "localsPass",
+    });
+    const db = freeUser("alice").firestore();
+    await assertFails(
+      setDoc(doc(db, "membershipState/alice"), {
+        uid: "alice",
+        lastEventTimestampMs: 0,
+      })
+    );
+  });
+
+  test("DENIED: a user cannot write somebody else's watermark",
+    async () => {
+      const db = freeUser("mallory").firestore();
+      await assertFails(
+        setDoc(doc(db, "membershipState/alice"), {
+          uid: "alice",
+          lastEventTimestampMs: 0,
+        })
+      );
+    });
+});
+
 describe("voteEvents", () => {
   test("DENIED: unauthenticated user cannot read voteEvents", async () => {
     await seedAsAdmin("voteEvents/evt-1", {

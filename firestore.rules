@@ -223,6 +223,31 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------
+    // webhookEvents and membershipState - admin-only
+    //
+    // Finding 5. webhookEvents is one document per RevenueCat event
+    // id, which is what makes a retry recognisable as a retry.
+    // membershipState is the per user watermark of the newest event
+    // applied, which is what stops a retried EXPIRATION arriving
+    // after a resubscribe from downgrading a paying user.
+    //
+    // Both denied to clients, and the write denial is the load
+    // bearing one on both. A client that could write its own
+    // watermark could rewind it and replay an old downgrade; a
+    // client that could mark an event done could make its own
+    // expiry disappear.
+    // -------------------------------------------------------
+    match /webhookEvents/{eventId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /membershipState/{uid} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------
     // voteEvents - admin-only (Cloud Function via Admin SDK)
     //
     // Append-only vote audit trail. No client can read or write,

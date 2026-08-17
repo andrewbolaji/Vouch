@@ -7,7 +7,7 @@
 
 import {timingSafeEqual} from "crypto";
 import {getAuth} from "firebase-admin/auth";
-import {Firestore} from "firebase-admin/firestore";
+import {Firestore, Timestamp} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 
 export interface RevenueCatWebhookEvent {
@@ -15,7 +15,28 @@ export interface RevenueCatWebhookEvent {
   app_user_id: string;
   product_id?: string;
   entitlement_ids?: string[];
+  /** RevenueCat's own id for this event. Used for deduplication. */
+  id?: string;
+  /** When RevenueCat says the event happened, not when it arrived. */
+  event_timestamp_ms?: number;
 }
+
+/** Processed webhook events, one document per RevenueCat event id. */
+export const WEBHOOK_EVENTS_COLLECTION = "webhookEvents";
+
+/** Per user watermark of the newest event actually applied. */
+export const MEMBERSHIP_STATE_COLLECTION = "membershipState";
+
+/**
+ * How long a processed-event record is kept.
+ *
+ * Only needs to outlive RevenueCat's retry window by a comfortable
+ * margin, since its whole job is to recognise a retry. 30 days is
+ * that margin. Like the waitlist counters, the field does nothing
+ * until a Firestore TTL policy exists on the collection; the command
+ * is in docs/DECISIONS.md.
+ */
+export const WEBHOOK_EVENT_TTL_DAYS = 30;
 
 /**
  * Maps a set of RevenueCat entitlement IDs to the Firestore
@@ -121,4 +142,149 @@ export async function handleWebhookEvent(
   );
 
   return {tier, uid};
+}
+
+/** Why an event was not applied, when it was not. */
+export type SkipReason = "duplicate" | "stale";
+
+export interface ProcessResult {
+  tier: string;
+  uid: string;
+  skipped?: boolean;
+  notApplied?: SkipReason;
+}
+
+/**
+ * Processes an event exactly once, and never applies an older event
+ * over a newer one.
+ *
+ * Two guards, and the second is the one that matters.
+ *
+ * **Duplicate.** RevenueCat retries a webhook it did not get a 2xx
+ * for, and Cloud Functions can deliver twice on its own. Both writes
+ * this handler performs are idempotent today, so a plain replay is
+ * harmless, and the record is kept anyway because it is the audit
+ * trail for a subscription pipeline that currently has none, and
+ * because "the writes happen to be idempotent" is a property of
+ * today's handler rather than a guarantee about tomorrow's.
+ *
+ * **Stale.** This is the failure worth preventing. Deduplication
+ * alone does not prevent it, because the two events are genuinely
+ * different events. If an EXPIRATION fails and RevenueCat retries it
+ * thirty minutes later, and the user resubscribes in between, the
+ * retried EXPIRATION arrives after the PURCHASE and sets a paying
+ * user back to free. Nothing in the app would ever correct it: the
+ * client detects "paid but not claimed" and shows a pending state
+ * that only the webhook can clear. So an event older than the newest
+ * one already applied for that user is recorded and not applied.
+ *
+ * The event record is marked done only after the writes land. A
+ * process that dies mid-apply leaves it "claimed", and a retry
+ * reprocesses rather than skipping, because a claimed-but-unapplied
+ * event is exactly the case a retry exists for.
+ *
+ * @param {Firestore} db Firestore instance.
+ * @param {RevenueCatWebhookEvent} event The webhook event.
+ * @param {Date} now Reference time, for the record's expiry.
+ * @return {Promise<ProcessResult>} What happened, and why.
+ */
+export async function processWebhookEvent(
+  db: Firestore,
+  event: RevenueCatWebhookEvent,
+  now: Date = new Date(),
+): Promise<ProcessResult> {
+  const uid = event.app_user_id;
+  const eventId = event.id;
+  const timestampMs = event.event_timestamp_ms;
+
+  // An event with no id cannot be deduplicated. Processed rather than
+  // refused: entitlements are revenue, and refusing a real event over
+  // a missing optional field would fail in the direction that costs a
+  // paying user their tier. It is logged so the assumption that
+  // RevenueCat always sends one is checkable rather than assumed.
+  if (!eventId) {
+    logger.warn(
+      `[webhook] event has no id, processing without dedupe: uid=${uid}, ` +
+      `type=${event.type}`
+    );
+    return handleWebhookEvent(db, event);
+  }
+
+  const eventRef = db.collection(WEBHOOK_EVENTS_COLLECTION).doc(eventId);
+  const stateRef = db.collection(MEMBERSHIP_STATE_COLLECTION).doc(uid);
+  const expiresAt = Timestamp.fromDate(
+    new Date(now.getTime() + WEBHOOK_EVENT_TTL_DAYS * 24 * 60 * 60 * 1000)
+  );
+
+  const decision = await db.runTransaction(async (tx) => {
+    const [eventSnap, stateSnap] = await Promise.all([
+      tx.get(eventRef),
+      tx.get(stateRef),
+    ]);
+
+    if (eventSnap.data()?.status === "done") {
+      return "duplicate" as const;
+    }
+
+    const applied = stateSnap.data()?.lastEventTimestampMs as
+      number | undefined;
+    if (
+      typeof timestampMs === "number" &&
+      typeof applied === "number" &&
+      timestampMs < applied
+    ) {
+      tx.set(eventRef, {
+        eventId,
+        uid,
+        type: event.type,
+        eventTimestampMs: timestampMs,
+        status: "skipped_stale",
+        expiresAt,
+      });
+      return "stale" as const;
+    }
+
+    tx.set(eventRef, {
+      eventId,
+      uid,
+      type: event.type,
+      eventTimestampMs: timestampMs ?? null,
+      status: "claimed",
+      expiresAt,
+    });
+    return "apply" as const;
+  });
+
+  if (decision === "duplicate") {
+    logger.info(
+      `[webhook] duplicate event ignored: id=${eventId}, uid=${uid}`
+    );
+    return {tier: tierFromEvent(event), uid, notApplied: "duplicate"};
+  }
+
+  if (decision === "stale") {
+    logger.warn(
+      `[webhook] stale event ignored: id=${eventId}, uid=${uid}, ` +
+      `type=${event.type}, event is older than the last one applied. ` +
+      "This is the retry-after-resubscribe case, and applying it would " +
+      "have downgraded a paying user."
+    );
+    return {tier: tierFromEvent(event), uid, notApplied: "stale"};
+  }
+
+  const result = await handleWebhookEvent(db, event);
+
+  // Marked done only now, after the writes landed.
+  const batch = db.batch();
+  batch.set(eventRef, {status: "done", tier: result.tier}, {merge: true});
+  if (typeof timestampMs === "number") {
+    batch.set(
+      stateRef,
+      {uid, lastEventTimestampMs: timestampMs, tier: result.tier},
+      {merge: true}
+    );
+  }
+  await batch.commit();
+
+  return result;
 }

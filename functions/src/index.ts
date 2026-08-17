@@ -33,7 +33,7 @@ import {deleteUserData} from "./user_cleanup";
 import {deleteRestaurantData} from "./restaurant_cleanup";
 import {recomputeAllRanks} from "./rank_recompute";
 import {
-  handleWebhookEvent,
+  processWebhookEvent,
   isValidAuth,
   RevenueCatWebhookEvent,
 } from "./membership_webhook";
@@ -527,11 +527,15 @@ export const onRevenueCatWebhook = onRequest(
         return;
       }
 
-      const result = await handleWebhookEvent(db, event);
+      const result = await processWebhookEvent(db, event);
       logger.info(
         `[webhook] ${event.type}: uid=${result.uid}, ` +
         `tier=${result.tier}, ` +
-        `claimSet=${result.skipped ? "skipped (user not found)" : "yes"}`
+        `claimSet=${
+          result.notApplied ?
+            `no (${result.notApplied})` :
+            result.skipped ? "skipped (user not found)" : "yes"
+        }`
       );
       res.status(200).json({ok: true});
     } catch (err) {
