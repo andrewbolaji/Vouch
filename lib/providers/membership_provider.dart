@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vouch/models/models.dart';
+import 'package:vouch/repositories/membership_repository.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/revenue_cat_service.dart';
 
@@ -18,13 +19,31 @@ class MembershipProvider extends ChangeNotifier {
     MembershipTier initialTier = MembershipTier.free,
     AuthService? authService,
     bool? simulatePurchases,
+    MembershipRepository? membershipRepo,
   })  : _currentTier = initialTier,
         _authService = authService,
+        _membershipRepo = membershipRepo,
         _simulatePurchases = simulatePurchases ?? kSimulatePurchases {
     _authService?.addListener(_onAuthChanged);
   }
 
   final AuthService? _authService;
+
+  /// Server-side reconciliation against RevenueCat.
+  ///
+  /// Injectable but not required, and constructed on demand when it
+  /// is absent rather than defaulting to doing nothing. That is
+  /// deliberate: a nullable dependency whose null branch silently
+  /// skips the feature is exactly how VoteRepository shipped unwired
+  /// for months, with every test still passing. Here a missing
+  /// repository cannot disable reconciliation, it can only fail to
+  /// substitute for it.
+  ///
+  /// Constructed lazily rather than in the constructor because
+  /// MembershipRepository reaches FirebaseAuth.instance, which throws
+  /// in a widget test with no Firebase. The lazy path is only ever
+  /// reached in a non-simulate build, which no test runs by default.
+  final MembershipRepository? _membershipRepo;
 
   /// Mirrors AppState's useFirebase seam. kSimulatePurchases is a
   /// compile-time const tied to kDebugMode, so without an override
@@ -142,12 +161,36 @@ class MembershipProvider extends ChangeNotifier {
     return result;
   }
 
-  /// Re-checks the claim for a purchase still awaiting confirmation.
+  /// Re-checks a purchase that RevenueCat confirms and the claim does
+  /// not. Backs the retry affordance on the pending UI, so a user who
+  /// has paid has something to do other than wait.
   ///
-  /// Backs the retry affordance on the pending UI, so a user who has
-  /// paid has something to do other than wait.
+  /// Asks the server to reconcile first, then re-derives. Before
+  /// reconciliation existed this method could only re-read a claim
+  /// that nothing was going to change: the webhook is the only writer
+  /// of that claim, and the case being retried is precisely the case
+  /// where the webhook never arrived. A retry button that cannot
+  /// affect its own outcome is worse than no button, because it makes
+  /// the user believe the problem is theirs to solve by waiting.
+  ///
+  /// A reconciliation failure is swallowed rather than surfaced. The
+  /// refresh below still runs, so the outcome is the state the user
+  /// was already in, which is what the pending screen already
+  /// describes. There is nothing more useful to say to somebody whose
+  /// purchase is still not visible than what it already says.
   Future<void> retryConfirmation() async {
     if (!_isAwaitingConfirmation) return;
+    if (!_simulatePurchases) {
+      try {
+        await (_membershipRepo ?? MembershipRepository()).reconcile();
+        // The claim may have just changed server-side, and the cached
+        // ID token predates it. refreshEntitlements force-refreshes
+        // the token itself, which is what makes the new claim visible
+        // to the check below rather than one launch later.
+      } on Exception catch (e) {
+        debugPrint('MembershipProvider: reconcile failed: $e');
+      }
+    }
     await refreshEntitlements();
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vouch/models/membership.dart';
 import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/repositories/membership_repository.dart';
 import 'package:vouch/services/auth_service.dart';
 import 'package:vouch/services/revenue_cat_service.dart';
 
@@ -254,9 +255,11 @@ void _pendingTests() {
     test('retryConfirmation clears pending once the claim lands',
         () async {
       final auth = signedInMock();
+      final repo = _FakeMembershipRepository();
       final provider = MembershipProvider(
         authService: auth,
         simulatePurchases: false,
+        membershipRepo: repo,
       );
       await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
       await provider.refreshEntitlements();
@@ -267,6 +270,74 @@ void _pendingTests() {
 
       expect(provider.isAwaitingConfirmation, isFalse);
       expect(provider.currentTier, MembershipTier.cityInsider);
+    });
+
+    // Finding 5. The button used to re-read a claim that nothing was
+    // going to change: the webhook is the only writer of that claim,
+    // and the state being retried is the state where the webhook
+    // never arrived. These pin the repair path instead.
+    test('retryConfirmation asks the server to reconcile first',
+        () async {
+      final auth = signedInMock();
+      final repo = _FakeMembershipRepository();
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+        membershipRepo: repo,
+      );
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+      await provider.refreshEntitlements();
+
+      // The webhook never landed, so the claim is still absent. The
+      // reconcile call is what sets it, which is the whole point.
+      repo.onReconcile = () => auth.setMockMembershipClaim('cityInsider');
+      await provider.retryConfirmation();
+
+      expect(repo.calls, 1);
+      expect(provider.isAwaitingConfirmation, isFalse);
+      expect(provider.currentTier, MembershipTier.cityInsider);
+    });
+
+    test('a failed reconcile leaves the user pending, not crashed',
+        () async {
+      // Swallowed on purpose. The refresh still runs, so the outcome
+      // is the state the pending screen already describes, and there
+      // is nothing more useful to tell somebody whose purchase is
+      // still not visible.
+      final auth = signedInMock();
+      final repo = _FakeMembershipRepository()..throwOnReconcile = true;
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+        membershipRepo: repo,
+      );
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+      await provider.refreshEntitlements();
+
+      await provider.retryConfirmation();
+
+      expect(repo.calls, 1);
+      expect(provider.isAwaitingConfirmation, isTrue);
+      expect(provider.currentTier, MembershipTier.free);
+    });
+
+    test('nothing is reconciled when nothing is pending', () async {
+      final auth = signedInMock(claim: 'cityInsider');
+      final repo = _FakeMembershipRepository();
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+        membershipRepo: repo,
+      );
+      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+      await provider.refreshEntitlements();
+      expect(provider.isAwaitingConfirmation, isFalse);
+
+      await provider.retryConfirmation();
+
+      // A daily server cap sits behind this call, and spending it on
+      // a user who has no problem would spend it for the one who does.
+      expect(repo.calls, 0);
     });
 
     test('a claim for a different tier does not confirm', () async {
@@ -302,4 +373,21 @@ void _pendingTests() {
       expect(provider.canViewInsiderTips, isFalse);
     }, timeout: const Timeout(Duration(seconds: 60)));
   });
+}
+
+/// Implements the repository rather than extending it, because the
+/// real constructor reaches FirebaseAuth.instance, which does not
+/// exist in a unit test.
+class _FakeMembershipRepository implements MembershipRepository {
+  int calls = 0;
+  bool throwOnReconcile = false;
+  void Function()? onReconcile;
+
+  @override
+  Future<String> reconcile() async {
+    calls++;
+    if (throwOnReconcile) throw Exception('reconcile unavailable');
+    onReconcile?.call();
+    return 'cityInsider';
+  }
 }

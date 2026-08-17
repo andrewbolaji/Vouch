@@ -38,6 +38,11 @@ import {
   RevenueCatWebhookEvent,
 } from "./membership_webhook";
 import {
+  reconcileMembershipFor,
+  EntitlementLookupError,
+  FetchLike,
+} from "./revenuecat_api";
+import {
   checkSignupInput,
   clientIpFrom,
   recordSignupAttempt,
@@ -565,5 +570,92 @@ export const onRestaurantDeleted = onDocumentDeleted(
   "restaurants/{restaurantId}",
   async (event) => {
     await deleteRestaurantData(db, event.params.restaurantId);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 8. reconcileMembership
+//    HTTPS callable. Asks RevenueCat directly what this user is
+//    entitled to and repairs the claim from the answer.
+//
+//    The webhook is the only thing that has ever set a membership
+//    claim, so a webhook that is never delivered leaves a paying user
+//    locked out with no way back. membership_provider.dart already
+//    detects that state precisely, calling it awaiting confirmation,
+//    and its retry button could only ever re-read the same claim that
+//    was never going to change. This is what that button now calls.
+//
+//    The uid comes from the auth context and never from the payload.
+//    A client that could name the user would be able to ask for
+//    somebody else's tier to be recomputed, which is a lever on an
+//    account it does not own.
+// ---------------------------------------------------------------------------
+
+const revenueCatRestApiKey = defineSecret("REVENUECAT_REST_API_KEY");
+
+/** Reconciliations one user may request in a UTC day. */
+export const MAX_RECONCILES_PER_DAY = 5;
+
+export const reconcileMembership = onCall(
+  {secrets: [revenueCatRestApiKey]},
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "You must be signed in to refresh your membership."
+      );
+    }
+
+    const uid = request.auth.uid;
+    const now = new Date();
+    const dateKey = now.toISOString().split("T")[0];
+
+    // A per user daily cap, in a transaction, for the same reason
+    // submitSuggestion has one: this endpoint makes an outbound call
+    // to a third party's API on demand, and an unbounded button is a
+    // way to spend RevenueCat's rate limit from a phone.
+    const counterRef = db
+      .collection("users")
+      .doc(uid)
+      .collection("reconcileCounts")
+      .doc(dateKey);
+
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(counterRef);
+      const count = (snap.data()?.count as number) ?? 0;
+      if (count >= MAX_RECONCILES_PER_DAY) {
+        throw new HttpsError(
+          "resource-exhausted",
+          "Too many refresh attempts today. Try again tomorrow, or " +
+          "contact support if your purchase still is not showing."
+        );
+      }
+      tx.set(counterRef, {count: count + 1, date: dateKey}, {merge: true});
+    });
+
+    try {
+      const result = await reconcileMembershipFor(
+        db,
+        uid,
+        revenueCatRestApiKey.value(),
+        now,
+        globalThis.fetch as unknown as FetchLike
+      );
+      return {tier: result.tier, changed: result.changed};
+    } catch (err) {
+      if (err instanceof EntitlementLookupError) {
+        // Deliberately not "you have no subscription". Not knowing and
+        // knowing there is nothing are different answers, and only one
+        // of them is safe to act on.
+        logger.error(`[reconcile] lookup failed for uid=${uid}`, {
+          error: err.message,
+        });
+        throw new HttpsError(
+          "unavailable",
+          "Could not reach the subscription service. Please try again."
+        );
+      }
+      throw err;
+    }
   }
 );
