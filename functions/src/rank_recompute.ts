@@ -25,6 +25,8 @@ import {
   assignRanks,
   baselineFor,
   baselineWeight,
+  BASELINE_STEP,
+  BASELINE_EXPIRY_VOTES_PER_RESTAURANT,
   DEFAULT_HALF_LIFE_DAYS,
 } from "./rank_engine.js";
 import type {
@@ -208,6 +210,23 @@ export async function recomputeAllRanks(
     await batch.commit();
 
     // -- Audit logging --
+    //
+    // The baseline line, once per city per run. Without it "why did
+    // the order change" has no answer, and the ranking becomes the
+    // same kind of unexplainable box the alphabetical tie-break was.
+    // It reports the weight that was actually applied, read from the
+    // same variable the batch wrote, so the log cannot describe a
+    // curve the run did not use.
+    const expiryVotes = restaurantCount * BASELINE_EXPIRY_VOTES_PER_RESTAURANT;
+    logger.info(
+      `[rank] ${cityName} (${cityId}) baseline weight ` +
+      `${weight.toFixed(3)} at ${cityVoteTotal}/${expiryVotes} votes, ` +
+      `step ${BASELINE_STEP}. ` +
+      (weight === 0 ?
+        "EXPIRED, rank is votes alone from here." :
+        `${expiryVotes - cityVoteTotal} votes until it expires.`)
+    );
+
     logCitySummary(cityName, cityId, ranked, scored, previousRanks);
   }
 }

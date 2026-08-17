@@ -9,6 +9,16 @@
  * No reimplementation. If production logic changes, tests break.
  */
 
+// Only info and warn are replaced. Everything else stays real, so a
+// call to an export this file does not know about cannot turn into an
+// undefined-is-not-a-function inside production code.
+jest.mock("firebase-functions/logger", () => ({
+  ...jest.requireActual("firebase-functions/logger"),
+  info: jest.fn(),
+  warn: jest.fn(),
+}));
+
+import * as logger from "firebase-functions/logger";
 import {initializeApp, getApps, deleteApp} from "firebase-admin/app";
 import {
   getFirestore,
@@ -1494,6 +1504,28 @@ describe("Rank recompute: zero-vote city guard", () => {
 // So the fixture makes rank and displayOrder disagree, and asserts
 // the baseline follows displayOrder.
 // ==================================================================
+/**
+ * Runs `body` and returns the messages it passed to logger.info.
+ *
+ * Going through the module mock rather than through stdout is
+ * deliberate, and was arrived at by a failure. Spying on the logger's
+ * exports directly throws, because they are non-configurable getters.
+ * Spying on process.stdout.write instead passed when index.test.ts
+ * ran alone and failed in the full suite, because Jest buffers
+ * console output per file rather than writing it through when more
+ * than one file is running. A seam that depends on how many test
+ * files are in the run is not a seam.
+ *
+ * @param {Function} body The async work whose logging is under test.
+ * @return {Promise<string[]>} The info messages it emitted.
+ */
+async function capturingInfo(body: () => Promise<void>): Promise<string[]> {
+  const info = logger.info as jest.Mock;
+  info.mockClear();
+  await body();
+  return info.mock.calls.map((call) => String(call[0]));
+}
+
 describe("Rank recompute: baseline follows displayOrder, not rank", () => {
   const now = new Date("2026-06-11T12:00:00Z");
 
@@ -1552,6 +1584,74 @@ describe("Rank recompute: baseline follows displayOrder, not rank", () => {
 
     const city = (await db.collection("cities").doc("skew-city").get()).data();
     expect(city?.baselineWeight).toBeCloseTo(0.975, 3);
+  });
+
+  test("the run logs the weight it actually applied", async () => {
+    // Observability, and specifically the one failure it could have:
+    // a log line that describes a curve the run did not use. It is
+    // asserted against the value written to the city document rather
+    // than against a literal, so the two cannot drift apart while
+    // both still passing.
+    const out = await capturingInfo(async () => {
+      await recomputeAllRanks(db, now);
+    });
+
+    const city = (await db.collection("cities").doc("skew-city").get()).data();
+    const written = (city?.baselineWeight as number).toFixed(3);
+    const line = out.find((l) => l.includes("baseline weight"));
+
+    expect(line).toBeDefined();
+    expect(line).toContain(`baseline weight ${written}`);
+    // 2 restaurants at 20 each, 1 vote cast.
+    expect(line).toContain("at 1/40 votes");
+    expect(line).toContain("39 votes until it expires");
+    expect(line).not.toContain("EXPIRED");
+  });
+});
+
+describe("Rank recompute: the baseline log says when it has expired", () => {
+  const now = new Date("2026-06-11T12:00:00Z");
+
+  beforeEach(async () => {
+    await clearFirestore();
+    await db.collection("cities").doc("done-city").set({
+      id: "done-city",
+      name: "Done City",
+    });
+    await db.collection("restaurants").doc("d-1").set({
+      id: "d-1", cityId: "done-city", name: "Only One",
+      rank: 1, displayOrder: 1, voteCount: 0,
+    });
+    // One restaurant expires at 20 votes, so 20 distinct voters puts
+    // the city exactly on the boundary where the weight reaches zero.
+    const votes = db
+      .collection("restaurants")
+      .doc("d-1")
+      .collection("votes");
+    for (let i = 0; i < 20; i++) {
+      await votes
+        .doc(`voter-${i}`)
+        .set({createdAt: Timestamp.fromDate(now), weight: 1});
+    }
+  });
+
+  test("says EXPIRED rather than a negative countdown", async () => {
+    // The countdown branch would read "0 votes until it expires" at
+    // the boundary and go negative past it, which is the reading that
+    // sends somebody looking for a bug in the arithmetic instead of
+    // telling them the curation is simply done.
+    const out = await capturingInfo(async () => {
+      await recomputeAllRanks(db, now);
+    });
+
+    const line = out.find((l) => l.includes("baseline weight"));
+    expect(line).toContain("baseline weight 0.000");
+    expect(line).toContain("EXPIRED");
+    expect(line).not.toContain("until it expires");
+
+    // And the score is now the votes alone, with no baseline left.
+    const d1 = (await db.collection("restaurants").doc("d-1").get()).data();
+    expect(d1?.baselineScore).toBe(0);
   });
 });
 
