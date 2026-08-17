@@ -1,13 +1,8 @@
-# Finding 6: resumable account deletion, for approval
+# Finding 6: resumable account deletion, revised for approval
 
-2026-08-17. Design only. Nothing built, per the standing rule that a
-plan is agreed before non-trivial code.
-
-Andrew's shape is taken as given and is right: the job document as the
-mechanism, a scheduled resume as the backstop, its own top-level
-collection keyed by uid, deleted last, every step idempotent. What
-follows is what that shape forces once it meets the code that exists,
-plus three questions only he can settle.
+Revised 2026-08-18 after Andrew's resolutions. Design only, nothing
+built. Supersedes the 2026-08-17 version; what changed is recorded at
+the end.
 
 ## The defect, stated in the current code
 
@@ -24,106 +19,151 @@ distinct operations** in sequence:
 | 6 | votes, `collectionGroup("votes")` filtered to this uid | batched delete |
 | 7 | comments, anonymised in place | batched update |
 
-Nothing records which of the seven finished. It runs inside
-`onUserDeleted`, a Gen1 auth trigger, and the auth user is **already
-gone** by the time it starts, so an interruption at step 4 leaves
-three collections cleaned, four not, no auth record, and nothing
-anywhere that knows. The user has been told the account was deleted.
+Nothing records which finished. It runs inside `onUserDeleted`, a Gen1
+auth trigger, and the auth user is **already gone** when it starts, so
+an interruption at step 4 leaves three collections cleaned, four not,
+no auth record, and nothing that knows. The user has been told the
+account was deleted.
 
-Step 6 is also the expensive one: `collectionGroup("votes").get()`
-reads every vote document in the database to find the ones whose id
-matches the uid. Today that is thousands of reads at most. It is the
-step most likely to time out first as the app grows, which makes it
-the most likely place for the partial state to happen.
+Step 6 is the expensive one: `collectionGroup("votes").get()` reads
+every vote document in the database to find the ones whose id matches
+the uid. At launch volume that is small. It is the step that will time
+out first as the app grows, which makes it the most likely place for
+the partial state to occur.
 
-## What Andrew's ordering forces, and it is the biggest thing here
+## The definition that carries the whole design
 
-The specified order is: revoke sessions and mark deleting, cascade,
-delete the auth user, clear the job. **Auth deletion moves from first
-to last.** That is correct, and it means `onUserDeleted` can no longer
-be the driver, because it only fires after the thing that now has to
-happen at the end.
+**A deletion job is not complete because the cascade ran. It is
+complete because a cascade pass found nothing left to delete.**
 
-So the entry point changes. A callable, `requestAccountDeletion`,
-creates the job and runs it. That has one consequence worth naming:
+Everything below follows from that sentence. It is what absorbs the
+race rather than preventing it: anything written after a pass, by a
+client whose token has not expired yet, is simply found by the next
+pass. There is no window to close, because a window that leaves data
+behind is indistinguishable from a pass that had work to do.
 
-**Re-authentication moves too.** `FirebaseAuth.delete()` is what
-raises `requires-recent-login` today, and `auth_service.dart` maps it
-to a re-auth dialog with a one-attempt retry (`DECISIONS.md`,
-2026-06-09). A callable gets no such error for free, so it must check
-`request.auth.token.auth_time` itself and refuse anything older than,
-say, five minutes with `failed-precondition`. The client's existing
-re-auth flow stays exactly as it is; only the error it keys on
-changes. If that check is forgotten, account deletion becomes
-available to anyone holding a stolen unexpired token, so it is not
-optional and it needs its own test.
+**The scheduled resume is therefore part of the correctness argument,
+not a retry mechanism.** It cannot be dropped later as an
+optimisation, cannot be moved to run "only on failures", and cannot be
+made conditional on an error having been recorded. A job with no error
+at all still needs the next pass, because the pass is how the system
+learns it is finished. Anyone proposing to remove it is proposing to
+change what completion means.
 
-**`onUserDeleted` stays**, for a deletion performed from the Firebase
-console or by any path that is not the app. It becomes: create a job
-if one does not exist, then run it. Both entry points converge on the
-same job document and the same idempotent steps, which is what stops
-them fighting.
+**One concrete code consequence.** `deleteUserData` returns `void`
+today; it logs counts and discards them. Completion now depends on
+those counts, so it must return them, and every one of the seven
+operations must contribute. A step that forgets to report its count
+makes the job close early, which is the original defect wearing a
+different hat. That return value needs a test of its own, asserting a
+non-zero count on a first pass and zero on the pass after.
 
-## Session revocation is weaker than it sounds
+## Entry point, and the protection that has to be rebuilt
 
-`revokeRefreshTokens(uid)` invalidates refresh tokens. **An ID token
+Deleting the auth user last means `onUserDeleted` cannot drive the
+job, since it only fires after the thing that now happens at the end.
+The entry point becomes a callable, `requestAccountDeletion`.
+
+**Freshness has to be re-implemented explicitly, and this is not
+optional.** `FirebaseAuth.delete()` is what raises
+`requires-recent-login` today. A callable inherits none of it, so
+without an explicit check, account deletion becomes available to
+anyone holding a stolen unexpired token, which is a worse defect than
+the one being fixed.
+
+- Reject unless `request.auth.token.auth_time` is within **five
+  minutes**, matching Firebase's own recent-login window.
+- Reject with a **distinct error code**, `failed-precondition` carrying
+  a `reauth_required` reason, so the client can tell "re-authenticate
+  and try again" apart from "something went wrong". Only one of those
+  is recoverable, and they produce different user behaviour.
+- The client's existing re-auth dialog and its one-attempt retry stay
+  exactly as they are (`DECISIONS.md`, 2026-06-09). Only the error it
+  keys on changes.
+
+`onUserDeleted` **stays**, for a deletion performed from the Firebase
+console or any path that is not the app. It creates a job if one does
+not exist and then runs it, so both entry points converge on the same
+document and the same idempotent steps.
+
+## Session revocation: accepted, not fought
+
+`revokeRefreshTokens(uid)` invalidates refresh tokens. An ID token
 already in the client's hands stays valid until it expires, up to an
-hour**, and `firestore.rules` cannot see revocation at all. So there
-is a window in which a client can still write, and a late write can
-recreate a document the cascade has just deleted, or fire a trigger
-that recreates an aggregate.
+hour, and `firestore.rules` cannot see revocation at all.
 
-Two ways to close it:
+**The rejected fix, recorded so nobody rediscovers it:** a `deleting`
+flag on the user document, checked in rules. That puts a `get()` on
+the hot path of every write in the app, permanently, to guard a case
+that happens once per account and never for most accounts. The cost is
+paid by every user forever; the benefit accrues during a few seconds
+of one user's life.
 
-1. **Rules read a flag.** Every write path adds a `get()` on a small
-   per-uid document. That is a real read cost on every vote and
-   comment for every user forever, to protect a window that occurs
-   only during deletion. Rejected on cost.
-2. **Cascade once more after the auth user is gone.** Once the auth
-   record is deleted, no new token can be minted and every existing
-   one is refused by Firestore. A second cascade pass at that point is
-   almost always a no-op, costs one extra pass at deletion time only,
-   and needs no rules change and no per-write cost.
-
-**Recommendation: 2.** The job then has four steps, not three, and the
-last one exists specifically to sweep whatever landed during the
-window. It is worth writing that reason into the code, or the pass
-looks redundant and somebody deletes it.
+The completion definition above handles it instead, at zero standing
+cost.
 
 ## The job document
 
-`deletionJobs/{uid}`, top level, denied to all clients in
-`firestore.rules` (with tests, proved wired by flipping the rule).
-Keyed by uid so a second request for the same account is the same job
-rather than a race.
+`deletionJobs/{jobId}`, top level, denied to all clients in
+`firestore.rules`, with tests proved wired by flipping the rule.
 
 ```
 {
-  uid, requestedAt, updatedAt,
-  pending: true,          // false once finished, see the query below
-  attempts: 0,
+  jobId,                  // hash of the uid, see the open question
+  uid,                    // present while running, removed at close
+  requestedAt, updatedAt,
+  pending: true,          // false once closed, see the query below
+  passes: 0,              // cascade passes run so far
+  lastPassDeleted: 0,     // documents the last pass touched
   steps: {
-    revoke:      "pending" | "done",
-    cascade:     "pending" | "done",
-    authDelete:  "pending" | "done",
-    sweep:       "pending" | "done"
+    revoke:     "pending" | "done",
+    authDelete: "pending" | "done"
   },
   lastError: string | null,
-  expiresAt: Timestamp    // see question 1
+  expiresAt: Timestamp
 }
 ```
 
-Each step reads its own status and skips if `done`, which is what
-makes replay safe. Every one of the seven cascade operations is
-already idempotent (deleting an absent document is a no-op, and the
-comment anonymisation writes fixed values), so `cascade` can be
-re-entered without a cursor. That is a property of today's code and
-should be asserted by a test rather than assumed, because the next
-person adding a step to the cascade will not know it was load bearing.
+`steps` only tracks the two operations that are not part of the
+repeating cascade. The cascade needs no per-step cursor because each
+of its seven operations is already idempotent: deleting an absent
+document is a no-op, and the comment anonymisation writes fixed values
+and then no longer matches its own query. **That is a property of
+today's code and must be asserted by a test rather than assumed**,
+because the next person adding a step to the cascade will not know it
+was load bearing.
+
+## The loop
+
+| # | Step | Repeats | Idempotent because |
+|---|---|---|---|
+| 1 | `revokeRefreshTokens`, mark `revoke: done` | no | revoking twice equals revoking once |
+| 2 | One cascade pass, record `lastPassDeleted` | **yes** | absent documents delete as no-ops |
+| 3 | When a pass reports 0: `deleteUser(uid)` | no | `auth/user-not-found` is success |
+| 4 | One more cascade pass after the auth record is gone | **yes** | as step 2 |
+| 5 | When that pass also reports 0: `pending = false`, drop `uid` | no | terminal |
+
+Closure requires a clean pass **after** the auth record is gone. That
+is Andrew's definition applied twice, and it is deliberate: it removes
+any dependence on a claim about how long a token outlives the account
+it names. If tokens die instantly, step 4 is a cheap no-op. If they do
+not, step 4 keeps sweeping until they do. The design does not need to
+know which, and neither does the reader.
+
+Step 3 treating `auth/user-not-found` as success is what lets the
+`onUserDeleted` path share this code: arriving from the console, the
+auth record is already gone before step 1.
+
+**A bound, so a pathological client cannot keep a job open forever.**
+If `passes` exceeds 12, roughly three hours at the cadence below, log
+`[deletion] ANOMALY: job still finding data after N passes` and keep
+going. It does not stop, because stopping would leave data; it becomes
+visible, because a job that never closes is a fact somebody should
+learn from a log rather than from a bill.
 
 ## The backstop
 
-A scheduled function every 15 minutes:
+Every 15 minutes:
 
 ```
 deletionJobs.where("pending", "==", true)
@@ -131,43 +171,44 @@ deletionJobs.where("pending", "==", true)
             .limit(20)
 ```
 
-Two details that decide whether this works.
+Two details decide whether this works.
 
-**`pending` is a boolean, not a status string.** Firestore allows
-range filters on only one field per query, so `status != "done"`
+**`pending` is a boolean, not a status string.** Firestore allows a
+range filter on only one field per query, so `status != "done"`
 alongside `updatedAt <` is not expressible. A boolean equality plus
 one inequality is.
 
-**It needs a composite index** on `(pending, updatedAt)` added to
-`firestore.indexes.json` and deployed. Without it the query fails at
-run time, in the backstop, which is the one place nobody is watching.
-That index is part of the change, not a follow-up.
+**It needs a composite index** on `(pending, updatedAt)` in
+`firestore.indexes.json`, deployed. Without it the query fails at run
+time, inside the backstop, which is the one place nobody is watching.
+The index is part of this change, not a follow-up.
 
-It scans jobs, never user data, so it stays cheap forever: at launch
-volume the query returns nothing and costs one read.
+It scans jobs, never user data, so it stays cheap as the app grows: at
+launch volume the query returns nothing and costs one read.
 
-## Order of operations
+## What the user sees, which the definition settles
 
-| # | Step | Idempotent because |
-|---|---|---|
-| 1 | `revokeRefreshTokens`, write job with `steps.revoke = done` | Revoking twice is the same as once |
-| 2 | Run the seven-operation cascade | Deletes of absent documents are no-ops |
-| 3 | `deleteUser(uid)` | `auth/user-not-found` is success, not failure |
-| 4 | Cascade once more, the window sweep | Same as 2 |
-| 5 | `pending = false`, `steps.* = done` | Terminal |
+The 2026-08-17 draft recommended running the whole job inline and
+returning when it was done. **That is no longer possible**, and the
+completion definition is what makes it impossible: a job closes only
+after a pass that finds nothing, and the earliest that can happen is
+one resume cycle later.
 
-Step 3 treating `user-not-found` as success is what lets the
-`onUserDeleted` path share this code: arriving from the console, the
-auth record is already gone before step 1.
+So: the callable runs step 1 and one cascade pass inline, clears local
+data, signs the user out, and returns. From the user's side the
+account is gone at that moment, which is true in every sense they can
+observe: they are signed out, their data is deleted, and their auth
+record follows within the hour. No new "deletion in progress" UI state
+is needed, because the user is not signed in to see it.
 
 ## What I would not build
 
 - **No sweep over user data.** The backstop scans jobs only. A sweeper
-  that walks users looking for orphans is the version of this that
-  gets expensive precisely when the app succeeds.
+  that walks users looking for orphans gets expensive exactly when the
+  app succeeds.
 - **No client-side retry as the guarantee.** The client may retry, but
-  the guarantee has to survive the client being uninstalled, which is
-  a normal thing to do immediately after deleting an account.
+  the guarantee has to survive the app being deleted from the phone,
+  which is a normal thing to do straight after deleting an account.
 
 ## One thing that already works, and is not reopened
 
@@ -180,43 +221,53 @@ have to work it out.
 
 ## Tests, before any of it is called done
 
-- Interrupted at **each** of the four steps: the job resumes at the
-  step that did not finish, and does not repeat one that did.
+- A pass that deletes something reports a non-zero count; the pass
+  after it reports zero. This is the test the whole design rests on.
+- Interrupted after revoke, after a cascade pass, and after
+  `deleteUser`: the job resumes and reaches closure.
+- Data written **between** a clean pass and the auth deletion is found
+  by the pass in step 4, and the job does not close until it is gone.
 - Running the whole job twice end to end leaves the same state.
-- The backstop picks up a job stale by 15 minutes and finishes it.
-- The backstop ignores a job that is not stale, and one that is done.
-- `auth_time` older than the window is refused.
+- The backstop picks up a job stale by 15 minutes, ignores a fresh one
+  and ignores a closed one.
+- `auth_time` older than five minutes is refused, with the
+  distinguishable code.
 - `deletionJobs` denied to clients, proved wired by flipping the rule.
-- The composite index exists, which in practice means running the
-  backstop query against the emulator so a missing index fails a test
-  rather than production.
+- The backstop query runs against the emulator, so a missing composite
+  index fails a test rather than production.
 
-## Three questions for Andrew
+## The one open question
 
-**1. Keep the job document or delete it?** The brief says clear it.
-The counter-argument is that a deletion with no record is exactly the
-state finding 6 is about: if something goes wrong afterwards there is
-nothing to look at. The middle option is `expiresAt` with a 30 day
-TTL, which now works in this project and was verified ACTIVE today.
-The tension is real though: the document is keyed by the uid of a user
-who asked to be erased, so retaining it for 30 days retains an
-identifier. Options are delete immediately, keep 30 days, or keep 30
-days keyed by a hash of the uid instead. **My recommendation: keep 30
-days, keyed by the hash.** It is auditable and holds nothing that
-points back at a person.
+**Retain the job document, and under what identifier?**
 
-**2. Five minutes for the `auth_time` freshness window?** Apple's
-guideline cares that deletion is reachable, not about the window.
-Shorter is safer and more re-auth prompts; five is the usual choice.
+The brief said clear it. The counter-argument is that a deletion with
+no record is the state finding 6 is about: if something goes wrong
+afterwards there is nothing to look at. But the document is keyed by
+the uid of a user who asked to be erased, so retaining it retains an
+identifier.
 
-**3. Does the user wait?** The callable can run the whole job inline
-and return when it is done, which is honest but can take seconds, or
-it can create the job, kick off step 1, and return immediately with
-the client showing "deletion in progress". The second is what makes
-the backstop meaningful. It also means the app must handle being
-signed in to an account that is mid-deletion, which is a UI state that
-does not exist today. **My recommendation: run inline, with the
-backstop as the safety net rather than the normal path.** At current
-data volumes the whole cascade is well under a second, and inventing a
-new UI state to solve a latency problem nobody has yet is the more
-expensive mistake.
+**Recommendation: key it by a hash of the uid, keep the plain uid as a
+field only while the job is running, and drop that field at closure,
+leaving a 30 day TTL record that holds timestamps, pass counts and no
+identifier.** The TTL mechanism is proven in this project as of
+2026-08-17. A second deletion request for the same account hashes to
+the same job, so idempotency survives.
+
+## What changed from the 2026-08-17 draft
+
+- Completion is now "a pass found nothing", not "the cascade ran".
+  This replaces the earlier single extra sweep pass, and it is
+  stronger: the sweep was one attempt at absorbing the token window,
+  the loop absorbs it however long it takes.
+- The scheduled resume is stated as part of correctness rather than as
+  a safety net.
+- `deleteUserData` must return counts. This is new, and it is the
+  concrete code change the definition forces.
+- The freshness window is settled at five minutes with a
+  distinguishable error code.
+- The rules-flag approach to revocation is recorded as rejected, with
+  the reason, so it is not rediscovered.
+- "Does the user wait" is no longer an open question. The definition
+  answers it.
+- Two of the three open questions are closed. The remaining one is the
+  job document's identifier and retention.
