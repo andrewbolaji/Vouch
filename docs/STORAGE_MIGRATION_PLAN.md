@@ -56,6 +56,25 @@ actually resolve today are the only ones that matter for launch:
 
 **Nothing else in this plan should run until that is answered.**
 
+### Measured 2026-08-17, and the answer is not good
+
+`docs/PHOTO_PROVENANCE_MEASUREMENT.md`. Rather than asking Andrew to
+certify 59 files from memory, the metadata was read: **59 of 59 carry
+`exif:UserComment: Screenshot`, and 0 of 59 carry any camera make,
+model, capture time, lens or GPS.** The dimensions are 59 different
+arbitrary sizes, which is what cropping a screen capture produces.
+
+A separate later batch in `~/Downloads`, named `{restaurant}_{n}_{dish}.jpg`,
+is 1080x1350 on every file with no EXIF, which is Instagram's post
+size. `site/img/mensho.jpg`, live on vouchfood.com today, is
+byte-identical to one of them and a 300x300 crop of another.
+
+So case 3 of the three above is the live hypothesis, the exposure
+already exists publicly on the marketing site, and **nothing may be
+uploaded**. The short list of questions Andrew actually has to answer
+is in the measurement report; the answers belong in
+`docs/PHOTO_MANIFEST.md`.
+
 ## Second fact that shapes everything: the files are the wrong shape
 
 Measured, not assumed:
