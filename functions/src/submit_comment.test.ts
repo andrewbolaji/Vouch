@@ -394,7 +394,7 @@ describe("submitComment target validation", () => {
     ).rejects.toMatchObject({code: "invalid-argument"});
   });
 
-  test("still accepts a valid top-level comment and a valid reply", async () => {
+  test("accepts a valid top-level comment and a valid reply", async () => {
     const top = await submitComment.run(
       request({restaurantId: "tv-r1", text: "top level"}, authFor(uid))
     );

@@ -1531,7 +1531,7 @@ describe("Rank recompute: baseline follows displayOrder, not rank", () => {
 
     // displayOrder 1 outranks displayOrder 2 on baseline, even though
     // s-1 held rank 1 going in and s-2 held rank 2.
-    expect(s2!.baselineScore).toBeGreaterThan(s1!.baselineScore as number);
+    expect(s2?.baselineScore).toBeGreaterThan(s1?.baselineScore as number);
   });
 
   test("baselineScore is written, and rankScore includes it", async () => {
@@ -1540,10 +1540,10 @@ describe("Rank recompute: baseline follows displayOrder, not rank", () => {
     const s1 = (await db.collection("restaurants").doc("s-1").get()).data();
     // 2 restaurants, expiry 40, 1 vote: weight = 1 - 1/40 = 0.975.
     // s-1 has displayOrder 2, so position value is (2-2+1)*2 = 2.
-    expect(s1!.baselineScore).toBeCloseTo(1.95, 2);
+    expect(s1?.baselineScore).toBeCloseTo(1.95, 2);
     // rankScore is the total that produced the rank, so the vote
     // component is recoverable as rankScore minus baselineScore.
-    expect((s1!.rankScore as number) - (s1!.baselineScore as number))
+    expect((s1?.rankScore as number) - (s1?.baselineScore as number))
       .toBeCloseTo(1.0, 2);
   });
 
@@ -1551,7 +1551,7 @@ describe("Rank recompute: baseline follows displayOrder, not rank", () => {
     await recomputeAllRanks(db, now);
 
     const city = (await db.collection("cities").doc("skew-city").get()).data();
-    expect(city!.baselineWeight).toBeCloseTo(0.975, 3);
+    expect(city?.baselineWeight).toBeCloseTo(0.975, 3);
   });
 });
 
