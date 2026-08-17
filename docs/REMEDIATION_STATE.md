@@ -485,6 +485,39 @@ because a public collection written for a consumer that may never
 exist is the same shape of unread work this remediation keeps
 finding.
 
+## The open list: climbable, and unreachable
+
+Measured 2026-08-18, `docs/OPEN_LIST_MEASUREMENT.md`, with
+`functions/src/open_list.test.ts` pinning the numbers.
+
+**The climb works.** Running the real engine, a newcomer with no
+`displayOrder` in a launch city needs **4 votes to reach rank 10 and
+20 to reach rank 1**. FIX_B_DESIGN's "17 net votes from last to
+first" describes a curated rank 10, which carries its own baseline
+and does not enlarge the city; a newcomer needs 20. Not decorative.
+
+**Nothing can arrive.** `submitSuggestion` writes to `suggestions`
+with `status: "pending"` and nothing reads that collection except the
+account-deletion cascade. Every restaurant-writing script writes a
+whole city roster; there is no script that adds one restaurant to a
+live city. So the open list is a property of the ranking engine and
+not a feature of the product, which is the same shape as findings 2
+and 11.
+
+**A trap for when it becomes real.** `backfill_display_order.js` sets
+`displayOrder = rank` on every document lacking it. A newcomer's
+absent `displayOrder` is deliberate, not a gap, so one run of that
+script would grant it a curated baseline at whatever rank it had
+climbed to, silently. The script is not wrong; its precondition
+expired.
+
+**A property nobody had stated.** Each newcomer raises every
+incumbent's baseline, because position value scales with `n` and the
+expiry does too. Curated first place gains 11 percent of its
+protection when an 11th restaurant appears; curated last place
+doubles its own, 1.8 to 3.636. Small at one newcomer, and it
+compounds.
+
 ## `RestaurantLocation.name`: where it renders today, and what it claims
 
 Asked after the teaser finding: if that field holds three kinds of
