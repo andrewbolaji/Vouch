@@ -23,6 +23,8 @@ import * as logger from "firebase-functions/logger";
 import {
   computeScore,
   assignRanks,
+  baselineFor,
+  baselineWeight,
   DEFAULT_HALF_LIFE_DAYS,
 } from "./rank_engine.js";
 import type {
@@ -120,6 +122,31 @@ export async function recomputeAllRanks(
       });
     }
 
+    // The curated baseline. Fix B.
+    //
+    // Added as a separate additive term at rank time, never as a vote
+    // and never through vote weight. firestore.rules:82 enforces
+    // weight == 1 on every vote write and the rules suite pins the
+    // denial, and that guarantee is what makes "money cannot buy
+    // rank" true rather than aspirational. Nothing here creates a
+    // vote document or touches a weight.
+    //
+    // Keyed on displayOrder, never on rank. rank is the output this
+    // computation produces, so feeding it back would lock the order
+    // in and votes could never dislodge it.
+    const restaurantCount = restaurantsSnap.size;
+    const weight = baselineWeight(cityVoteTotal, restaurantCount);
+    const baselineById = new Map<string, number>();
+    for (const r of scored) {
+      const baseline = baselineFor(
+        r.displayOrder,
+        restaurantCount,
+        cityVoteTotal
+      );
+      baselineById.set(r.id, baseline);
+      r.score += baseline;
+    }
+
     // The zero-vote guard. Fix B, and the outer layer of it.
     //
     // A city that has cast no votes has produced no evidence, so
@@ -150,12 +177,34 @@ export async function recomputeAllRanks(
     const batch = db.batch();
     for (const r of ranked) {
       const ref = db.collection("restaurants").doc(r.id);
+      const baseline = baselineById.get(r.id) ?? 0;
       batch.update(ref, {
         rank: r.rank,
+        // The total that produced the rank, baseline included.
         rankScore: Math.round(r.score * 1000) / 1000,
+        // Written for observability and NEVER read back as an input.
+        // That distinction is the lesson of this remediation:
+        // cities.restaurantCount and restaurants.voteCount both
+        // drifted precisely because a stored value was read as truth.
+        // A derived value written only to be looked at cannot drift
+        // into being wrong, because nothing depends on it. The vote
+        // component is rankScore minus this.
+        baselineScore: Math.round(baseline * 1000) / 1000,
         voteCount: trueVoteCountById.get(r.id) ?? 0,
       });
     }
+    // The city's current baseline weight, written once, in the same
+    // batch as the ranks it produced.
+    //
+    // The city screen needs this to decide whether to show the
+    // opening-list line, and it must READ it rather than recompute
+    // it. A client-side copy of the curve would be a second
+    // implementation that drifts against this one, and the two
+    // disagreeing means the app says the list is still opening while
+    // the ranking has already stopped protecting it, or the reverse.
+    // One writer, one number, read-only everywhere else.
+    batch.update(cityDoc.ref, {baselineWeight: weight});
+
     await batch.commit();
 
     // -- Audit logging --

@@ -1421,8 +1421,19 @@ describe("Rank recompute: zero-vote city guard", () => {
     const q3 = await db.collection("restaurants").doc("q-3").get();
     // The guard is about having no evidence at all, not about
     // protecting curation forever. One real vote and the engine runs.
+    //
+    // "The engine ran" is voteCount and rankScore being written, NOT
+    // the order changing. This assertion originally expected rank 1
+    // and was written before the baseline existed. Under Fix B one
+    // vote on curated last place must NOT reach first: with 3
+    // restaurants the weight is 1 - 1/60, so q-3 scores
+    // 1*2*0.983 + 1.0 = 2.97 against q-1's 3*2*0.983 = 5.90. It stays
+    // at 3, and that is the inversion Fix B exists to prevent.
     expect(q3.data()?.voteCount).toBe(1);
-    expect(q3.data()?.rank).toBe(1);
+    expect(q3.data()?.rankScore).toBeGreaterThan(0);
+    expect(q3.data()?.rank).toBe(3);
+    // And the sentinel is gone, which is what proves the batch ran.
+    expect(q3.data()?.rankScore).not.toBe(999);
   });
 
   test("a quiet city does not block a busy one in the same run",
@@ -1450,13 +1461,98 @@ describe("Rank recompute: zero-vote city guard", () => {
 
       await recomputeAllRanks(db, now);
 
-      // Busy city recomputed.
-      expect((await db.collection("restaurants").doc("b-2").get())
-        .data()?.rank).toBe(1);
-      // Quiet city still untouched.
-      expect((await db.collection("restaurants").doc("q-1").get())
-        .data()?.rank).toBe(1);
+      // Busy city recomputed. Measured by the write happening, not by
+      // the order flipping: under Fix B one vote does not move
+      // curated last past curated first, so b-2 correctly stays at 2.
+      const b2 = await db.collection("restaurants").doc("b-2").get();
+      expect(b2.data()?.voteCount).toBe(1);
+      expect(b2.data()?.rankScore).toBeGreaterThan(0);
+      const busyCity = await db.collection("cities").doc("busy-city").get();
+      expect(busyCity.data()?.baselineWeight).toBeDefined();
+
+      // Quiet city untouched, proven by the sentinel surviving rather
+      // than by its rank being unchanged, which it would be either
+      // way.
+      const q1 = await db.collection("restaurants").doc("q-1").get();
+      expect(q1.data()?.rankScore).toBe(999);
+      const quietCity = await db.collection("cities").doc("quiet-city").get();
+      expect(quietCity.data()?.baselineWeight).toBeUndefined();
     });
+});
+
+// ==================================================================
+// Fix B step 3: the baseline is wired to displayOrder, not to rank.
+//
+// This is the assertion that arity cannot make. baselineFor takes
+// three arguments and a caller can still hand it `rank` in the
+// `displayOrder` slot, which is the actual failure mode. Feeding rank
+// back would be positive feedback: the baseline that produced today's
+// order becomes an input to tomorrow's, the order locks itself in,
+// and a restaurant that rose on real votes ends up defended by a
+// baseline it earned by rising.
+//
+// So the fixture makes rank and displayOrder disagree, and asserts
+// the baseline follows displayOrder.
+// ==================================================================
+describe("Rank recompute: baseline follows displayOrder, not rank", () => {
+  const now = new Date("2026-06-11T12:00:00Z");
+
+  beforeEach(async () => {
+    await clearFirestore();
+    await db.collection("cities").doc("skew-city").set({
+      id: "skew-city",
+      name: "Skew City",
+    });
+    // rank and displayOrder are deliberately inverted. If the
+    // baseline read rank, s-1 would get the largest baseline. It
+    // reads displayOrder, so s-2 does.
+    await db.collection("restaurants").doc("s-1").set({
+      id: "s-1", cityId: "skew-city", name: "First By Rank",
+      rank: 1, displayOrder: 2, voteCount: 0,
+    });
+    await db.collection("restaurants").doc("s-2").set({
+      id: "s-2", cityId: "skew-city", name: "Second By Rank",
+      rank: 2, displayOrder: 1, voteCount: 0,
+    });
+    // One vote so the guard lifts and the engine actually runs.
+    await db
+      .collection("restaurants")
+      .doc("s-1")
+      .collection("votes")
+      .doc("voter-1")
+      .set({createdAt: Timestamp.fromDate(now), weight: 1});
+  });
+
+  test("the larger baseline goes to the lower displayOrder", async () => {
+    await recomputeAllRanks(db, now);
+
+    const s1 = (await db.collection("restaurants").doc("s-1").get()).data();
+    const s2 = (await db.collection("restaurants").doc("s-2").get()).data();
+
+    // displayOrder 1 outranks displayOrder 2 on baseline, even though
+    // s-1 held rank 1 going in and s-2 held rank 2.
+    expect(s2!.baselineScore).toBeGreaterThan(s1!.baselineScore as number);
+  });
+
+  test("baselineScore is written, and rankScore includes it", async () => {
+    await recomputeAllRanks(db, now);
+
+    const s1 = (await db.collection("restaurants").doc("s-1").get()).data();
+    // 2 restaurants, expiry 40, 1 vote: weight = 1 - 1/40 = 0.975.
+    // s-1 has displayOrder 2, so position value is (2-2+1)*2 = 2.
+    expect(s1!.baselineScore).toBeCloseTo(1.95, 2);
+    // rankScore is the total that produced the rank, so the vote
+    // component is recoverable as rankScore minus baselineScore.
+    expect((s1!.rankScore as number) - (s1!.baselineScore as number))
+      .toBeCloseTo(1.0, 2);
+  });
+
+  test("the city carries the weight the screen will read", async () => {
+    await recomputeAllRanks(db, now);
+
+    const city = (await db.collection("cities").doc("skew-city").get()).data();
+    expect(city!.baselineWeight).toBeCloseTo(0.975, 3);
+  });
 });
 
 describe("Waitlist signup logic", () => {

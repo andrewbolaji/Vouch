@@ -11,7 +11,8 @@
  * regression is exactly what this guards against.
  */
 
-import {computeScore, assignRanks, DEFAULT_HALF_LIFE_DAYS} from "./rank_engine";
+import {computeScore, assignRanks, DEFAULT_HALF_LIFE_DAYS,
+  baselineWeight, baselineFor, BASELINE_STEP} from "./rank_engine";
 import type {VoteRecord, ScoredRestaurant} from "./rank_engine";
 
 describe("Rank engine golden set", () => {
@@ -193,5 +194,124 @@ describe("assignRanks tie-break on a zero-vote city", () => {
     ];
 
     expect(assignRanks(scored).map((r) => r.id)).toEqual(["hou-9", "hou-1"]);
+  });
+});
+
+// ================================================================
+// Fix B step 2: the curated baseline.
+//
+// Fix A fixed the zero-vote case. This fixes the one-vote inversion,
+// measured by execution rather than argued: a single vote on Lotus
+// Seafood produced score 0.997 against nine restaurants at 0.000, so
+// one person could reorder a curated Top 10 overnight.
+//
+// See docs/FIX_B_DESIGN.md for why the constants are what they are.
+// BASELINE_STEP is 2.0 because at 1.0 nine friends buys rank 1 on
+// launch day.
+// ================================================================
+describe("baselineWeight", () => {
+  test("is 1 at zero votes and exactly 0 at the expiry", () => {
+    expect(baselineWeight(0, 10)).toBe(1);
+    // 10 restaurants * 20 = 200.
+    expect(baselineWeight(200, 10)).toBe(0);
+    // Atlanta: 17 * 20 = 340.
+    expect(baselineWeight(340, 17)).toBe(0);
+  });
+
+  test("is monotonically non-increasing and never negative", () => {
+    // Required property, asserted rather than inherited. Decay is
+    // driven by lifetime city votes, which only grow, so this holds
+    // "for free" via something two layers away. That is exactly how
+    // the composition-root class of bug gets in: the property holds
+    // because of something nobody asserts, and then somebody changes
+    // the something. A weight that can rise is a list that un-learns.
+    let previous = Infinity;
+    for (let votes = 0; votes <= 1000; votes++) {
+      const w = baselineWeight(votes, 10);
+      expect(w).toBeLessThanOrEqual(previous);
+      expect(w).toBeGreaterThanOrEqual(0);
+      previous = w;
+    }
+  });
+
+  test("clamps at zero rather than going negative past expiry", () => {
+    // 1 - votes/expiry goes negative past expiry, and a negative
+    // baseline would actively penalise a curated restaurant for its
+    // position, which is the opposite of the intent and would be very
+    // hard to notice.
+    expect(baselineWeight(10_000, 10)).toBe(0);
+    expect(baselineWeight(Number.MAX_SAFE_INTEGER, 10)).toBe(0);
+  });
+
+  test("a city with no restaurants does not divide by zero", () => {
+    expect(Number.isFinite(baselineWeight(0, 0))).toBe(true);
+    expect(baselineWeight(0, 0)).toBe(0);
+  });
+});
+
+describe("baselineFor", () => {
+  const n = 10;
+
+  test("rank 1 gets the largest baseline, rank n the smallest", () => {
+    // At 20 city votes the weight is 0.90.
+    expect(baselineFor(1, n, 20)).toBeCloseTo(18.0, 5);
+    expect(baselineFor(5, n, 20)).toBeCloseTo(10.8, 5);
+    expect(baselineFor(10, n, 20)).toBeCloseTo(1.8, 5);
+  });
+
+  test("adjacent positions differ by exactly one step, scaled", () => {
+    // The user-facing quantity: what one place is worth. This is what
+    // has to mean the same thing in Houston and in Atlanta, which is
+    // why the baseline scales with n rather than using a fixed top.
+    const w = baselineWeight(20, n);
+    expect(baselineFor(4, n, 20) - baselineFor(5, n, 20))
+      .toBeCloseTo(BASELINE_STEP * w, 5);
+  });
+
+  test("a restaurant with no displayOrder gets no baseline", () => {
+    // Nobody curated it, so nobody is vouching for its position. It
+    // competes on votes alone. This is also what the open list
+    // produces: a user-suggested restaurant arrives with no curated
+    // position by definition.
+    expect(baselineFor(undefined, n, 20)).toBe(0);
+    expect(baselineFor(null, n, 20)).toBe(0);
+  });
+
+  test("every baseline is exactly zero once the city has expired", () => {
+    for (let d = 1; d <= n; d++) {
+      expect(baselineFor(d, n, 200)).toBe(0);
+    }
+  });
+
+  // Deliberately NOT tested here by asserting baselineFor.length.
+  // Arity proves nothing: a caller can still pass rank in the
+  // displayOrder slot, which is the actual failure mode. That the
+  // baseline follows displayOrder rather than rank is asserted at the
+  // wiring, in index.test.ts, with a fixture where the two disagree.
+});
+
+describe("the one-vote inversion, before and after", () => {
+  const n = 10;
+
+  test("one vote on rank 10 no longer reaches rank 1", () => {
+    const cityVotes = 20;
+    const freshVote = 0.997;
+
+    const challenger = freshVote + baselineFor(10, n, cityVotes);
+    const incumbent = 0 + baselineFor(1, n, cityVotes);
+    expect(challenger).toBeLessThan(incumbent);
+
+    // It does not even pass rank 9 on a single vote at STEP 2.0.
+    expect(challenger).toBeLessThan(baselineFor(9, n, cityVotes));
+  });
+
+  test("votes still beat curation once there are enough of them", () => {
+    // The baseline is a prior, not a floor. Seventeen net votes takes
+    // curated last to first at launch, which is the manipulation cost
+    // the constant was chosen for.
+    const cityVotes = 20;
+    const challenger = 17 + baselineFor(10, n, cityVotes);
+    const incumbent = 0 + baselineFor(1, n, cityVotes);
+    expect(challenger).toBeGreaterThan(incumbent);
   });
 });
