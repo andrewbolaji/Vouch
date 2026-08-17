@@ -591,6 +591,17 @@ Four constraints, agreed:
 Plan goes to Andrew before it runs, including what `RestaurantImage`
 becomes and its loading and failure states.
 
+**Written 2026-08-16: `docs/STORAGE_MIGRATION_PLAN.md`.** Nothing in
+it has been run. Two things it turned up that were not in the record
+here. The photographs' provenance is written down nowhere, and the
+migration changes what is being claimed about them (a file bundled in
+a private demo build is a small exposure; the same file served from
+the project's own bucket beside a paywall is publishing), so that
+question blocks step 0. And `assets/demo/` is **175 MB of PNGs**,
+averaging 3 MB each at about 1600px, so re-encoding is part of the
+migration rather than a nicety: measured at quality 80, `Mensho.png`
+goes 5,100 KB to 840 KB at hero size and 288 KB at card size.
+
 ## Image pipeline
 
 `RestaurantImage.build()` checks `resolveDemoAsset(restaurant.name)`
