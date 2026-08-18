@@ -14,6 +14,24 @@ This is the chronological evidence trail for substantial engineering work. It re
 
 ## Entries
 
+### 2026-08-18T22:11:16Z Build the private Vouch launch command center
+
+- **Status:** completed
+- **Scope:** Private HTML operator guide and project execution record only
+- **Reference:** Andrew's 2026-08-18 request for an easy copy-paste next-steps guide covering the Instagram bio, RevenueCat, DMs, the real-phone walk, TestFlight and release
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 22:10:27 | Consolidated the current launch state and superseded stale handoff instructions | Local app, backend, site and project documentation | Recorded what is live, implemented locally, planned and still manual. Confirmed that the website should remain the permanent Instagram bio destination while its call to action changes from waitlist to TestFlight to App Store. |
+| 22:10:27 | Corrected the RevenueCat sequence against the current implementation and official vendor documentation | Private operator guide | Gated webhook HMAC activation because the current Vouch verifier expects a different header and payload than RevenueCat's documented timestamped signature format. Kept secrets out of the guide, required exact existing Apple Product IDs, and separated manual dashboard work from Codex code and deployment work. |
+| 22:11:16 | Built one dependency-ordered, copy-paste launch guide | `docs/VOUCH_LAUNCH_COMMAND_CENTER.html` | Added 52 persistent launch checks, 19 copy blocks, private notes, current-state labels, Instagram and restaurant DM text, content templates, RevenueCat and App Store steps, a real-phone walkthrough, external TestFlight steps, release copy and short Codex handoffs. |
+| 22:11:16 | Validated the self-contained artifact and project memory | Local source | All IDs are unique; all 19 copy targets, 52 checkbox labels and eight internal navigation targets resolve; the script parses; external links use HTTPS; the App Store subtitle, promotional text and keywords fit their respective character limits at 29, 162 and 86 characters; no secret-like values or prohibited dash characters were found; `git diff --check` and the project memory contract passed. |
+
+- **Files/artifacts:** `docs/VOUCH_LAUNCH_COMMAND_CENTER.html`, `docs/EXECUTION.md`
+- **Skipped or blocked:** The private guide was not added to the public website and no app, backend, RevenueCat, App Store Connect, Instagram, TestFlight, Git remote or production state was changed. Visual browser inspection was not requested and was skipped under the active Sites workflow.
+- **Final state:** One local launch command center now gives Andrew an ordered manual path and safe copy-paste handoffs while keeping unfinished features and security gates explicit.
+
 ### 2026-08-18T21:05:46Z Apply supplied Vouch brand assets to the production site
 
 - **Status:** completed
