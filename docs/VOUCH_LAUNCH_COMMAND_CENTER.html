@@ -246,19 +246,51 @@
   <main class="wrap">
     <section class="stage" id="now">
       <div class="stage-head"><span class="stage-number">00</span><h2>What is true right now.</h2></div>
-      <p class="stage-intro">This replaces older handoffs that still call the website unfinished or billing fully wired. Use this page as the current launch map.</p>
+      <p class="stage-intro">This replaces older handoffs that still call the website unfinished, the RevenueCat verifier incompatible, or the open list automatically deferred. Use this page as the current launch map.</p>
       <div class="status-grid">
         <article class="status-card live"><b>Live now</b><p><b>vouchfood.com</b>, waitlist signup, Privacy, Support, Instagram link, favicon, and Vouch brand assets.</p></article>
         <article class="status-card you"><b>Andrew owns next</b><p>Instagram bio, final Houston ten, neighborhoods, photographs, insider notes, prices, App Store forms, and device testing.</p></article>
-        <article class="status-card code"><b>Codex owns next</b><p>RevenueCat correction and activation, exact product IDs, full validation, production backend deploy, and release build support.</p></article>
-        <article class="status-card stop"><b>Not live yet</b><p>The iOS release, public TestFlight, photo uploads, weekly recap delivery, automatic restaurant promotion, and App Check enforcement.</p></article>
+        <article class="status-card code"><b>Codex owns next</b><p>The reviewed V1 contender pool, resumable account deletion after your approval, Houston content ingestion, safe backend deployment, and release support.</p></article>
+        <article class="status-card stop"><b>Not live yet</b><p>The iOS release, public TestFlight, reviewed contenders, photo uploads, weekly recap delivery, ordering links, and App Check enforcement.</p></article>
       </div>
       <div class="task-list">
         <div class="task"><input id="now-bio" data-check type="checkbox"><label for="now-bio"><strong>Put vouchfood.com in the Instagram bio.</strong><span>This is useful now and stays correct after TestFlight and App Store launch.</span></label><span class="tag you">You</span></div>
         <div class="task"><input id="now-prices" data-check type="checkbox"><label for="now-prices"><strong>Confirm the two plans, four prices, and seven-day trial decision.</strong><span>Do this before creating or changing Apple subscription products.</span></label><span class="tag you">You</span></div>
-        <div class="task"><input id="now-ten" data-check type="checkbox"><label for="now-ten"><strong>Lock the final Houston ten.</strong><span>The first five are recorded. The remaining five and the two displaced restaurants still need your decision.</span></label><span class="tag you">You</span></div>
-        <div class="task"><input id="now-revenuecat-handoff" data-check type="checkbox"><label for="now-revenuecat-handoff"><strong>Send Codex the RevenueCat correction handoff below.</strong><span>Current webhook signing code must be corrected before the HMAC switch is enabled.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="now-ten" data-check type="checkbox"><label for="now-ten"><strong>Choose two Houston removals, then rank the five survivors.</strong><span>The exact seven-name choice and copy-paste reply are in Content below.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="now-open-list" data-check type="checkbox"><label for="now-open-list"><strong>Keep the reviewed contender pool in V1.</strong><span>Codex builds the bounded intake, review, discovery and equal-vouch path. A nomination alone never publishes or grants rank.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="now-deletion" data-check type="checkbox"><label for="now-deletion"><strong>Approve or change the account-deletion recovery rule.</strong><span>The exact privacy and retention question from the old work is below.</span></label><span class="tag both">Both</span></div>
       </div>
+
+      <details open>
+        <summary>What from the old Claude handoff is still relevant?</summary>
+        <div class="detail-body">
+          <ul>
+            <li><b>Still required:</b> the final Houston roster, ten neighborhood labels, publishable launch photographs, insider notes, final coordinates, account-deletion recovery, exact Apple and RevenueCat configuration, sandbox purchase proof, external TestFlight, App Check traffic verification, photo Storage migration, and the final production content migration.</li>
+            <li><b>Completed or corrected:</b> the RevenueCat signature verifier, membership failure handling, full local validation, unsigned iOS release build, Privacy and Support pages, public website, Add a Place entry point, and Your Vouches list.</li>
+            <li><b>Promoted to V1:</b> a reviewed contender pool that turns approved nominations into discoverable, equally voteable restaurants outside the ranked ten.</li>
+            <li><b>Still later:</b> public photo uploads, weekly recap delivery, automatic city activation, paid restaurant tools, and ordering or delivery revenue experiments.</li>
+          </ul>
+          <div class="note"><strong>The weekend shoot, translated:</strong> You do not have to revisit every restaurant. Every final-ten restaurant needs one publishable image. Freshly shooting the top five was a quality recommendation because those images dominate the opening screen and App Store screenshots. Your statement that the existing photographs are yours answered the earlier provenance concern.</div>
+        </div>
+      </details>
+
+      <details>
+        <summary>One remaining privacy decision from the Claude work</summary>
+        <div class="detail-body">
+          <p>Account deletion works on the happy path today, but an interruption can leave a partially completed deletion. The proposed recovery job can resume safely without retaining a permanent plain user ID. The old document says this was approved, but a document is not a substitute for your direct answer.</p>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="deletion-decision-answer">Copy</button><pre id="deletion-decision-answer">ACCOUNT DELETION RECOVERY
+
+Approve this design: yes / no
+
+- Job ID is a one-way hash of the Firebase user ID.
+- Plain user ID exists only while deletion is running.
+- Plain user ID is removed when deletion closes.
+- Completed non-identifying job record is automatically deleted after 30 days.
+- A scheduled function resumes interrupted deletion jobs.
+
+Changes I want:</pre></div>
+        </div>
+      </details>
 
       <details open>
         <summary>Copy the Instagram profile now</summary>
@@ -280,12 +312,57 @@ Join early ↓</pre></div>
       <div class="stage-head"><span class="stage-number">01</span><h2>Finish what only you can know.</h2></div>
       <p class="stage-intro">The release build should use a complete Houston list, not scaffold text or screenshots whose quality you do not love.</p>
       <div class="task-list">
-        <div class="task"><input id="content-final-five" data-check type="checkbox"><label for="content-final-five"><strong>Choose ranks 6 through 10.</strong><span>Ranks 1 through 5 are ChòpnBlọk, Mensho, CorkScrew BBQ, Roostar, and JOEY Uptown.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="content-final-five" data-check type="checkbox"><label for="content-final-five"><strong>Choose two removals and rank the five survivors.</strong><span>Choose from Tacos Los Brothers, Crave Suya, The Peri Peri Factory, Lost and Found, Top Sushi, The Better Box, and Lotus Seafood.</span></label><span class="tag you">You</span></div>
         <div class="task"><input id="content-neighborhoods" data-check type="checkbox"><label for="content-neighborhoods"><strong>Write one neighborhood for each restaurant.</strong><span>Ten short, human-verified strings. Do not infer them from the mixed address/location field.</span></label><span class="tag you">You</span></div>
         <div class="task"><input id="content-notes" data-check type="checkbox"><label for="content-notes"><strong>Write two useful insider notes for every restaurant.</strong><span>One exact thing to order and one practical tip. No filler.</span></label><span class="tag you">You</span></div>
-        <div class="task"><input id="content-photos" data-check type="checkbox"><label for="content-photos"><strong>Supply a publishable photo for every restaurant.</strong><span>Prefer your own fresh photographs for the top five. For supplied images, record who owns them and the permission received.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="content-photos" data-check type="checkbox"><label for="content-photos"><strong>Choose one publishable launch photo for every restaurant.</strong><span>Reshoot the top five only if you want stronger launch visuals. It is recommended for quality, not required to prove you took the existing images.</span></label><span class="tag you">You</span></div>
         <div class="task"><input id="content-pack" data-check type="checkbox"><label for="content-pack"><strong>Hand the completed content pack to Codex.</strong><span>Codex can migrate, validate, and seed it only after the facts and rights are settled.</span></label><span class="tag both">Both</span></div>
       </div>
+      <details open>
+        <summary>Answer the final Houston roster question</summary>
+        <div class="detail-body">
+          <p>The fixed opening five are ChòpnBlọk, Mensho, CorkScrew BBQ, Roostar, and JOEY Uptown. ChòpnBlọk and Roostar are new, so exactly two of the seven restaurants below must leave if the ranked list stays at ten.</p>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="houston-roster-answer">Copy</button><pre id="houston-roster-answer">FINAL HOUSTON ROSTER
+
+Remove these two:
+1.
+2.
+
+Choose from:
+- Tacos Los Brothers
+- Crave Suya
+- The Peri Peri Factory
+- Lost and Found
+- Top Sushi
+- The Better Box
+- Lotus Seafood
+
+Rank the five survivors:
+6.
+7.
+8.
+9.
+10.</pre></div>
+        </div>
+      </details>
+      <details open>
+        <summary>Answer the neighborhood question</summary>
+        <div class="detail-body">
+          <p>This is not asking for exact addresses. It asks for the short area label a Houston person would expect to see on the card. Confirm or correct the suggested top-five labels, then fill the five survivors after choosing them.</p>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="houston-neighborhood-answer">Copy</button><pre id="houston-neighborhood-answer">HOUSTON NEIGHBORHOODS
+
+1. ChòpnBlọk: Montrose [confirm or correct]
+2. Mensho: Chinatown / Asiatown [choose wording]
+3. CorkScrew BBQ: Old Town Spring / Spring [choose wording]
+4. Roostar: East End [confirm or correct]
+5. JOEY Uptown: Galleria / Uptown [choose wording]
+6. [restaurant]:
+7. [restaurant]:
+8. [restaurant]:
+9. [restaurant]:
+10. [restaurant]:</pre></div>
+        </div>
+      </details>
       <details>
         <summary>Copy this once for each restaurant</summary>
         <div class="detail-body">
@@ -309,11 +386,31 @@ Official Instagram handle:</pre></div>
         </div>
       </details>
       <details>
-        <summary>What Add a Place can honestly promise at launch</summary>
+        <summary>What the V1 open list means</summary>
         <div class="detail-body">
-          <p>The app can accept one restaurant, correction, city, or general suggestion per signed-in user per UTC day. That is a maximum, not a daily assignment. Suggestions enter a pending review queue. They do not automatically become voteable and never receive rank from being nominated.</p>
-          <div class="note good"><strong>Launch-safe promise:</strong> Nominate a missing restaurant. Vouch reviews it. If approved later, it may become eligible for local vouches. Only local vouches determine rank.</div>
-          <div class="note stop"><strong>Do not promise yet:</strong> instant restaurant creation, public photo upload, automatic city activation, a visible submission status tracker, or guaranteed entry into the Top 10.</div>
+          <p>The existing app can accept one restaurant, correction, city, or general suggestion per signed-in user per UTC day. That is a maximum, not a daily assignment. Today the record stops at pending. V1 now includes the missing reviewed path.</p>
+          <ol>
+            <li>A signed-in user nominates a missing place.</li>
+            <li>Vouch reviews it for identity, location, duplicates and basic fit.</li>
+            <li>An approved restaurant appears in a separate contender pool outside the ranked ten.</li>
+            <li>Users vouch for contenders with the same vote weight as every other restaurant.</li>
+            <li>The daily ranking can move a contender into the Top 10 and move the previous number ten out.</li>
+          </ol>
+          <div class="note good"><strong>Launch-safe promise:</strong> Nominate a missing restaurant. If Vouch approves it as a contender, locals can vouch it into the ranked ten. Only local vouches determine rank.</div>
+          <div class="note stop"><strong>Still prohibited:</strong> instant publication, nomination-based rank, restaurant-paid placement, public photo upload without review, automatic city activation, or guaranteed entry into the Top 10.</div>
+        </div>
+      </details>
+      <details>
+        <summary>Product idea: From Vouch to table</summary>
+        <div class="detail-body">
+          <p>The useful DoorDash element comes after Vouch answers where to eat. A restaurant detail page can offer <b>Visit</b> and <b>Order</b>. Order opens a verified restaurant ordering link, preferring the restaurant's direct channel and using DoorDash as a fallback when that is the available option.</p>
+          <ul>
+            <li><b>Best expression:</b> “Order the Vouch” beside the what-to-order note when a stable link to that exact dish exists. Otherwise use the honest “Order from this restaurant.”</li>
+            <li><b>V1.1 implementation:</b> manually verified URLs, an external-link disclosure, availability fallback, and an outbound click event. No DoorDash API dependency is required.</li>
+            <li><b>Revenue path:</b> later negotiate attributable referrals with ordering providers or direct restaurant partners. Payment can affect the order button or a clearly labeled offers area, never rank, eligibility, vote weight or editorial notes.</li>
+            <li><b>Retention path:</b> a saved Vouch becomes actionable at dinner time. “What should I order?” and “Get it here” close the decision loop without turning Vouch into a delivery marketplace.</li>
+          </ul>
+          <div class="note"><strong>Why this is not a launch dependency:</strong> DoorDash's current Marketplace documentation says it is not accepting new integration partners while it develops self-serve tooling. Verified outbound links let Vouch test whether users want ordering before taking on menus, availability, commissions and support obligations.</div>
         </div>
       </details>
     </section>
@@ -322,9 +419,9 @@ Official Instagram handle:</pre></div>
       <div class="stage-head"><span class="stage-number">02</span><h2>RevenueCat, in the safe order.</h2></div>
       <p class="stage-intro">The dashboard work and the code work meet in the middle. Do not archive a paid build until the exact Apple product IDs are in the app and a sandbox purchase has completed end to end.</p>
 
-      <div class="note stop">
-        <strong>Stop before enabling HMAC signing.</strong>
-        <p>RevenueCat currently documents the header as <code>X-RevenueCat-Webhook-Signature</code>, formatted as <code>t=timestamp,v1=signature</code>, with the HMAC computed over <code>timestamp.raw_body</code>. The current Vouch code expects a different header and hashes only the raw body. Codex must fix and test that code before you enable signing in RevenueCat or flip <code>SIGNATURE_ENABLED</code>.</p>
+      <div class="note good">
+        <strong>The code correction is complete. The activation proof is still manual.</strong>
+        <p>Vouch now verifies <code>X-RevenueCat-Webhook-Signature</code> in the documented <code>t=timestamp,v1=signature</code> format, authenticates the exact raw request bytes, uses constant-time comparison, and rejects stale requests outside five minutes. Seventeen focused tests pass. Keep <code>SIGNATURE_ENABLED</code> off until the signing secret exists and a real RevenueCat delivery proves the deployed path.</p>
       </div>
 
       <h3>A. Confirm the money decision</h3>
@@ -689,7 +786,7 @@ houston,restaurants,food,local,top 10,dining,where to eat,foodie,restaurant guid
       </details>
 
       <details>
-        <summary>Final ten-point gate</summary>
+        <summary>Final release gate</summary>
         <div class="detail-body">
           <ol>
             <li>Privacy and Support open publicly and from inside the release build.</li>
@@ -698,6 +795,7 @@ houston,restaurants,food,local,top 10,dining,where to eat,foodie,restaurant guid
             <li>All four products display correct localized prices and trial language.</li>
             <li>Purchase, webhook, Firebase claim, restore, expiration, and reconciliation are proved.</li>
             <li>The final Houston ten has complete neighborhoods, publishable photos, and insider notes.</li>
+            <li>The V1 contender pool accepts a reviewed restaurant, makes it discoverable, records an equal vouch, and lets ranking rather than nomination determine entry.</li>
             <li>The site and app make no conflicting rank or feature claim.</li>
             <li>At least a small real tester group has produced legitimate vouches and comments.</li>
             <li>App Check verified traffic appears, and enforcement does not touch waitlist or RevenueCat webhook traffic.</li>
@@ -712,9 +810,9 @@ houston,restaurants,food,local,top 10,dining,where to eat,foodie,restaurant guid
       <p class="stage-intro">These are the short handoffs for continuing the build without making you translate the checklist into developer language.</p>
       <details open>
         <summary>Tell Codex to start the release work</summary>
-        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="start-handoff">Copy</button><pre id="start-handoff">Use docs/VOUCH_LAUNCH_COMMAND_CENTER.html as the current launch map. Start with the RevenueCat correction and exact product-ID audit. Do not enable HMAC signing until the verifier matches RevenueCat's documented timestamped signature format and has tests. Show me what I need to do manually at each dashboard gate, never ask me to paste a secret into chat, and maintain the execution, interface, decision, and learning records required by the Vouch framework.
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="start-handoff">Copy</button><pre id="start-handoff">Use docs/VOUCH_LAUNCH_COMMAND_CENTER.html as the current launch map. The RevenueCat signature correction, full local suites, Firebase deploy dry run, and unsigned iOS release build are complete. Keep the production switches off until I finish the exact Product IDs, secrets, sandbox purchase and webhook delivery steps. Never ask me to paste a secret into chat, and maintain the execution, interface, decision, and learning records required by the Vouch framework.
 
-After RevenueCat is safe, finish validation for the current Add a Place and Your Vouches work, run the full suites, deploy Functions and Firestore rules before the app build, and prepare the exact real-phone walkthrough. Do not ship photo upload, weekly recap delivery, automatic restaurant promotion, or automatic city activation as if they are live.</pre></div></div>
+Keep the reviewed open-list contender pool in V1: nomination, duplicate-safe review, approve or decline, visible contenders, equal-weight vouching, and ranking eligibility. A nomination alone must never publish or grant rank. Then ingest the final Houston content, deploy Functions and Firestore rules before the app build, and prepare the exact real-phone walkthrough. Do not ship public photo upload, weekly recap delivery, automatic city activation, or ordering links as if they are already live.</pre></div></div>
       </details>
       <details>
         <summary>Tell Codex the Houston content is ready</summary>
@@ -740,6 +838,8 @@ After RevenueCat is safe, finish validation for the current Add a Place and Your
         <li><a href="https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers">Apple external TestFlight testers</a></li>
         <li><a href="https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-in-app-purchase">Apple first subscription submission</a></li>
         <li><a href="https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/">Apple screenshot specifications</a></li>
+        <li><a href="https://developer.doordash.com/en-US/api/marketplace/">DoorDash Marketplace API and current integration availability</a></li>
+        <li><a href="https://help.doordash.com/en-us/merchants/article/add-online-ordering">DoorDash guidance for verified online-ordering links</a></li>
       </ul>
       <p class="mini">This is a private operator guide. It intentionally stores no credentials or secret values and should not be deployed to the public marketing site.</p>
     </aside>

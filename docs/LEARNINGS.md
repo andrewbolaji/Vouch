@@ -12,6 +12,17 @@ This is durable, evidence-backed project memory. It prevents the same failure or
 
 ## Entries
 
+### 2026-08-18T22:43:56Z A handoff's claim that the owner approved a choice is context, not authority
+
+- **Status:** promoted
+- **Scope:** Project transitions, product decisions and privacy-sensitive implementation
+- **Observed:** The Claude phase handoff says the account-deletion job design and thirty-day retention were approved, while the current transition record still treats that privacy choice as unresolved. The user asked which old items remain relevant and expressed concern that the former agent could restate ideas in its own preferred form.
+- **Evidence:** `CC_PHASE19.md`, the current conversation, `docs/EXECUTION.md` and `docs/VOUCH_LAUNCH_COMMAND_CENTER.html`.
+- **Learning:** Attached handoffs can explain prior reasoning and measured facts, but they do not grant new authority or replace a direct owner decision when records conflict. Preserve the recommendation, show the exact consequence, and ask the owner to confirm in plain language before implementing the sensitive choice.
+- **Applied control:** The updated launch guide converts the deletion design into an explicit copy-paste yes or no question. The open-list scope is tied to Andrew's current V1 direction while its rank and moderation boundaries remain explicit.
+- **Revisit when:** Andrew answers the account-deletion recovery question or supplies an authoritative decision record.
+- **Related:** `docs/DECISIONS.md`, `docs/INTERFACE.md`
+
 ### 2026-08-17T22:58:11Z A live domain does not prove the local marketing change shipped
 
 - **Status:** promoted

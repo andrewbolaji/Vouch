@@ -14,6 +14,26 @@ This is the chronological evidence trail for substantial engineering work. It re
 
 ## Entries
 
+### 2026-08-18T22:43:56Z Clarify the Claude handoff and update the v1 launch guide
+
+- **Status:** completed
+- **Scope:** Private launch guide, Houston content questions, open-list scope, delivery-ordering product idea and project memory only
+- **Reference:** Andrew's 2026-08-18 request to explain the old weekend shoot, final-ten and neighborhood questions, reconsider the open list for v1, propose a Vouch and DoorDash element, and update his guide
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 22:43:56 | Re-read the exact Claude handoff rather than relying on its summary | `CC_PHASE19.md`, `VOUCH_WHATS_LEFT.md`, open-list measurement and current launch guide | Confirmed that the weekend shoot was a quality recommendation for the top five, not a provenance requirement or a request to revisit all ten. Confirmed that adding ChòpnBlọk and Roostar means choosing two removals from seven named incumbents, then ordering the five survivors at ranks 6 through 10. Confirmed that neighborhoods are ten short owner-supplied labels because the existing location field mixes neighborhoods, streets and a separate municipality. |
+| 22:43:56 | Reassessed the open list against the current Add a Place work and Andrew's expansion goal | Local product and backend documentation | The ranking engine can rank a newcomer, but pending suggestions still lack review, promotion and candidate-discovery consumers. Recommended a bounded reviewed contender pool for v1 rather than either postponing the whole growth loop or publishing unreviewed submissions. |
+| 22:43:56 | Checked current official DoorDash integration surfaces before recommending a product dependency | DoorDash developer and merchant documentation | DoorDash's Marketplace integration intake is currently capacity-limited and designed around merchant or provider menu and order systems. A v1 dependency on that API is therefore inappropriate. The low-risk product direction is an explicit outbound order action using a verified restaurant ordering URL, preferring direct ordering and using DoorDash as a fallback, with attribution and rank kept separate. |
+| 22:50:12 | Replaced vague old questions with direct owner answer sheets | Private launch command center | Added the seven named Houston incumbents, two-removal choice, ranks 6 through 10 reply, suggested top-five neighborhood wording, the precise optional top-five photo-shoot rationale, and the account-deletion recovery and retention question. |
+| 22:50:12 | Updated the current product and interface records | Launch guide, wishlist, interface memory, decisions and learnings | Promoted the reviewed contender pool from v1.1 to v1. Recorded the “From Vouch to table” ordering handoff as a v1.1 experiment, with direct ordering preferred and DoorDash as fallback. Corrected stale RevenueCat and release-handoff copy. Recorded that a prior handoff's approval claim does not replace direct owner authority when records conflict. |
+| 22:50:12 | Validated the private HTML and project memory | Local documentation artifact | All 88 HTML ids were unique; all 22 copy targets and eight internal navigation links resolved; the inline script parsed; the prohibited-dash scan, `git diff --check` and project memory contract passed. The installed HTML Tidy predates HTML5 and rejected semantic elements such as `header`, `nav`, `main`, `section` and `article`, so its output was not treated as a valid HTML5 result. |
+
+- **Files/artifacts:** `docs/VOUCH_LAUNCH_COMMAND_CENTER.html`, `docs/WISHLIST.md`, `docs/INTERFACE.md`, `docs/DECISIONS.md`, `docs/LEARNINGS.md`, this record
+- **Skipped or blocked:** No app, backend, restaurant data, Firebase, DoorDash, website, TestFlight, App Store or Git remote state will change in this documentation pass.
+- **Final state:** The private guide now distinguishes obsolete Claude instructions from current launch gates, asks Andrew the concrete roster, neighborhood and deletion questions, keeps the reviewed contender pool in v1, and preserves ordering as a small measured follow-up rather than a launch dependency.
+
 ### 2026-08-18T22:21:01Z Finish the locally actionable RevenueCat and v1 engineering work
 
 - **Status:** completed locally
