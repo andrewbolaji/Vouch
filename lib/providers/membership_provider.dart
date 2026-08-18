@@ -20,10 +20,14 @@ class MembershipProvider extends ChangeNotifier {
     AuthService? authService,
     bool? simulatePurchases,
     MembershipRepository? membershipRepo,
-  })  : _currentTier = initialTier,
-        _authService = authService,
-        _membershipRepo = membershipRepo,
-        _simulatePurchases = simulatePurchases ?? kSimulatePurchases {
+    @visibleForTesting Future<Set<String>> Function()? entitlementsLoader,
+    @visibleForTesting Future<Set<String>> Function()? restoreLoader,
+  }) : _currentTier = initialTier,
+       _authService = authService,
+       _membershipRepo = membershipRepo,
+       _entitlementsLoader = entitlementsLoader,
+       _restoreLoader = restoreLoader,
+       _simulatePurchases = simulatePurchases ?? kSimulatePurchases {
     _authService?.addListener(_onAuthChanged);
   }
 
@@ -44,6 +48,8 @@ class MembershipProvider extends ChangeNotifier {
   /// in a widget test with no Firebase. The lazy path is only ever
   /// reached in a non-simulate build, which no test runs by default.
   final MembershipRepository? _membershipRepo;
+  final Future<Set<String>> Function()? _entitlementsLoader;
+  final Future<Set<String>> Function()? _restoreLoader;
 
   /// Mirrors AppState's useFirebase seam. kSimulatePurchases is a
   /// compile-time const tied to kDebugMode, so without an override
@@ -195,14 +201,19 @@ class MembershipProvider extends ChangeNotifier {
   }
 
   Future<void> restorePurchases() async {
-    final entitlements = await RevenueCatService.restorePurchases();
-    final tier = _tierFromEntitlements(entitlements);
-    // Force a single token refresh so Firestore rules see the claim.
-    if (!_simulatePurchases && _authService != null) {
-      await _authService.forceTokenRefresh();
+    final Set<String> entitlements;
+    try {
+      entitlements =
+          await (_restoreLoader ?? RevenueCatService.restorePurchases)();
+    } on Exception catch (e) {
+      // A failed RevenueCat read is not proof that the user has no
+      // subscription. Keep the last known tier rather than silently
+      // downgrading a paid user because the network or SDK failed.
+      debugPrint('MembershipProvider: restore failed: $e');
+      return;
     }
-    _currentTier = tier;
-    notifyListeners();
+
+    await _applyEntitlements(entitlements);
   }
 
   /// Recomputes tier and pending state from live entitlements and the
@@ -213,7 +224,25 @@ class MembershipProvider extends ChangeNotifier {
   /// the app was closed resolves here, rather than the app coming
   /// back up still confirming.
   Future<void> refreshEntitlements() async {
-    final entitlements = await RevenueCatService.getActiveEntitlements();
+    final Set<String> entitlements;
+    try {
+      entitlements =
+          await (_entitlementsLoader ??
+              RevenueCatService.getActiveEntitlements)();
+    } on Exception catch (e) {
+      // Unknown is not free. Preserve the last confirmed state until
+      // RevenueCat can answer, just as the server reconciliation path
+      // refuses to turn a lookup failure into an empty entitlement set.
+      debugPrint('MembershipProvider: entitlement refresh failed: $e');
+      return;
+    }
+
+    await _applyEntitlements(entitlements);
+  }
+
+  /// Applies RevenueCat's known entitlement answer without ever
+  /// unlocking paid UI ahead of the Firebase claim used by rules.
+  Future<void> _applyEntitlements(Set<String> entitlements) async {
     final entitledTier = _tierFromEntitlements(entitlements);
 
     // No entitlement at all: nothing to confirm, nothing pending.
@@ -275,12 +304,15 @@ class MembershipProvider extends ChangeNotifier {
       '$kClaimPollMaxRetries retries, proceeding',
     );
     try {
-      unawaited(FirebaseCrashlytics.instance.recordError(
-        Exception('claim poll exhausted after $kClaimPollMaxRetries retries'),
-        StackTrace.current,
-        reason: 'MembershipProvider: _pollForMembershipClaim '
-            '(expected=$expectedClaim)',
-      ));
+      unawaited(
+        FirebaseCrashlytics.instance.recordError(
+          Exception('claim poll exhausted after $kClaimPollMaxRetries retries'),
+          StackTrace.current,
+          reason:
+              'MembershipProvider: _pollForMembershipClaim '
+              '(expected=$expectedClaim)',
+        ),
+      );
     } on Exception catch (_) {
       // Crashlytics unavailable (unit tests).
     }

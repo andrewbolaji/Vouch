@@ -14,23 +14,25 @@ const bool kSimulatePurchases = kDebugMode;
 enum PurchaseResult { success, cancelled, failed }
 
 /// RevenueCat product and entitlement identifiers.
-/// PLACEHOLDER values: replace with your RevenueCat dashboard configuration.
+///
+/// The iOS public SDK key is configured. Android and the four Product IDs
+/// remain release gates until their exact store values are confirmed.
 class RevenueCatConfig {
   RevenueCatConfig._();
 
-  // PLACEHOLDER: Replace with your RevenueCat public SDK keys.
+  // RevenueCat public, app-specific SDK keys.
   static const String appleApiKey = 'appl_JbjVMnHeyNDTQSqfHUzlDDvOHXi';
+  // Android is not part of the v1 launch and remains unconfigured.
   static const String googleApiKey = 'goog_VOUCH_ANDROID_API_KEY';
 
   // Entitlement identifiers (must match RevenueCat dashboard).
   static const String localsPassEntitlement = 'locals_pass';
   static const String cityInsiderEntitlement = 'city_insider';
 
-  // PLACEHOLDER: Must match App Store Connect / Google Play product IDs.
+  // Release gate: these must match the exact existing App Store Connect IDs.
   static const String localsPassMonthly = 'com.vouch.app.locals_pass.monthly';
   static const String localsPassYearly = 'com.vouch.app.locals_pass.yearly';
-  static const String cityInsiderMonthly =
-      'com.vouch.app.city_insider.monthly';
+  static const String cityInsiderMonthly = 'com.vouch.app.city_insider.monthly';
   static const String cityInsiderYearly = 'com.vouch.app.city_insider.yearly';
 
   /// Returns the store product ID for a given tier and billing cycle.
@@ -75,7 +77,7 @@ class RevenueCatService {
     }
 
     try {
-      await Purchases.setLogLevel(LogLevel.debug);
+      await Purchases.setLogLevel(LogLevel.warn);
       final apiKey = defaultTargetPlatform == TargetPlatform.iOS
           ? RevenueCatConfig.appleApiKey
           : RevenueCatConfig.googleApiKey;
@@ -131,7 +133,7 @@ class RevenueCatService {
     } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: getActiveEntitlements failed: $e');
       _recordError('getActiveEntitlements', e, stack);
-      return {};
+      rethrow;
     }
   }
 
@@ -141,7 +143,7 @@ class RevenueCatService {
     if (kSimulatePurchases) {
       return {
         RevenueCatConfig.localsPassMonthly: r'$4.99',
-        RevenueCatConfig.localsPassYearly: r'$29.99',
+        RevenueCatConfig.localsPassYearly: r'$39.99',
         RevenueCatConfig.cityInsiderMonthly: r'$9.99',
         RevenueCatConfig.cityInsiderYearly: r'$79.99',
       };
@@ -152,8 +154,7 @@ class RevenueCatService {
       final packages = offerings.current?.availablePackages ?? [];
       final prices = <String, String>{};
       for (final pkg in packages) {
-        prices[pkg.storeProduct.identifier] =
-            pkg.storeProduct.priceString;
+        prices[pkg.storeProduct.identifier] = pkg.storeProduct.priceString;
       }
       return prices;
     } on Exception catch (e, stack) {
@@ -186,8 +187,10 @@ class RevenueCatService {
           return PurchaseResult.success;
         }
       }
-      debugPrint('RevenueCatService: product $productId not found in '
-          'offerings (${packages.length} packages available)');
+      debugPrint(
+        'RevenueCatService: product $productId not found in '
+        'offerings (${packages.length} packages available)',
+      );
       _recordError(
         'purchase: product not found (productId=$productId, '
         'availableCount=${packages.length})',
@@ -223,7 +226,7 @@ class RevenueCatService {
     } on Exception catch (e, stack) {
       debugPrint('RevenueCatService: restorePurchases failed: $e');
       _recordError('restorePurchases', e, stack);
-      return {};
+      rethrow;
     }
   }
 
@@ -231,11 +234,13 @@ class RevenueCatService {
   /// Keeps the debugPrint for local dev; this adds the production signal.
   static void _recordError(String reason, Object error, StackTrace stack) {
     try {
-      unawaited(FirebaseCrashlytics.instance.recordError(
-        error,
-        stack,
-        reason: 'RevenueCatService: $reason',
-      ));
+      unawaited(
+        FirebaseCrashlytics.instance.recordError(
+          error,
+          stack,
+          reason: 'RevenueCatService: $reason',
+        ),
+      );
     } on Exception catch (_) {
       // Crashlytics unavailable (unit tests without Firebase).
     }

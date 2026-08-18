@@ -94,16 +94,18 @@ void main() {
       expect(kSimulatePurchases, isTrue);
     });
 
-    test('simulate purchase localsPass grants locals_pass entitlement',
-        () async {
-      final provider = MembershipProvider();
-      await provider.purchaseTier(MembershipTier.localsPass);
+    test(
+      'simulate purchase localsPass grants locals_pass entitlement',
+      () async {
+        final provider = MembershipProvider();
+        await provider.purchaseTier(MembershipTier.localsPass);
 
-      // Restore on a fresh provider picks up simulated entitlements
-      final provider2 = MembershipProvider();
-      await provider2.restorePurchases();
-      expect(provider2.currentTier, MembershipTier.localsPass);
-    });
+        // Restore on a fresh provider picks up simulated entitlements
+        final provider2 = MembershipProvider();
+        await provider2.restorePurchases();
+        expect(provider2.currentTier, MembershipTier.localsPass);
+      },
+    );
 
     test('simulate purchase cityInsider grants both entitlements', () async {
       final provider = MembershipProvider();
@@ -160,27 +162,28 @@ void _pendingTests() {
       return auth;
     }
 
-    test('an entitlement with no claim yet is pending, and stays locked',
-        () async {
-      final auth = signedInMock();
-      final provider = MembershipProvider(
-        authService: auth,
-        simulatePurchases: false,
-      );
-      await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
+    test(
+      'an entitlement with no claim yet is pending, and stays locked',
+      () async {
+        final auth = signedInMock();
+        final provider = MembershipProvider(
+          authService: auth,
+          simulatePurchases: false,
+        );
+        await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
 
-      await provider.refreshEntitlements();
+        await provider.refreshEntitlements();
 
-      expect(provider.isAwaitingConfirmation, isTrue);
-      expect(provider.currentTier, MembershipTier.free);
-      // Locked, not optimistically unlocked: firestore.rules gates on
-      // the claim, so unlocking here would produce denied reads.
-      expect(provider.canViewInsiderTips, isFalse);
-      expect(provider.canViewTop10, isFalse);
-    });
+        expect(provider.isAwaitingConfirmation, isTrue);
+        expect(provider.currentTier, MembershipTier.free);
+        // Locked, not optimistically unlocked: firestore.rules gates on
+        // the claim, so unlocking here would produce denied reads.
+        expect(provider.canViewInsiderTips, isFalse);
+        expect(provider.canViewTop10, isFalse);
+      },
+    );
 
-    test('a claim that agrees resolves to paid and clears pending',
-        () async {
+    test('a claim that agrees resolves to paid and clears pending', () async {
       final auth = signedInMock(claim: 'cityInsider');
       final provider = MembershipProvider(
         authService: auth,
@@ -193,6 +196,70 @@ void _pendingTests() {
       expect(provider.isAwaitingConfirmation, isFalse);
       expect(provider.currentTier, MembershipTier.cityInsider);
       expect(provider.canViewInsiderTips, isTrue);
+    });
+
+    test('restore with no claim stays locked and pending', () async {
+      final auth = signedInMock();
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+        restoreLoader: () async => {
+          RevenueCatConfig.cityInsiderEntitlement,
+          RevenueCatConfig.localsPassEntitlement,
+        },
+      );
+
+      await provider.restorePurchases();
+
+      expect(provider.isAwaitingConfirmation, isTrue);
+      expect(provider.currentTier, MembershipTier.free);
+      expect(provider.canViewInsiderTips, isFalse);
+    });
+
+    test('restore with an agreeing claim restores paid access', () async {
+      final auth = signedInMock(claim: 'localsPass');
+      final provider = MembershipProvider(
+        authService: auth,
+        simulatePurchases: false,
+        restoreLoader: () async => {
+          RevenueCatConfig.localsPassEntitlement,
+        },
+      );
+
+      await provider.restorePurchases();
+
+      expect(provider.isAwaitingConfirmation, isFalse);
+      expect(provider.currentTier, MembershipTier.localsPass);
+      expect(provider.canViewTop10, isTrue);
+    });
+
+    test('failed restore preserves the last confirmed tier', () async {
+      final provider = MembershipProvider(
+        initialTier: MembershipTier.localsPass,
+        authService: signedInMock(claim: 'localsPass'),
+        simulatePurchases: false,
+        restoreLoader: () async => throw Exception('RevenueCat unavailable'),
+      );
+
+      await provider.restorePurchases();
+
+      expect(provider.currentTier, MembershipTier.localsPass);
+      expect(provider.isAwaitingConfirmation, isFalse);
+    });
+
+    test('failed refresh preserves the last confirmed tier', () async {
+      final provider = MembershipProvider(
+        initialTier: MembershipTier.cityInsider,
+        authService: signedInMock(claim: 'cityInsider'),
+        simulatePurchases: false,
+        entitlementsLoader: () async =>
+            throw Exception('RevenueCat unavailable'),
+      );
+
+      await provider.refreshEntitlements();
+
+      expect(provider.currentTier, MembershipTier.cityInsider);
+      expect(provider.isAwaitingConfirmation, isFalse);
     });
 
     test('no entitlement means nothing pending', () async {
@@ -237,8 +304,7 @@ void _pendingTests() {
       expect(afterRelaunch.currentTier, MembershipTier.cityInsider);
     });
 
-    test('a relaunch still pending stays pending, not silently paid',
-        () async {
+    test('a relaunch still pending stays pending, not silently paid', () async {
       final auth = signedInMock();
       await RevenueCatService.purchase(RevenueCatConfig.cityInsiderMonthly);
 
@@ -252,8 +318,7 @@ void _pendingTests() {
       expect(afterRelaunch.currentTier, MembershipTier.free);
     });
 
-    test('retryConfirmation clears pending once the claim lands',
-        () async {
+    test('retryConfirmation clears pending once the claim lands', () async {
       final auth = signedInMock();
       final repo = _FakeMembershipRepository();
       final provider = MembershipProvider(
@@ -276,8 +341,7 @@ void _pendingTests() {
     // going to change: the webhook is the only writer of that claim,
     // and the state being retried is the state where the webhook
     // never arrived. These pin the repair path instead.
-    test('retryConfirmation asks the server to reconcile first',
-        () async {
+    test('retryConfirmation asks the server to reconcile first', () async {
       final auth = signedInMock();
       final repo = _FakeMembershipRepository();
       final provider = MembershipProvider(
@@ -298,8 +362,7 @@ void _pendingTests() {
       expect(provider.currentTier, MembershipTier.cityInsider);
     });
 
-    test('a failed reconcile leaves the user pending, not crashed',
-        () async {
+    test('a failed reconcile leaves the user pending, not crashed', () async {
       // Swallowed on purpose. The refresh still runs, so the outcome
       // is the state the pending screen already describes, and there
       // is nothing more useful to tell somebody whose purchase is
@@ -357,21 +420,24 @@ void _pendingTests() {
     // The slow path, deliberately: the real poll budget is 5 tries
     // with a 2 second gap, so this exercises the exhaustion branch
     // end to end rather than short-cutting to refreshEntitlements.
-    test('a purchase whose claim never lands ends pending, not paid',
-        () async {
-      final auth = signedInMock();
-      final provider = MembershipProvider(
-        authService: auth,
-        simulatePurchases: false,
-      );
+    test(
+      'a purchase whose claim never lands ends pending, not paid',
+      () async {
+        final auth = signedInMock();
+        final provider = MembershipProvider(
+          authService: auth,
+          simulatePurchases: false,
+        );
 
-      final result = await provider.purchaseTier(MembershipTier.cityInsider);
+        final result = await provider.purchaseTier(MembershipTier.cityInsider);
 
-      expect(result, PurchaseResult.success);
-      expect(provider.isAwaitingConfirmation, isTrue);
-      expect(provider.currentTier, MembershipTier.free);
-      expect(provider.canViewInsiderTips, isFalse);
-    }, timeout: const Timeout(Duration(seconds: 60)));
+        expect(result, PurchaseResult.success);
+        expect(provider.isAwaitingConfirmation, isTrue);
+        expect(provider.currentTier, MembershipTier.free);
+        expect(provider.canViewInsiderTips, isFalse);
+      },
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
   });
 }
 

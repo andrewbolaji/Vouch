@@ -108,57 +108,89 @@ export function isValidAuth(
   return timingSafeEqual(headerBuf, expectedBuf);
 }
 
-/**
- * The header RevenueCat sends the webhook signature in.
- *
- * CONFIRM THIS AGAINST REVENUECAT'S OWN DOCUMENTATION BEFORE THE
- * SIGNING SECRET IS SET. It is written here as a named constant
- * precisely so that confirming it is a one line change rather than an
- * archaeology exercise, and because a header name that is wrong fails
- * in the worst possible way: every real webhook is rejected, every
- * subscriber stops being upgraded, and the app reports nothing at all
- * because the failure is on RevenueCat's side of the wire.
- *
- * Verification stays inert until REVENUECAT_WEBHOOK_SIGNING_SECRET
- * exists, so this constant being wrong cannot break anything today.
- */
-export const REVENUECAT_SIGNATURE_HEADER = "x-revenuecat-signature";
+/** The lower-case form Node uses for RevenueCat's signature header. */
+export const REVENUECAT_SIGNATURE_HEADER =
+  "x-revenuecat-webhook-signature";
+
+/** RevenueCat's reference verifier uses a five-minute replay window. */
+export const REVENUECAT_SIGNATURE_TOLERANCE_SECONDS = 300;
 
 /**
- * Verifies an HMAC-SHA256 signature over the exact bytes received.
+ * Verifies RevenueCat's timestamped HMAC-SHA256 signature.
  *
- * The raw body, never the re-serialised one. `JSON.stringify(req.body)`
- * is not guaranteed to reproduce the bytes RevenueCat hashed: key
- * order, unicode escaping and whitespace all survive the wire and do
- * not survive a parse-and-reprint. A signature check computed over a
- * reconstruction verifies the reconstruction.
+ * RevenueCat sends `t=<unix timestamp>,v1=<hex digest>` and signs the
+ * exact bytes of `<timestamp>.<raw body>`. The body is never
+ * re-serialised: key order, unicode escaping and whitespace survive
+ * the wire and do not survive a parse-and-reprint.
  *
- * Accepts a bare hex digest or a `sha256=` prefixed one, because
- * both conventions are common and rejecting the wrong one would look
- * exactly like a forged request.
+ * The signed timestamp is also checked against a bounded tolerance.
+ * Without that check, anybody who captured a legitimate request could
+ * replay it forever with its still-valid signature.
  *
  * @param {Buffer} rawBody The exact bytes of the request body.
  * @param {string|undefined} header The signature header value.
  * @param {string} secret The shared signing secret.
+ * @param {Date} now Reference time for the replay check.
+ * @param {number} toleranceSeconds Maximum permitted clock skew.
  * @return {boolean} Whether the signature matches.
  */
 export function verifyWebhookSignature(
   rawBody: Buffer | undefined,
   header: string | undefined,
   secret: string,
+  now: Date = new Date(),
+  toleranceSeconds: number = REVENUECAT_SIGNATURE_TOLERANCE_SECONDS,
 ): boolean {
   if (!rawBody || !header || !secret) return false;
+  if (!Number.isFinite(toleranceSeconds) || toleranceSeconds < 0) {
+    return false;
+  }
 
-  const provided = header.startsWith("sha256=") ? header.slice(7) : header;
-  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  const parts = new Map<string, string>();
+  for (const rawPart of header.split(",")) {
+    const separator = rawPart.indexOf("=");
+    if (separator <= 0) return false;
 
-  const providedBuf = Buffer.from(provided.toLowerCase());
-  const expectedBuf = Buffer.from(expected);
-  // Same tradeoff as isValidAuth: timingSafeEqual throws on differing
-  // lengths, so the length check has to come first and leaks length
-  // rather than content.
-  if (providedBuf.length !== expectedBuf.length) return false;
-  return timingSafeEqual(providedBuf, expectedBuf);
+    const key = rawPart.slice(0, separator).trim();
+    const value = rawPart.slice(separator + 1).trim();
+    if (!key || !value || parts.has(key)) return false;
+    parts.set(key, value);
+  }
+
+  const timestamp = parts.get("t");
+  const provided = parts.get("v1");
+  if (
+    !timestamp ||
+    !provided ||
+    !/^\d+$/.test(timestamp) ||
+    !/^[a-fA-F0-9]{64}$/.test(provided)
+  ) {
+    return false;
+  }
+
+  const timestampSeconds = Number(timestamp);
+  const nowSeconds = now.getTime() / 1000;
+  if (
+    !Number.isSafeInteger(timestampSeconds) ||
+    !Number.isFinite(nowSeconds)
+  ) {
+    return false;
+  }
+
+  const expected = createHmac("sha256", secret)
+    .update(Buffer.from(`${timestamp}.`))
+    .update(rawBody)
+    .digest();
+  const providedBuf = Buffer.from(provided, "hex");
+
+  if (
+    providedBuf.length !== expected.length ||
+    !timingSafeEqual(providedBuf, expected)
+  ) {
+    return false;
+  }
+
+  return Math.abs(nowSeconds - timestampSeconds) <= toleranceSeconds;
 }
 
 /**

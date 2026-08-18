@@ -15,8 +15,7 @@ void main() {
   });
 
   group('UpgradeScreen price loading', () {
-    testWidgets('shows progress indicators while prices load',
-        (tester) async {
+    testWidgets('shows progress indicators while prices load', (tester) async {
       final completer = Completer<Map<String, String>>();
 
       await tester.pumpWidget(
@@ -40,15 +39,16 @@ void main() {
       // Clean up: complete the future so the test does not leak.
       completer.complete({
         RevenueCatConfig.localsPassMonthly: r'$4.99',
-        RevenueCatConfig.localsPassYearly: r'$29.99',
+        RevenueCatConfig.localsPassYearly: r'$39.99',
         RevenueCatConfig.cityInsiderMonthly: r'$9.99',
         RevenueCatConfig.cityInsiderYearly: r'$79.99',
       });
       await tester.pumpAndSettle();
     });
 
-    testWidgets('shows error and Retry on failure, retries on tap',
-        (tester) async {
+    testWidgets('shows error and Retry on failure, retries on tap', (
+      tester,
+    ) async {
       var callCount = 0;
 
       // First call: return empty (simulates failure).
@@ -58,7 +58,7 @@ void main() {
         if (callCount == 1) return {};
         return {
           RevenueCatConfig.localsPassMonthly: r'$4.99',
-          RevenueCatConfig.localsPassYearly: r'$29.99',
+          RevenueCatConfig.localsPassYearly: r'$39.99',
           RevenueCatConfig.cityInsiderMonthly: r'$9.99',
           RevenueCatConfig.cityInsiderYearly: r'$79.99',
         };
@@ -96,7 +96,7 @@ void main() {
         if (callCount == 1) throw Exception('network error');
         return {
           RevenueCatConfig.localsPassMonthly: r'$4.99',
-          RevenueCatConfig.localsPassYearly: r'$29.99',
+          RevenueCatConfig.localsPassYearly: r'$39.99',
           RevenueCatConfig.cityInsiderMonthly: r'$9.99',
           RevenueCatConfig.cityInsiderYearly: r'$79.99',
         };
@@ -120,11 +120,11 @@ void main() {
 
     testWidgets('renders prices on success', (tester) async {
       Future<Map<String, String>> loader() async => {
-            RevenueCatConfig.localsPassMonthly: r'$4.99',
-            RevenueCatConfig.localsPassYearly: r'$29.99',
-            RevenueCatConfig.cityInsiderMonthly: r'$9.99',
-            RevenueCatConfig.cityInsiderYearly: r'$79.99',
-          };
+        RevenueCatConfig.localsPassMonthly: r'$4.99',
+        RevenueCatConfig.localsPassYearly: r'$39.99',
+        RevenueCatConfig.cityInsiderMonthly: r'$9.99',
+        RevenueCatConfig.cityInsiderYearly: r'$79.99',
+      };
 
       await tester.pumpWidget(
         buildTestApp(Scaffold(body: UpgradeScreen(priceLoader: loader))),
@@ -148,9 +148,9 @@ void main() {
         // tier not yet approved in App Store Connect), that tier's
         // price stays null even though _loading is false.
         Future<Map<String, String>> loader() async => {
-              RevenueCatConfig.localsPassMonthly: r'$4.99',
-              RevenueCatConfig.localsPassYearly: r'$29.99',
-            };
+          RevenueCatConfig.localsPassMonthly: r'$4.99',
+          RevenueCatConfig.localsPassYearly: r'$39.99',
+        };
 
         await tester.pumpWidget(
           buildTestApp(Scaffold(body: UpgradeScreen(priceLoader: loader))),
@@ -184,8 +184,9 @@ void main() {
   });
 
   group('UpgradeScreen legal links', () {
-    testWidgets('Terms of Use and Privacy Policy links are tappable',
-        (tester) async {
+    testWidgets('Terms of Use and Privacy Policy links are tappable', (
+      tester,
+    ) async {
       final launchedUrls = <Uri>[];
 
       await tester.pumpWidget(
@@ -194,7 +195,7 @@ void main() {
             body: UpgradeScreen(
               priceLoader: () async => {
                 RevenueCatConfig.localsPassMonthly: r'$4.99',
-                RevenueCatConfig.localsPassYearly: r'$29.99',
+                RevenueCatConfig.localsPassYearly: r'$39.99',
                 RevenueCatConfig.cityInsiderMonthly: r'$9.99',
                 RevenueCatConfig.cityInsiderYearly: r'$79.99',
               },
@@ -234,7 +235,7 @@ void main() {
             body: UpgradeScreen(
               priceLoader: () async => {
                 RevenueCatConfig.localsPassMonthly: r'$4.99',
-                RevenueCatConfig.localsPassYearly: r'$29.99',
+                RevenueCatConfig.localsPassYearly: r'$39.99',
                 RevenueCatConfig.cityInsiderMonthly: r'$9.99',
                 RevenueCatConfig.cityInsiderYearly: r'$79.99',
               },
@@ -251,8 +252,9 @@ void main() {
       expect(find.textContaining('App Store settings'), findsOneWidget);
     });
 
-    testWidgets('post-trial price renders only after prices load',
-        (tester) async {
+    testWidgets('post-trial price renders only after prices load', (
+      tester,
+    ) async {
       final completer = Completer<Map<String, String>>();
 
       await tester.pumpWidget(
@@ -270,7 +272,7 @@ void main() {
 
       completer.complete({
         RevenueCatConfig.localsPassMonthly: r'$4.99',
-        RevenueCatConfig.localsPassYearly: r'$29.99',
+        RevenueCatConfig.localsPassYearly: r'$39.99',
         RevenueCatConfig.cityInsiderMonthly: r'$9.99',
         RevenueCatConfig.cityInsiderYearly: r'$79.99',
       });
@@ -290,15 +292,16 @@ void main() {
       );
     });
 
-    testWidgets('duration is stated explicitly, not just a /month suffix',
-        (tester) async {
+    testWidgets('duration is stated explicitly, not just a /month suffix', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(
           Scaffold(
             body: UpgradeScreen(
               priceLoader: () async => {
                 RevenueCatConfig.localsPassMonthly: r'$4.99',
-                RevenueCatConfig.localsPassYearly: r'$29.99',
+                RevenueCatConfig.localsPassYearly: r'$39.99',
                 RevenueCatConfig.cityInsiderMonthly: r'$9.99',
                 RevenueCatConfig.cityInsiderYearly: r'$79.99',
               },

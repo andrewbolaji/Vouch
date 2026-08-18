@@ -413,12 +413,12 @@ Prices:
 
 RevenueCat now has the four Apple products, entitlements locals_pass and city_insider, and a default offering with all four packages. REVENUECAT_REST_API_KEY is set in Firebase Secret Manager through the terminal prompt. I did not paste any key here.
 
-Before enabling signing, correct the webhook verifier to RevenueCat's current format: header X-RevenueCat-Webhook-Signature, value t=timestamp,v1=signature, HMAC-SHA256 over timestamp + "." + exact raw request body, constant-time comparison, and a replay-age check. Add tests from the documented format. The current verifier is not compatible, so do not simply flip SIGNATURE_ENABLED.
+The webhook verifier now follows RevenueCat's current format: header X-RevenueCat-Webhook-Signature, value t=timestamp,v1=signature, HMAC-SHA256 over timestamp + "." + exact raw request body, constant-time comparison, and a five-minute replay-age check. Seventeen focused tests cover the documented format. Do not flip SIGNATURE_ENABLED until the signing secret exists and a real RevenueCat test delivery proves the deployed path.
 
 Then:
-1. Update RevenueCatConfig to the exact Product IDs above and reconcile any hardcoded fallback price mismatch.
+1. Update RevenueCatConfig to the exact Product IDs above and keep the simulated store prices aligned with the confirmed Apple prices.
 2. Enable and deploy server reconciliation after proving the REST key against a real sandbox customer.
-3. Fix the signature verifier, let me enable HMAC in RevenueCat, set REVENUECAT_WEBHOOK_SIGNING_SECRET through the terminal prompt, then enable and deploy signing.
+3. Let me enable HMAC in RevenueCat, set REVENUECAT_WEBHOOK_SIGNING_SECRET through the terminal prompt, then enable and deploy signing.
 4. Prove a correct signed event is accepted, a bad or stale signature is rejected, a duplicate event is harmless, and an older event cannot overwrite a newer one.
 5. Prove sandbox purchase, entitlement, Firebase custom claim, paid Firestore read, restore, renewal or product change, expiration, and failed-webhook reconciliation.
 6. Run the full Flutter, Functions, and Firestore rule suites plus a whole-codebase Firebase deploy dry run.

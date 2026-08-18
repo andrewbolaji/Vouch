@@ -58,13 +58,13 @@ This is durable, evidence-backed project memory. It prevents the same failure or
 
 ### 2026-08-17T22:11:37Z Verify held vendor security contracts before creating their secrets
 
-- **Status:** active
+- **Status:** promoted
 - **Scope:** RevenueCat webhook signature verification
 - **Observed:** The held implementation expects `x-revenuecat-signature`, accepts a bare digest or `sha256=` prefix, and computes HMAC-SHA256 over only the raw body. RevenueCat currently documents `X-RevenueCat-Webhook-Signature` with `t=<timestamp>,v1=<digest>`, computed over `<timestamp>.<raw_json_body>`, plus a recommended timestamp-tolerance check.
 - **Evidence:** RevenueCat's official Webhooks documentation checked on 2026-08-17, `functions/src/membership_webhook.ts` and `functions/src/membership_signature.test.ts`.
 - **Learning:** A test derived from an assumed third-party contract only proves the assumption is internally consistent. Check the current primary vendor documentation and test its exact example shape before creating a secret or enabling a request-rejecting control.
-- **Applied control:** `SIGNATURE_ENABLED` remains false and the current verifier must be corrected before the signing secret is enabled or the webhook is redeployed with verification active.
-- **Revisit when:** The verifier parses the documented header, signs timestamp plus raw body, enforces a bounded tolerance, passes vendor-shaped tests and accepts a RevenueCat test delivery while rejecting a deliberately invalid one.
+- **Applied control:** The verifier now parses the documented header, signs the timestamp plus exact raw body, uses constant-time comparison, and enforces RevenueCat's five-minute reference tolerance. Seventeen focused tests cover the vendor shape, exact bytes, tampering, malformed values, duplicates, past and future replay bounds, and legacy formats. `SIGNATURE_ENABLED` remains false until the signing secret exists and a RevenueCat test delivery proves the deployed path.
+- **Revisit when:** The signing secret is configured. Accept a RevenueCat test delivery and reject a deliberately invalid or stale one before enabling the switch for production traffic.
 - **Related:** `docs/EXECUTION.md`, `functions/src/index.ts`
 
 ## Entry template
