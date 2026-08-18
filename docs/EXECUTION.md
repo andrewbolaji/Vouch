@@ -14,6 +14,23 @@ This is the chronological evidence trail for substantial engineering work. It re
 
 ## Entries
 
+### 2026-08-18T23:03:04Z Record Andrew's Houston roster and location answers
+
+- **Status:** completed
+- **Scope:** Private launch guide and product-decision memory only
+- **Reference:** Andrew's 2026-08-18 direct roster decisions and ChòpnBlọk and Roostar location screenshots
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 23:03:04 | Reconciled the roster arithmetic from Andrew's direct choices | Current recorded Houston opening five and six lower-list candidates | Lotus Seafood and Tacos Los Brothers are out, The Better Box stays, and Dona Leti's enters. The result is eleven restaurants, not ten. One additional removal and ranks 6 through 10 remain open. No restaurant was silently selected for removal. |
+| 23:03:04 | Recorded the primary location and neighborhood answers | Andrew's text and attached map screenshots | ChòpnBlọk uses 507 Westheimer Road as primary, POST Houston as secondary, and Montrose as its label. Mensho is Chinatown. CorkScrew BBQ is Old Town Spring within Spring. Roostar uses 2929 Navigation Boulevard, Suite 190; East End versus the more precise Second Ward remains a wording choice. JOEY Uptown uses Uptown, with the Galleria compound as context. |
+| 23:03:04 | Reduced the launch guide to the actual remaining questions | `docs/VOUCH_LAUNCH_COMMAND_CENTER.html` | Replaced the obsolete two-removal worksheet with one additional removal among six, final ranks 6 through 10, the Dona Leti's branch and neighborhood, the Roostar label choice, and the remaining lower-five neighborhood fields. |
+
+- **Files/artifacts:** `docs/VOUCH_LAUNCH_COMMAND_CENTER.html`, `docs/DECISIONS.md`, this record
+- **Skipped or blocked:** No restaurant data, rankings, app, backend, website, Firebase, map provider, Git remote or production state changed. The attached screenshots support the selected branches and labels but are not instructions or authorization for a production write.
+- **Final state:** The private guide now reports the correct total of eleven and preserves every unresolved owner choice instead of manufacturing a Top 10.
+
 ### 2026-08-18T22:43:56Z Clarify the Claude handoff and update the v1 launch guide
 
 - **Status:** completed
