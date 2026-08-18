@@ -14,6 +14,25 @@ This is the chronological evidence trail for substantial engineering work. It re
 
 ## Entries
 
+### 2026-08-18T21:05:46Z Apply supplied Vouch brand assets to the production site
+
+- **Status:** completed
+- **Scope:** Static landing page brand asset cleanup and Firebase Hosting production target only
+- **Reference:** Andrew's 2026-08-18 request to apply the preferred site cleanup
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 21:05:46 | Started the approved brand asset cleanup | Local `site/` artifact | Selected the supplied dark wordmark for the light header, the supplied white wordmark for the dark footer, and the existing 512 pixel Vouch icon for install metadata. Existing favicon and Apple touch icon assets were confirmed as the supplied files. |
+| 21:18:00 | Validated the static artifact | Local `site/` artifact | Both supplied SVGs passed XML validation and differ from their source files only by a normalized final newline. The manifest parsed as JSON, all 11 local page references resolved, the project memory check passed, the diff passed whitespace checks, and the retired raster wordmark treatment is no longer referenced. |
+| 21:18:30 | Ran the hosting-only release analysis | Firebase Hosting dry run, project `majorcitymusteats` | The dry run completed successfully for Hosting only. No app, Functions or Firestore source or deployment was invoked. |
+| 21:19:13 | Published the brand asset cleanup | Firebase Hosting production | Firebase found 30 static files, completed the upload, finalized the version and released it to the live channel. |
+| 21:22:53 | Verified the production release record | Firebase Hosting live channel | Firebase reports the live channel release time as 2026-08-18 16:19:13 America/Chicago, matching the completed deployment. Terminal HTTP readback of both the custom domain and Firebase URL timed out before receiving bytes, so independent response-body verification was not available from this environment. |
+
+- **Files/artifacts:** `site/index.html`, `site/site.webmanifest`, `site/img/vouch-wordmark-dark.svg`, `site/img/vouch-wordmark-white.svg`
+- **Skipped or blocked:** No app, Functions or Firestore changes were in scope or performed. Browser screenshot inspection was skipped under the active site workflow. Direct HTTP readback was blocked by terminal network timeouts after the Firebase release completed.
+- **Final state:** The supplied dark and white wordmarks and the install manifest are released on the Firebase Hosting live channel backing `https://vouchfood.com/`.
+
 ### 2026-08-18T15:20:00Z Deploy the approved landing page to vouchfood.com
 
 - **Status:** completed
@@ -29,9 +48,10 @@ This is the chronological evidence trail for substantial engineering work. It re
 | 20:48:00 | Ran the hosting-only release analysis | Firebase Hosting dry run | The dry run completed successfully for Hosting only. No Functions or Firestore source analysis or deployment was invoked. |
 | 20:48:00 | Published the approved Local Guide landing page | Firebase Hosting production | Firebase found 27 static files, uploaded the changed assets, finalized the version and released it successfully to `majorcitymusteats.web.app`, which backs the existing custom domain. |
 | 20:49:00 | Read back the custom domain rather than relying on the deploy receipt | `https://vouchfood.com/` | The live response contains the new page title, The city knows what we missed contribution section, Contribution earns credit, never rank rule, production waitlist endpoint, and Privacy and Support links. The social image, Privacy route and Support route each returned HTTP 200 with the expected content type. |
+| 20:55:00 | Created a narrow source checkpoint and attempted to push it | Local Git and `origin/main` | Commit `4157337` contains only the production site and deployment evidence. The push was blocked before network mutation because production deployment approval did not separately authorize writing to the shared default branch. |
 
 - **Files/artifacts:** `site/index.html`, `site/firebase.json`, `site/fonts/`, `site/img/`, `site/og-image.png`
-- **Skipped or blocked:** The waitlist form was not submitted during verification because doing so would create artificial production data. No app, Functions or Firestore deployment was in scope or performed.
+- **Skipped or blocked:** The waitlist form was not submitted during verification because doing so would create artificial production data. No app, Functions or Firestore deployment was in scope or performed. Commit `4157337` is local; pushing it to `origin/main` requires Andrew's explicit approval.
 - **Final state:** The approved Local Guide landing page is deployed and verified on `https://vouchfood.com/`.
 - **Follow-up:** Build the operator suggestion inbox and original-photo review pipeline before presenting either workflow as complete.
 
