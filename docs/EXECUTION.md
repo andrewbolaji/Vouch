@@ -16,7 +16,7 @@ This is the chronological evidence trail for substantial engineering work. It re
 
 ### 2026-08-19T00:51:40Z Verify and publish the Vouch checkpoint
 
-- **Status:** published for review
+- **Status:** published for review; CI repair applied
 - **Scope:** The committed range from `origin/main` through the updated framework checkpoint, plus public-site label consistency
 - **Reference:** Andrew's 2026-08-18 authorization to publish the commits after verifying that they belong in Vouch
 - **Operator:** Codex
@@ -30,11 +30,14 @@ This is the chronological evidence trail for substantial engineering work. It re
 | 01:03:10 | Ran Firebase's whole-source deployment analysis | Firebase dry run against project `majorcitymusteats` | Firestore rules compiled, Functions predeploy lint and build passed, source analysis and packaging completed, and Firebase reported `Dry run complete`. Nothing was deployed. |
 | 01:03:10 | Rendered the patched site and inspected the visible result | Temporary localhost preview in the in-app browser | The final labels render as Second Ward and Uptown, all requested site assets returned successfully, and the browser console contained no warnings or errors. |
 | 01:06:22 | Published the verified checkpoint for review | GitHub branch `agent/publish-vouch-v1-checkpoint` and draft pull request 2 | The branch push completed and GitHub opened `https://github.com/andrewbolaji/Vouch/pull/2` against `main`. The unrelated dirty working-tree files remained unstaged and are absent from the pull request. |
+| 01:24:58 | Investigated the first pull-request CI run | GitHub Actions run `32203806910` | The non-golden work was not implicated. CI reported 411 Flutter tests passed and one Linux golden failed: `restaurant_cards.png` differed by 19.05 percent. The last baseline generation predated commit `d9c5148`, which intentionally added visible zero vote counts, so the authoritative Linux baseline was stale. |
+| 01:24:58 | Regenerated the stale baseline after Andrew's approval | GitHub Actions run `32204610705` on the pull-request branch | Vouch's pinned Linux Update goldens workflow completed successfully and created commit `55ac44e`. The commit changes only `test/goldens/baselines/restaurant_cards.png`. |
+| 01:24:58 | Reviewed the generated image and commit boundary | Isolated remote-branch worktree | The updated baseline preserves the three expected restaurant cards and adds the zero-count line to the rank 2 and rank 5 cards, matching the earlier product change. No source or unrelated local file entered the repair. |
 
-- **Files/artifacts:** `site/index.html`, this record, isolated review worktree under `/private/tmp`
+- **Files/artifacts:** `site/index.html`, `test/goldens/baselines/restaurant_cards.png`, this record, isolated review worktrees under `/private/tmp`
 - **Skipped or blocked:** No Firebase Hosting, Functions, rules or app deployment was performed. Firebase noted that the installed `firebase-functions` package is outdated; that existing dependency upgrade is intentionally outside this checkpoint.
-- **Final state:** The exact verified checkpoint is published in draft pull request 2 with unrelated unfinished local work excluded.
-- **Follow-up:** Review and merge pull request 2 when ready. Continue the separately held account-deletion and contender-pool work through their own gates.
+- **Final state:** The exact verified checkpoint and the scoped Linux golden repair are published in draft pull request 2 with unrelated unfinished local work excluded.
+- **Follow-up:** Confirm the full pull-request CI rerun, then review and merge pull request 2 when ready. Continue the separately held account-deletion and contender-pool work through their own gates.
 
 ### 2026-08-19T00:21:39Z Adopt the updated framework contract and finish Houston labels
 
