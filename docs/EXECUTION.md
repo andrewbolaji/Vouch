@@ -14,6 +14,27 @@ This is the chronological evidence trail for substantial engineering work. It re
 
 ## Entries
 
+### 2026-08-19T00:51:40Z Verify and publish the Vouch checkpoint
+
+- **Status:** verified for publication
+- **Scope:** The committed range from `origin/main` through the updated framework checkpoint, plus public-site label consistency
+- **Reference:** Andrew's 2026-08-18 authorization to publish the commits after verifying that they belong in Vouch
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 00:51:40 | Confirmed the intended publish range and isolated it from the dirty worktree | Local Git repository and detached temporary worktree | The range contains the approved Local Guide site, supplied brand assets, launch command center, RevenueCat corrections, owner decisions and updated framework. Current unfinished app, backend, contender and account-deletion files are not committed and are excluded. |
+| 00:51:40 | Reviewed the combined committed diff for scope and sensitive material | Detached worktree at `366df16` | No private key, GitHub token, Stripe key or similar credential pattern appears in the range. The RevenueCat iOS value is the intentionally public app-specific SDK key. Review found two stale public area labels on the site. |
+| 00:51:40 | Corrected the public labels to the later owner-approved choices | `site/index.html` | Roostar now displays Second Ward and JOEY Uptown now displays Uptown, matching the project decision and private launch guide. |
+| 01:03:10 | Ran the exact checkpoint's client, backend and repository gates | Detached worktree with only the two label corrections applied | All 407 non-golden Flutter tests passed. Functions lint and TypeScript build passed. All 11 Firebase emulator suites and 233 tests passed. The project-memory checker, focused 17-test RevenueCat signature suite, combined secret scan, site structure check and `git diff --check` passed. |
+| 01:03:10 | Ran Firebase's whole-source deployment analysis | Firebase dry run against project `majorcitymusteats` | Firestore rules compiled, Functions predeploy lint and build passed, source analysis and packaging completed, and Firebase reported `Dry run complete`. Nothing was deployed. |
+| 01:03:10 | Rendered the patched site and inspected the visible result | Temporary localhost preview in the in-app browser | The final labels render as Second Ward and Uptown, all requested site assets returned successfully, and the browser console contained no warnings or errors. |
+
+- **Files/artifacts:** `site/index.html`, this record, isolated review worktree under `/private/tmp`
+- **Skipped or blocked:** Git commit, branch push and draft pull request remain in progress. No Firebase Hosting, Functions, rules or app deployment is part of this GitHub publication. Firebase noted that the installed `firebase-functions` package is outdated; that existing dependency upgrade is intentionally outside this checkpoint.
+- **Final state:** The exact proposed checkpoint is verified for GitHub publication with unrelated unfinished local work excluded.
+- **Follow-up:** Commit only the two reviewed files, publish a safe branch and open a draft pull request.
+
 ### 2026-08-19T00:21:39Z Adopt the updated framework contract and finish Houston labels
 
 - **Status:** completed locally
