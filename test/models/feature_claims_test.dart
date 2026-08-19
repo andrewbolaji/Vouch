@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vouch/models/membership.dart';
 import 'package:vouch/providers/membership_provider.dart';
+import 'package:vouch/services/revenue_cat_service.dart';
 
 /// Marks a feature bullet as deliberately not gated behind any
 /// [MembershipProvider] capability, either because every tier gets it
@@ -31,12 +32,36 @@ void main() {
         expect(
           claims.containsKey(feature),
           isTrue,
-          reason: 'MembershipInfo lists "$feature" under ${tier.name} '
+          reason:
+              'MembershipInfo lists "$feature" under ${tier.name} '
               'but there is no matching entry in the claims map in '
               'feature_claims_test.dart. Add a capability closure, or '
               '`ungated` if it is deliberately not gated.',
         );
       }
+    }
+  });
+
+  test('simulated store prices match the membership copy', () async {
+    final prices = await RevenueCatService.getLocalizedPrices();
+
+    for (final tier in membershipTiers.where(
+      (tier) => tier.tier != MembershipTier.free,
+    )) {
+      expect(
+        prices[RevenueCatConfig.productIdFor(tier.tier, yearly: false)],
+        tier.monthlyPrice,
+        reason:
+            '${tier.name} monthly price drifted between the paywall '
+            'model and RevenueCat simulation.',
+      );
+      expect(
+        prices[RevenueCatConfig.productIdFor(tier.tier, yearly: true)],
+        tier.yearlyPrice,
+        reason:
+            '${tier.name} yearly price drifted between the paywall '
+            'model and RevenueCat simulation.',
+      );
     }
   });
 }

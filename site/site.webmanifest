@@ -1,0 +1,18 @@
+{
+  "name": "Vouch: Where locals actually eat",
+  "short_name": "Vouch",
+  "description": "Houston's living Top 10, ranked and expanded by the locals who keep going back.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#eee7d8",
+  "theme_color": "#e8502a",
+  "icons": [
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

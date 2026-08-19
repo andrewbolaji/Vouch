@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vouch launch command center</title>
+  <meta name="description" content="Andrew's ordered Vouch launch checklist, copy bank, RevenueCat setup, phone walk, TestFlight plan, and App Store release guide.">
+  <style>
+    :root {
+      --paper: #eee7d8;
+      --raised: #f8f3e9;
+      --ink: #1a1714;
+      --ink-2: #5c5142;
+      --ink-3: #827667;
+      --flame: #e8502a;
+      --flame-deep: #c2401c;
+      --gold: #9a6b1f;
+      --blue: #2f68df;
+      --green: #226c4a;
+      --line: rgba(26, 23, 20, .18);
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--paper); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--sans);
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(rgba(26, 23, 20, .04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26, 23, 20, .04) 1px, transparent 1px);
+      background-size: 42px 42px;
+      line-height: 1.58;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    button, input, textarea { font: inherit; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+    .topbar {
+      background: var(--ink);
+      color: var(--raised);
+      border-bottom: 2px solid var(--ink);
+      padding: 11px 0;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .topbar .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    header { padding: clamp(58px, 8vw, 105px) 0 54px; }
+    .kicker, .eyebrow {
+      margin: 0 0 14px;
+      color: var(--flame-deep);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { font-family: var(--serif); font-weight: 400; letter-spacing: -.035em; }
+    h1 { max-width: 900px; margin: 0; font-size: clamp(58px, 8.5vw, 118px); line-height: .86; }
+    h1 em { color: var(--flame); font-weight: 400; }
+    .lede { max-width: 760px; margin: 28px 0 0; color: var(--ink-2); font-size: clamp(17px, 2vw, 22px); }
+    .answer {
+      display: grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap: 2px;
+      margin-top: 42px;
+      border: 2px solid var(--ink);
+      background: var(--ink);
+      box-shadow: 8px 8px 0 var(--flame);
+    }
+    .answer-main, .answer-side { padding: clamp(25px, 4vw, 45px); background: var(--raised); }
+    .answer-main strong { display: block; font-family: var(--serif); font-size: clamp(34px, 4vw, 55px); line-height: .98; font-weight: 400; }
+    .answer-main p, .answer-side p { margin: 15px 0 0; color: var(--ink-2); }
+    .answer-side { background: var(--flame); }
+    .answer-side strong { display: block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+    .progress-shell {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-block: 2px solid var(--ink);
+      background: rgba(248, 243, 233, .96);
+      backdrop-filter: blur(12px);
+    }
+    .progress-row { min-height: 76px; display: grid; grid-template-columns: 170px 1fr auto; gap: 22px; align-items: center; }
+    .progress-label strong { font-family: var(--serif); font-size: 25px; font-weight: 400; }
+    .progress-label span { display: block; color: var(--ink-3); font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .track { height: 14px; border: 2px solid var(--ink); background: var(--paper); }
+    .bar { width: 0; height: 100%; background: var(--flame); transition: width .2s ease; }
+    .reset, .copy-button, .jump a {
+      border: 2px solid var(--ink);
+      background: var(--raised);
+      color: var(--ink);
+      padding: 10px 13px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .jump { display: flex; flex-wrap: wrap; gap: 9px; padding: 24px 0 0; }
+    .jump a:hover, .reset:hover, .copy-button:hover { background: var(--flame); }
+    main { padding-bottom: 100px; }
+    .stage { padding: clamp(70px, 8vw, 110px) 0 0; scroll-margin-top: 88px; }
+    .stage-head { display: grid; grid-template-columns: 120px 1fr; gap: 24px; align-items: end; padding-bottom: 28px; border-bottom: 2px solid var(--ink); }
+    .stage-number { font-family: var(--serif); font-size: 76px; color: var(--flame); line-height: .8; }
+    .stage h2 { margin: 0; font-size: clamp(43px, 6vw, 76px); line-height: .93; }
+    .stage-intro { max-width: 760px; margin: 22px 0 30px 144px; color: var(--ink-2); font-size: 16px; }
+    .status-grid, .two-col, .three-col { display: grid; gap: 16px; }
+    .status-grid { grid-template-columns: repeat(4, 1fr); margin-top: 28px; }
+    .two-col { grid-template-columns: 1fr 1fr; }
+    .three-col { grid-template-columns: repeat(3, 1fr); }
+    .status-card, .card, details, .task {
+      border: 2px solid var(--ink);
+      background: var(--raised);
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .status-card { padding: 21px; min-height: 165px; }
+    .status-card b { display: block; margin-bottom: 11px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    .status-card p { margin: 0; color: var(--ink-2); font-size: 13px; }
+    .status-card.live { background: #dcebdd; }
+    .status-card.you { background: #f2dfb7; }
+    .status-card.code { background: #dfe7f7; }
+    .status-card.stop { background: #f4cdc2; }
+    .task-list { display: grid; gap: 13px; margin-top: 24px; }
+    .task { display: grid; grid-template-columns: 34px 1fr auto; gap: 15px; align-items: start; padding: 19px 20px; }
+    .task input[type="checkbox"] { width: 23px; height: 23px; margin: 2px 0 0; accent-color: var(--flame-deep); }
+    .task label { cursor: pointer; }
+    .task label strong { display: block; margin-bottom: 4px; font-size: 15px; }
+    .task label span { display: block; color: var(--ink-2); font-size: 13px; }
+    .tag { display: inline-block; border: 1.5px solid var(--ink); padding: 4px 7px; white-space: nowrap; font-size: 8px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .tag.you { background: #f2dfb7; }
+    .tag.codex { background: #dfe7f7; }
+    .tag.both { background: #dcebdd; }
+    .tag.stop { background: #f4cdc2; }
+    details { margin-top: 18px; overflow: hidden; }
+    summary { cursor: pointer; padding: 20px 22px; font-weight: 800; letter-spacing: .02em; list-style-position: inside; }
+    .detail-body { border-top: 1.5px solid var(--ink); padding: clamp(22px, 4vw, 38px); }
+    .detail-body > :first-child { margin-top: 0; }
+    h3 { margin: 38px 0 14px; font-size: clamp(29px, 4vw, 43px); line-height: 1; }
+    h4 { margin: 30px 0 10px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+    p, li { color: var(--ink-2); }
+    ol, ul { padding-left: 24px; }
+    li { margin-bottom: 9px; }
+    .note {
+      margin: 22px 0;
+      padding: 18px 20px;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+    }
+    .note strong { color: var(--ink); }
+    .note.stop { background: #f4cdc2; }
+    .note.good { background: #dcebdd; }
+    .note p:last-child { margin-bottom: 0; }
+    .copy {
+      position: relative;
+      margin: 15px 0 24px;
+      border: 2px solid var(--ink);
+      background: var(--ink);
+      color: var(--raised);
+    }
+    .copy-button { position: absolute; top: 10px; right: 10px; z-index: 2; box-shadow: none; }
+    pre { margin: 0; padding: 58px 20px 20px; color: var(--raised); white-space: pre-wrap; overflow-wrap: anywhere; font: 12.5px/1.62 var(--mono); }
+    code { padding: 2px 5px; background: rgba(26, 23, 20, .08); border: 1px solid var(--line); font-family: var(--mono); font-size: .9em; }
+    table { width: 100%; border-collapse: collapse; margin: 17px 0 24px; font-size: 13px; }
+    th { color: var(--ink); background: var(--paper); text-align: left; font-size: 9px; letter-spacing: .11em; text-transform: uppercase; }
+    th, td { padding: 12px; border: 1.5px solid var(--ink); vertical-align: top; }
+    td { color: var(--ink-2); background: var(--raised); }
+    textarea {
+      width: 100%; min-height: 110px; resize: vertical; padding: 14px;
+      color: var(--ink); background: var(--raised); border: 2px solid var(--ink); border-radius: 0;
+    }
+    .mini { color: var(--ink-3); font-size: 11px; }
+    .sources { margin-top: 78px; padding: 30px; border: 2px solid var(--ink); background: var(--raised); }
+    .sources h2 { margin: 0 0 16px; font-size: 35px; }
+    .sources a { color: var(--blue); }
+    footer { padding: 34px 0 60px; background: var(--ink); color: var(--raised); }
+    footer p { margin: 0; color: rgba(248, 243, 233, .68); font-size: 12px; }
+    @media (max-width: 900px) {
+      .answer, .status-grid, .two-col, .three-col { grid-template-columns: 1fr 1fr; }
+      .stage-head { grid-template-columns: 82px 1fr; }
+      .stage-number { font-size: 58px; }
+      .stage-intro { margin-left: 106px; }
+    }
+    @media (max-width: 650px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .answer, .status-grid, .two-col, .three-col { grid-template-columns: 1fr; }
+      .progress-row { grid-template-columns: 1fr auto; padding: 12px 0; }
+      .track { grid-column: 1 / -1; grid-row: 2; }
+      .stage-head { grid-template-columns: 1fr; }
+      .stage-intro { margin-left: 0; }
+      .task { grid-template-columns: 30px 1fr; }
+      .task .tag { grid-column: 2; justify-self: start; }
+      pre { font-size: 11.5px; }
+    }
+    @media print {
+      body { background: white; }
+      .progress-shell, .copy-button, .reset { display: none !important; }
+      .stage { break-before: page; }
+      details { break-inside: avoid; }
+      details > .detail-body { display: block; }
+      .status-card, .card, details, .task, .copy { box-shadow: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .bar { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar"><div class="wrap"><span>Vouch launch command center</span><span>Current 18 August 2026</span></div></div>
+
+  <header class="wrap">
+    <p class="kicker">Houston first</p>
+    <h1>From almost ready to <em>released.</em></h1>
+    <p class="lede">One private working page for the remaining content, RevenueCat setup, Instagram work, real-phone walk, TestFlight, and App Store release. Checkboxes and notes save in this browser.</p>
+    <div class="answer">
+      <div class="answer-main">
+        <p class="eyebrow">The Instagram answer</p>
+        <strong>Yes. Put vouchfood.com in the bio now.</strong>
+        <p>Keep the owned website as the permanent link. Today it collects the waitlist. Later it can route visitors to TestFlight, then the App Store, without changing the Instagram bio again.</p>
+      </div>
+      <div class="answer-side">
+        <strong>Use one link</strong>
+        <p><b>Title:</b> Join Vouch<br><b>URL:</b> https://vouchfood.com</p>
+      </div>
+    </div>
+    <nav class="jump" aria-label="Jump to a section">
+      <a href="#now">Do now</a><a href="#content">Content</a><a href="#revenuecat">RevenueCat</a><a href="#walk">The walk</a><a href="#testflight">TestFlight</a><a href="#instagram">Instagram and DMs</a><a href="#release">Release</a><a href="#handoffs">Copy to Codex</a>
+    </nav>
+  </header>
+
+  <div class="progress-shell">
+    <div class="wrap progress-row">
+      <div class="progress-label"><strong id="progressText">0 of 0</strong><span>Launch checks complete</span></div>
+      <div class="track" aria-hidden="true"><div class="bar" id="progressBar"></div></div>
+      <button class="reset" id="resetChecks" type="button">Reset checks</button>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="stage" id="now">
+      <div class="stage-head"><span class="stage-number">00</span><h2>What is true right now.</h2></div>
+      <p class="stage-intro">This replaces older handoffs that still call the website unfinished, the RevenueCat verifier incompatible, or the open list automatically deferred. Use this page as the current launch map.</p>
+      <div class="status-grid">
+        <article class="status-card live"><b>Live now</b><p><b>vouchfood.com</b>, waitlist signup, Privacy, Support, Instagram link, favicon, and Vouch brand assets.</p></article>
+        <article class="status-card you"><b>Andrew owns next</b><p>Instagram bio, photographs, insider notes, prices, App Store forms, and device testing.</p></article>
+        <article class="status-card code"><b>Codex owns next</b><p>The reviewed V1 contender pool, emulator proof and deployment of the locally built account deletion recovery, Houston content ingestion, safe backend deployment, and release support.</p></article>
+        <article class="status-card stop"><b>Not live yet</b><p>The iOS release, public TestFlight, reviewed contenders, photo uploads, weekly recap delivery, ordering links, and App Check enforcement.</p></article>
+      </div>
+      <div class="task-list">
+        <div class="task"><input id="now-bio" data-check type="checkbox"><label for="now-bio"><strong>Put vouchfood.com in the Instagram bio.</strong><span>This is useful now and stays correct after TestFlight and App Store launch.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="now-prices" data-check type="checkbox"><label for="now-prices"><strong>Confirm the two plans, four prices, and seven-day trial decision.</strong><span>Do this before creating or changing Apple subscription products.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="now-ten" data-check type="checkbox"><label for="now-ten"><strong>Final Houston Top 10 recorded.</strong><span>Crave Suya, Lotus Seafood, and Tacos Los Brothers are out. Peri Peri, Lost and Found, Top Sushi, Better Box, and Dona Leti's are ranks 6 through 10.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="now-open-list" data-check type="checkbox"><label for="now-open-list"><strong>Keep the reviewed contender pool in V1.</strong><span>Codex builds the bounded intake, review, discovery and equal-vouch path. A nomination alone never publishes or grants rank.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="now-deletion" data-check type="checkbox"><label for="now-deletion"><strong>Verify and deploy the locally built account-deletion recovery.</strong><span>Build and lint pass. Firebase emulator proof, TTL activation, dry run, and deployment remain.</span></label><span class="tag code">Codex</span></div>
+      </div>
+
+      <details open>
+        <summary>What from the old Claude handoff is still relevant?</summary>
+        <div class="detail-body">
+          <ul>
+            <li><b>Still required:</b> publishable launch photographs, insider notes, final coordinates, emulator proof and deployment of account-deletion recovery, exact Apple and RevenueCat configuration, sandbox purchase proof, external TestFlight, App Check traffic verification, photo Storage migration, and the final production content migration.</li>
+            <li><b>Completed or corrected:</b> the RevenueCat signature verifier, membership failure handling, full local validation, unsigned iOS release build, Privacy and Support pages, public website, Add a Place entry point, and Your Vouches list.</li>
+            <li><b>Promoted to V1:</b> a reviewed contender pool that turns approved nominations into discoverable, equally voteable restaurants outside the ranked ten.</li>
+            <li><b>Still later:</b> public photo uploads, weekly recap delivery, automatic city activation, paid restaurant tools, and ordering or delivery revenue experiments.</li>
+          </ul>
+          <div class="note"><strong>The weekend shoot, translated:</strong> You do not have to revisit every restaurant. Every final-ten restaurant needs one publishable image. Freshly shooting the top five was a quality recommendation because those images dominate the opening screen and App Store screenshots. Your statement that the existing photographs are yours answered the earlier provenance concern.</div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Approved account-deletion recovery design</summary>
+        <div class="detail-body">
+          <p>Andrew directly approved the recovery design on August 18, 2026. Codex implemented it locally with one safety correction: the job stays open through a 65-minute post-auth quiet window because an already-issued Firebase ID token may remain usable for an hour. TypeScript build, lint, and focused client tests pass. Firebase emulator proof and deployment remain.</p>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="deletion-decision-answer">Copy</button><pre id="deletion-decision-answer">ACCOUNT DELETION RECOVERY
+
+Status: APPROVED
+
+- Job ID is a one-way hash of the Firebase user ID.
+- Plain user ID exists only while deletion is running.
+- Plain user ID is removed when deletion closes.
+- Completed non-identifying job record is automatically deleted after 30 days.
+- A scheduled function resumes interrupted deletion jobs.</pre></div>
+          <h3>Codex pre-deploy gate</h3>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="deletion-verification">Copy</button><pre id="deletion-verification"># 1. Functions and rules under Firebase emulators
+env PATH=/usr/local/opt/openjdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin firebase emulators:exec --only firestore,auth 'cd functions &amp;&amp; npx jest src/index.test.ts --runInBand --forceExit --detectOpenHandles'
+
+env PATH=/usr/local/opt/openjdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin firebase emulators:exec --only firestore 'cd test-rules &amp;&amp; npm test -- --runInBand'
+
+# 2. Whole-source deploy analysis
+firebase deploy --dry-run
+
+# 3. Only after every gate passes: deploy together
+firebase deploy --only functions:requestAccountDeletion,functions:onUserDeleted,functions:resumeAccountDeletions,firestore:rules,firestore:indexes
+
+# 4. One-time TTL policy, then verify ACTIVE
+gcloud firestore fields ttls update expiresAt --collection-group=deletionJobs --enable-ttl --project=majorcitymusteats
+gcloud firestore fields ttls list --project=majorcitymusteats</pre></div>
+          <div class="note"><strong>Do not run the deploy block yet.</strong> The local emulator gate was blocked by Codex's current tool-usage limit before the emulators could start. The code has not failed that gate; it has not completed it.</div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>Copy the Instagram profile now</summary>
+        <div class="detail-body">
+          <h3>Profile link</h3>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="bio-link">Copy</button><pre id="bio-link">Title: Join Vouch
+URL: https://vouchfood.com</pre></div>
+          <h3>Recommended bio</h3>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="bio-copy">Copy</button><pre id="bio-copy">Where locals actually eat.
+Houston's living Top 10.
+No paid spots.
+Join early ↓</pre></div>
+          <p class="mini">Keep one profile link. When public TestFlight opens, add its button to vouchfood.com. When the App Store opens, replace that button with the App Store button. The Instagram URL never changes.</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="stage" id="content">
+      <div class="stage-head"><span class="stage-number">01</span><h2>Finish what only you can know.</h2></div>
+      <p class="stage-intro">The release build should use a complete Houston list, not scaffold text or screenshots whose quality you do not love.</p>
+      <div class="task-list">
+        <div class="task"><input id="content-final-five" data-check type="checkbox"><label for="content-final-five"><strong>Use the final owner-approved Houston order.</strong><span>Ranks 1 through 10 are settled. Codex must rewrite and dry-run the stale launch-order script before any production write.</span></label><span class="tag code">Codex</span></div>
+        <div class="task"><input id="content-neighborhoods" data-check type="checkbox"><label for="content-neighborhoods"><strong>Use the ten settled neighborhood labels.</strong><span>Peri Peri Factory and Top Sushi use Mid-West, Better Box uses Northwest Houston, and Dona Leti's uses Washington Corridor.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="content-notes" data-check type="checkbox"><label for="content-notes"><strong>Write two useful insider notes for every restaurant.</strong><span>One exact thing to order and one practical tip. No filler.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="content-photos" data-check type="checkbox"><label for="content-photos"><strong>Choose one publishable launch photo for every restaurant.</strong><span>Reshoot the top five only if you want stronger launch visuals. It is recommended for quality, not required to prove you took the existing images.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="content-pack" data-check type="checkbox"><label for="content-pack"><strong>Hand the completed content pack to Codex.</strong><span>Codex can migrate, validate, and seed it only after the facts and rights are settled.</span></label><span class="tag both">Both</span></div>
+      </div>
+      <details open>
+        <summary>Final Houston Top 10</summary>
+        <div class="detail-body">
+          <p>Andrew directly settled the complete opening order on August 18, 2026. This is now the source of truth for the Houston content pack.</p>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="houston-roster-answer">Copy</button><pre id="houston-roster-answer">FINAL HOUSTON ROSTER
+
+1. ChòpnBlọk
+2. Mensho
+3. CorkScrew BBQ
+4. Roostar
+5. JOEY Uptown
+6. The Peri Peri Factory
+7. Lost and Found
+8. Top Sushi
+9. The Better Box
+10. Dona Leti's
+
+Confirmed out:
+- Crave Suya
+- Lotus Seafood
+- Tacos Los Brothers</pre></div>
+          <div class="note"><strong>Engineering guardrail:</strong> the current launch-order script predates this decision and still lists Dona Leti's as a removal. It must not be run until Codex rewrites it for this exact order and shows a dry-run diff.</div>
+        </div>
+      </details>
+      <details open>
+        <summary>Final Houston neighborhood labels</summary>
+        <div class="detail-body">
+          <p>This asks for the short area label a Houston person would expect to see on the card, not another address. Andrew's approval and the supplied location screenshots now settle all ten labels.</p>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="houston-neighborhood-answer">Copy</button><pre id="houston-neighborhood-answer">HOUSTON NEIGHBORHOODS
+
+1. ChòpnBlọk: Montrose
+   Primary: 507 Westheimer Rd
+   Secondary location: POST Houston
+2. Mensho: Chinatown
+3. CorkScrew BBQ: Old Town Spring
+   City: Spring
+4. Roostar: Second Ward
+   Primary: 2929 Navigation Blvd, Suite 190
+5. JOEY Uptown: Uptown
+   Location note: Galleria mall compound
+6. The Peri Peri Factory: Mid-West
+   Address: 6375 Westheimer Rd
+7. Lost and Found: Midtown
+   Address: 160 W Gray St
+8. Top Sushi: Mid-West
+   Address: 8401 Westheimer Rd
+9. The Better Box: Northwest Houston
+   Address: 8902 Fallbrook Dr
+10. Dona Leti's: Washington Corridor
+    Selected location: 7340 Washington Ave</pre></div>
+          <div class="note"><strong>Labels complete:</strong> these are short card labels, not civic-boundary claims. The screenshots support the selected branches and current addresses; they are evidence, not instructions or authorization for a production write.</div>
+        </div>
+      </details>
+      <details>
+        <summary>Copy this once for each restaurant</summary>
+        <div class="detail-body">
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="restaurant-template">Copy</button><pre id="restaurant-template">RESTAURANT
+Name:
+Final Houston rank:
+Cuisine:
+Neighborhood:
+Address:
+One-sentence reason it belongs:
+What to order:
+Insider tip:
+Photo filename or link:
+Photo owner:
+Permission for app use: yes / no
+Permission for vouchfood.com use: yes / no
+Permission for Vouch social use: yes / no
+Credit line:
+Official Instagram handle:</pre></div>
+          <div class="note"><strong>Photo rule.</strong> Pixels and metadata cannot prove who pressed the shutter. Use your own photo, an explicit permission reply from the owner, or a properly licensed source. Keep a record. Photo upload by users is planned, not live.</div>
+        </div>
+      </details>
+      <details>
+        <summary>What the V1 open list means</summary>
+        <div class="detail-body">
+          <p>The existing app can accept one restaurant, correction, city, or general suggestion per signed-in user per UTC day. That is a maximum, not a daily assignment. Today the record stops at pending. V1 now includes the missing reviewed path.</p>
+          <ol>
+            <li>A signed-in user nominates a missing place.</li>
+            <li>Vouch reviews it for identity, location, duplicates and basic fit.</li>
+            <li>An approved restaurant appears in a separate contender pool outside the ranked ten.</li>
+            <li>Users vouch for contenders with the same vote weight as every other restaurant.</li>
+            <li>The daily ranking can move a contender into the Top 10 and move the previous number ten out.</li>
+          </ol>
+          <div class="note good"><strong>Launch-safe promise:</strong> Nominate a missing restaurant. If Vouch approves it as a contender, locals can vouch it into the ranked ten. Only local vouches determine rank.</div>
+          <div class="note stop"><strong>Still prohibited:</strong> instant publication, nomination-based rank, restaurant-paid placement, public photo upload without review, automatic city activation, or guaranteed entry into the Top 10.</div>
+        </div>
+      </details>
+      <details>
+        <summary>Product idea: From Vouch to table</summary>
+        <div class="detail-body">
+          <p>The useful DoorDash element comes after Vouch answers where to eat. A restaurant detail page can offer <b>Visit</b> and <b>Order</b>. Order opens a verified restaurant ordering link, preferring the restaurant's direct channel and using DoorDash as a fallback when that is the available option.</p>
+          <ul>
+            <li><b>Best expression:</b> “Order the Vouch” beside the what-to-order note when a stable link to that exact dish exists. Otherwise use the honest “Order from this restaurant.”</li>
+            <li><b>V1.1 implementation:</b> manually verified URLs, an external-link disclosure, availability fallback, and an outbound click event. No DoorDash API dependency is required.</li>
+            <li><b>Revenue path:</b> later negotiate attributable referrals with ordering providers or direct restaurant partners. Payment can affect the order button or a clearly labeled offers area, never rank, eligibility, vote weight or editorial notes.</li>
+            <li><b>Retention path:</b> a saved Vouch becomes actionable at dinner time. “What should I order?” and “Get it here” close the decision loop without turning Vouch into a delivery marketplace.</li>
+          </ul>
+          <div class="note"><strong>Why this is not a launch dependency:</strong> DoorDash's current Marketplace documentation says it is not accepting new integration partners while it develops self-serve tooling. Verified outbound links let Vouch test whether users want ordering before taking on menus, availability, commissions and support obligations.</div>
+        </div>
+      </details>
+    </section>
+
+    <section class="stage" id="revenuecat">
+      <div class="stage-head"><span class="stage-number">02</span><h2>RevenueCat, in the safe order.</h2></div>
+      <p class="stage-intro">The dashboard work and the code work meet in the middle. Do not archive a paid build until the exact Apple product IDs are in the app and a sandbox purchase has completed end to end.</p>
+
+      <div class="note good">
+        <strong>The code correction is complete. The activation proof is still manual.</strong>
+        <p>Vouch now verifies <code>X-RevenueCat-Webhook-Signature</code> in the documented <code>t=timestamp,v1=signature</code> format, authenticates the exact raw request bytes, uses constant-time comparison, and rejects stale requests outside five minutes. Seventeen focused tests pass. Keep <code>SIGNATURE_ENABLED</code> off until the signing secret exists and a real RevenueCat delivery proves the deployed path.</p>
+      </div>
+
+      <h3>A. Confirm the money decision</h3>
+      <table>
+        <thead><tr><th>Tier</th><th>Monthly</th><th>Yearly</th><th>Entitlement</th><th>What it unlocks now</th></tr></thead>
+        <tbody>
+          <tr><td>Locals Pass</td><td>$4.99</td><td>$39.99</td><td><code>locals_pass</code></td><td>Full Top 10 and saved restaurants</td></tr>
+          <tr><td>City Insider</td><td>$9.99</td><td>$79.99</td><td><code>city_insider</code></td><td>Locals Pass access, insider notes, and comment badge</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><strong>Decision to make:</strong> The current UI says "Start 7-day free trial" on every paid option. Either configure a seven-day introductory trial on all four Apple products or have Codex change the UI before release. Also keep every vote at weight 1 for v1. Do not market paid vote power.</div>
+      <div class="task-list">
+        <div class="task"><input id="rc-prices" data-check type="checkbox"><label for="rc-prices"><strong>Confirm or change the four prices above.</strong><span>Prices can change later, but the launch copy and paywall must agree.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="rc-trial" data-check type="checkbox"><label for="rc-trial"><strong>Confirm the seven-day trial.</strong><span>Configure what the UI promises, or change the promise before upload.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="rc-agreements" data-check type="checkbox"><label for="rc-agreements"><strong>Confirm Apple's Paid Apps Agreement, tax, and banking are complete.</strong><span>Store products cannot be tested properly until the commercial setup is clear.</span></label><span class="tag you">You</span></div>
+      </div>
+
+      <details open>
+        <summary>B. App Store Connect subscription setup</summary>
+        <div class="detail-body">
+          <ol>
+            <li>Open App Store Connect, My Apps, Vouch, Monetization, Subscriptions.</li>
+            <li>If a subscription group already exists, use it. If not, create one named <b>Vouch Membership</b>.</li>
+            <li>Before creating anything new, record every existing Product ID. Product IDs cannot be edited or reused after they are saved.</li>
+            <li>If the four products do not exist, create monthly and yearly products for Locals Pass and City Insider. A clean recommendation is shown below, but only use it if App Store Connect confirms those IDs are unused.</li>
+            <li>Set City Insider as level 1 and Locals Pass as level 2. Put the monthly and yearly products for the same tier at the same access level.</li>
+            <li>For every product, add duration, price, United States availability, English display name and description, the confirmed introductory trial, and the required App Review paywall screenshot.</li>
+            <li>Add the subscription group localization.</li>
+            <li>Do not submit the first subscriptions separately. Apple's first auto-renewable subscription and group travel with the first app version submission.</li>
+          </ol>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="recommended-product-ids">Copy</button><pre id="recommended-product-ids">RECOMMENDED ONLY IF NO PRODUCTS EXIST YET
+com.thunderrivertech.vouch.locals_pass.monthly
+com.thunderrivertech.vouch.locals_pass.yearly
+com.thunderrivertech.vouch.city_insider.monthly
+com.thunderrivertech.vouch.city_insider.yearly</pre></div>
+          <div class="note"><strong>If App Store Connect already contains <code>com.vouch.app...</code> IDs:</strong> do not duplicate them merely because the bundle ID is different. Send the exact existing IDs to Codex. The app must match the store, not a naming preference.</div>
+          <div class="task-list">
+            <div class="task"><input id="rc-group" data-check type="checkbox"><label for="rc-group"><strong>Subscription group exists and is localized.</strong><span>One group prevents users from holding both paid tiers at the same time.</span></label><span class="tag you">You</span></div>
+            <div class="task"><input id="rc-products" data-check type="checkbox"><label for="rc-products"><strong>All four Apple products are complete.</strong><span>Exact IDs, duration, price, availability, localization, trial, and review screenshot.</span></label><span class="tag you">You</span></div>
+            <div class="task"><input id="rc-levels" data-check type="checkbox"><label for="rc-levels"><strong>Subscription levels are correct.</strong><span>City Insider above Locals Pass, with billing durations grouped by tier.</span></label><span class="tag you">You</span></div>
+          </div>
+          <label for="productIds"><strong>Paste the exact four existing Product IDs here for your own record.</strong></label>
+          <textarea id="productIds" data-note placeholder="Locals monthly:&#10;Locals yearly:&#10;Insider monthly:&#10;Insider yearly:"></textarea>
+        </div>
+      </details>
+
+      <details open>
+        <summary>C. RevenueCat dashboard setup</summary>
+        <div class="detail-body">
+          <ol>
+            <li>Open the Vouch RevenueCat project and confirm the Apple app uses bundle ID <code>com.thunderrivertech.vouch</code>.</li>
+            <li>Product catalog, Products: import the four exact App Store Connect products.</li>
+            <li>Product catalog, Entitlements: confirm <code>locals_pass</code> and <code>city_insider</code>.</li>
+            <li>Attach both Locals Pass products to <code>locals_pass</code>. Attach both City Insider products to <code>city_insider</code>. You may also attach City Insider products to <code>locals_pass</code> because the higher tier includes it.</li>
+            <li>Product catalog, Offerings: create or update the default offering with four packages. Use distinct package identifiers such as <code>locals_monthly</code>, <code>locals_yearly</code>, <code>insider_monthly</code>, and <code>insider_yearly</code>. Mark the offering as Default.</li>
+            <li>Project Settings, API keys: the iOS public app-specific key is the right least-privilege key for the current read-only REST v1 customer-status call. It starts with <code>appl_</code>. Store it through the terminal prompt below. Do not paste it into this page or chat.</li>
+            <li>Integrations, Webhooks: keep the existing Authorization header secret. Do not enable HMAC signing until Codex confirms the verifier correction is deployed and tested.</li>
+          </ol>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="rest-secret-command">Copy</button><pre id="rest-secret-command">cd ~/Desktop/projects/vouch/vouch-repo
+firebase functions:secrets:set REVENUECAT_REST_API_KEY</pre></div>
+          <p class="mini">Run the command, then paste the iOS public app-specific key only into the hidden terminal prompt. The key is public by RevenueCat's classification, but keeping the server configuration in Secret Manager preserves one deployment path and avoids scattering values.</p>
+          <div class="task-list">
+            <div class="task"><input id="rc-import" data-check type="checkbox"><label for="rc-import"><strong>Four Apple products imported.</strong><span>Every imported identifier exactly matches App Store Connect.</span></label><span class="tag you">You</span></div>
+            <div class="task"><input id="rc-entitlements" data-check type="checkbox"><label for="rc-entitlements"><strong>Products attached to the two exact entitlement IDs.</strong><span>Misspelling an entitlement lets payment succeed without unlocking the app.</span></label><span class="tag you">You</span></div>
+            <div class="task"><input id="rc-offering" data-check type="checkbox"><label for="rc-offering"><strong>Default offering contains four packages.</strong><span>The current app searches every package in the current offering for the exact Product ID.</span></label><span class="tag you">You</span></div>
+            <div class="task"><input id="rc-rest-secret" data-check type="checkbox"><label for="rc-rest-secret"><strong>REST key set through the terminal prompt.</strong><span>Never paste its value in chat or store it in a file.</span></label><span class="tag you">You</span></div>
+          </div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>D. Hand the dashboard state to Codex</summary>
+        <div class="detail-body">
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="rc-handoff">Copy</button><pre id="rc-handoff">RevenueCat manual setup is ready.
+
+I confirmed these exact App Store Connect Product IDs:
+- Locals Pass monthly: [PASTE ID]
+- Locals Pass yearly: [PASTE ID]
+- City Insider monthly: [PASTE ID]
+- City Insider yearly: [PASTE ID]
+
+Prices:
+- Locals Pass: [MONTHLY] monthly, [YEARLY] yearly
+- City Insider: [MONTHLY] monthly, [YEARLY] yearly
+- Seven-day introductory trial: [YES OR NO, AND WHICH PRODUCTS]
+
+RevenueCat now has the four Apple products, entitlements locals_pass and city_insider, and a default offering with all four packages. REVENUECAT_REST_API_KEY is set in Firebase Secret Manager through the terminal prompt. I did not paste any key here.
+
+The webhook verifier now follows RevenueCat's current format: header X-RevenueCat-Webhook-Signature, value t=timestamp,v1=signature, HMAC-SHA256 over timestamp + "." + exact raw request body, constant-time comparison, and a five-minute replay-age check. Seventeen focused tests cover the documented format. Do not flip SIGNATURE_ENABLED until the signing secret exists and a real RevenueCat test delivery proves the deployed path.
+
+Then:
+1. Update RevenueCatConfig to the exact Product IDs above and keep the simulated store prices aligned with the confirmed Apple prices.
+2. Enable and deploy server reconciliation after proving the REST key against a real sandbox customer.
+3. Let me enable HMAC in RevenueCat, set REVENUECAT_WEBHOOK_SIGNING_SECRET through the terminal prompt, then enable and deploy signing.
+4. Prove a correct signed event is accepted, a bad or stale signature is rejected, a duplicate event is harmless, and an older event cannot overwrite a newer one.
+5. Prove sandbox purchase, entitlement, Firebase custom claim, paid Firestore read, restore, renewal or product change, expiration, and failed-webhook reconciliation.
+6. Run the full Flutter, Functions, and Firestore rule suites plus a whole-codebase Firebase deploy dry run.
+7. Deploy Functions and Firestore rules before any app build that depends on them.
+
+Do not deploy from assumptions. Stop and show me any mismatch between Apple, RevenueCat, the app IDs, prices, entitlements, or trial language.</pre></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>E. Signing secret, only after Codex says the verifier is ready</summary>
+        <div class="detail-body">
+          <ol>
+            <li>RevenueCat, Integrations, Webhooks, open the Vouch webhook.</li>
+            <li>Enable HMAC webhook signing. Copy the one-time signing secret.</li>
+            <li>In Terminal, run the command below and paste the value at the hidden prompt.</li>
+            <li>Tell Codex only that the secret now exists. Never paste the value into chat.</li>
+          </ol>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="signing-secret-command">Copy</button><pre id="signing-secret-command">cd ~/Desktop/projects/vouch/vouch-repo
+firebase functions:secrets:set REVENUECAT_WEBHOOK_SIGNING_SECRET</pre></div>
+          <div class="task-list">
+            <div class="task"><input id="rc-code-ready" data-check type="checkbox"><label for="rc-code-ready"><strong>Codex proved the corrected verifier before dashboard enablement.</strong><span>No secret or switch changes before this check is true.</span></label><span class="tag stop">Gate</span></div>
+            <div class="task"><input id="rc-sign-secret" data-check type="checkbox"><label for="rc-sign-secret"><strong>HMAC enabled and signing secret stored through Terminal.</strong><span>The value never entered chat, notes, source, or this HTML file.</span></label><span class="tag you">You</span></div>
+            <div class="task"><input id="rc-e2e" data-check type="checkbox"><label for="rc-e2e"><strong>Sandbox subscription completed end to end.</strong><span>Payment, entitlement, Firebase claim, gated read, restore, and expiration behavior all proved.</span></label><span class="tag both">Both</span></div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="stage" id="walk">
+      <div class="stage-head"><span class="stage-number">03</span><h2>The real phone walk.</h2></div>
+      <p class="stage-intro">Do this on the exact release candidate, not a debug simulation. Use a physical iPhone, a clean account, and a second account for social and moderation paths.</p>
+      <div class="note good"><strong>Suggested setup:</strong> one clean free account, one second account, one Apple sandbox purchaser, a physical iPhone, and a second device or a sign-out cycle. Record every failure in the notes box before changing anything.</div>
+      <div class="task-list">
+        <div class="task"><input id="walk-cold" data-check type="checkbox"><label for="walk-cold"><strong>Cold install and onboarding.</strong><span>Three pages, Next and Skip, readable at large text, and onboarding stays dismissed after relaunch.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-auth" data-check type="checkbox"><label for="walk-auth"><strong>Authentication round trip.</strong><span>Apple, Google, and email each complete on a real device. Sign out and back in with the same account.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-free" data-check type="checkbox"><label for="walk-free"><strong>Free Houston path.</strong><span>Top 5 is readable. Top 10 is locked without rank 6 to 10 data appearing underneath or in accessibility output.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-vouch" data-check type="checkbox"><label for="walk-vouch"><strong>Vouch and Your Vouches.</strong><span>Vouch for a restaurant, see the count change, find it in Your Vouches, relaunch, then remove the vouch and confirm it disappears.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-suggest" data-check type="checkbox"><label for="walk-suggest"><strong>Add a Place and the daily maximum.</strong><span>First restaurant nomination succeeds. Second submission in the same UTC day explains the limit. Nothing pressures the user to submit daily.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-comments" data-check type="checkbox"><label for="walk-comments"><strong>Two-account comments and moderation.</strong><span>A posts, B reads, replies, reports, and blocks. Account deletion anonymizes A without breaking the thread.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-paywall" data-check type="checkbox"><label for="walk-paywall"><strong>Paywall on the smallest supported iPhone.</strong><span>All four localized prices load. Trial, renewal, cancellation, Terms, Privacy, Restore, loading, offline, and error states are readable.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-purchase" data-check type="checkbox"><label for="walk-purchase"><strong>Real sandbox purchase and restore.</strong><span>Locals Pass unlocks Top 10. City Insider unlocks notes. Relaunch and restore preserve access only after the Firebase claim agrees.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="walk-offline" data-check type="checkbox"><label for="walk-offline"><strong>Offline and recovery.</strong><span>Cached data is labeled, writes fail clearly, and reconnect plus pull-to-refresh restores live state.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-accessibility" data-check type="checkbox"><label for="walk-accessibility"><strong>Accessibility pass.</strong><span>VoiceOver order, button labels, largest text size, reduced motion, and 44 point touch targets.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="walk-appcheck" data-check type="checkbox"><label for="walk-appcheck"><strong>App Check verified traffic appears.</strong><span>Use a physical release build and confirm App Attest requests show as verified before enforcement.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="walk-delete" data-check type="checkbox"><label for="walk-delete"><strong>Delete Account completes.</strong><span>Recent-login recovery works, auth disappears, Firestore cleanup runs, votes are removed, and comments are anonymized.</span></label><span class="tag you">You</span></div>
+      </div>
+      <label for="walkNotes"><h3>Walk notes</h3></label>
+      <textarea id="walkNotes" data-note placeholder="Build number, device, iOS version, account type, step, expected result, actual result, screenshot filename..."></textarea>
+      <details>
+        <summary>Copy a bug report back to Codex</summary>
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="bug-template">Copy</button><pre id="bug-template">VOUCH REAL-PHONE WALK FAILURE
+Build/version:
+Device and iOS:
+Account state:
+Exact starting screen:
+Steps I tapped:
+Expected:
+Actual:
+Does it reproduce after relaunch: yes / no
+Screenshot or recording path:
+Anything visible in Firebase, RevenueCat, or App Store Connect:
+
+Please diagnose first. Tell me the cause and the smallest safe fix before changing release state.</pre></div></div>
+      </details>
+    </section>
+
+    <section class="stage" id="testflight">
+      <div class="stage-head"><span class="stage-number">04</span><h2>External TestFlight before launch.</h2></div>
+      <p class="stage-intro">Vouch needs real votes before the public App Store day. TestFlight is where the launch list starts becoming a community list.</p>
+      <div class="task-list">
+        <div class="task"><input id="tf-server" data-check type="checkbox"><label for="tf-server"><strong>Production Functions and Firestore rules are deployed first.</strong><span>The app build must never arrive before the backend state it relies on.</span></label><span class="tag codex">Codex</span></div>
+        <div class="task"><input id="tf-build" data-check type="checkbox"><label for="tf-build"><strong>The release candidate passes the real-phone walk.</strong><span>Use this exact build for external TestFlight. Do not rebuild casually afterward.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="tf-upload" data-check type="checkbox"><label for="tf-upload"><strong>Archive and upload from Xcode.</strong><span>Product, Archive, Distribute App, App Store Connect, Upload. Wait for processing.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="tf-internal" data-check type="checkbox"><label for="tf-internal"><strong>Create an internal group first.</strong><span>Apple requires an internal group before the first external testing group.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="tf-review" data-check type="checkbox"><label for="tf-review"><strong>Create an external Houston group and submit for TestFlight App Review.</strong><span>Add the build, beta description, what to test, contact information, and feedback email.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="tf-public" data-check type="checkbox"><label for="tf-public"><strong>Create a public TestFlight link after approval.</strong><span>Set a tester limit, then add the link to vouchfood.com. Keep the Instagram profile pointed at the site.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="tf-signal" data-check type="checkbox"><label for="tf-signal"><strong>Collect launch signal, not vanity installs.</strong><span>Require each tester to vouch, open Your Vouches, comment, and nominate one missing restaurant.</span></label><span class="tag you">You</span></div>
+      </div>
+      <details open>
+        <summary>Beta information to paste</summary>
+        <div class="detail-body">
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="beta-copy">Copy</button><pre id="beta-copy">BETA DESCRIPTION
+Vouch is Houston's living restaurant shortlist. Everyone can see the Top 5 and vouch for the places they stand behind. The list settles into a new order each morning as recent local support changes.
+
+WHAT TO TEST
+Please do these five things:
+1. Vouch for at least two Houston restaurants you would send a friend to.
+2. Open Profile, then Your Vouches, and confirm your choices appear there.
+3. Leave one useful comment about what to order.
+4. Use Add a Place to nominate one restaurant Houston is missing.
+5. Open the membership screen and tell us whether the plans, prices, and differences are clear.
+
+If you see another person's comment, also try Reply, Report, and Block.
+
+KNOWN LIMITS
+Houston is the only launch city. Photo contribution and notification delivery are not live in this build. A restaurant nomination is reviewed and does not guarantee placement or rank.
+
+FEEDBACK EMAIL
+support@vouchfood.com</pre></div>
+        </div>
+      </details>
+      <details>
+        <summary>Story copy when the public TestFlight link is ready</summary>
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="testflight-story">Copy</button><pre id="testflight-story">Houston, help us build the list before launch.
+
+Vouch is open in TestFlight.
+Vouch for the places you would put your name behind, tell us what is missing, and help the first Top 10 start with real local signal.
+
+Join through the link in bio.</pre></div></div>
+      </details>
+    </section>
+
+    <section class="stage" id="instagram">
+      <div class="stage-head"><span class="stage-number">05</span><h2>Instagram and restaurant DMs.</h2></div>
+      <p class="stage-intro">The grid should stay food-first. Stories carry the asks. Restaurant DMs should feel personal, make no rank claim, and request rights clearly when asking for a photo.</p>
+      <div class="task-list">
+        <div class="task"><input id="ig-grid-five" data-check type="checkbox"><label for="ig-grid-five"><strong>Build the grid to five strong food posts.</strong><span>Use questions and specific dishes. Avoid generic launch graphics taking over the feed.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="ig-mensho" data-check type="checkbox"><label for="ig-mensho"><strong>Send the Mensho DM after its post.</strong><span>Use the exact handle from the live post and ask for permission in plain language.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="ig-chopnblok" data-check type="checkbox"><label for="ig-chopnblok"><strong>Send the ChòpnBlọk DM after its post.</strong><span>No rank number and no claim that community voting is already live.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="ig-generic" data-check type="checkbox"><label for="ig-generic"><strong>Use the generic DM only for a confirmed opening-list restaurant.</strong><span>Fill the restaurant, dish, and handle from the actual post. Never guess a handle.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="ig-permission" data-check type="checkbox"><label for="ig-permission"><strong>Save each photo permission reply beside the original file.</strong><span>Do not rely on a tag, repost, or casual attachment as the entire rights record.</span></label><span class="tag you">You</span></div>
+      </div>
+      <div class="two-col">
+        <details open>
+          <summary>Mensho Houston DM</summary>
+          <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="mensho-dm">Copy</button><pre id="mensho-dm">Hey Mensho team. I am building Vouch, a Houston restaurant app around one simple idea: where locals actually eat. Mensho is in our opening Houston list, and I just featured the Texas Wagyu BBQ Ramen on @vouch.food.
+
+Would you be open to sending one original high-resolution photo that your team owns or is authorized to share? We would love to use it in the Vouch app and on vouchfood.com, with credit to @mensho.houston.
+
+Also, where does your team eat on a day off? I would take a cook's pick over a review site any day.
+
+Either way, glad to have you on the opening list.</pre></div></div>
+        </details>
+        <details open>
+          <summary>ChòpnBlọk DM</summary>
+          <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="chopnblok-dm">Copy</button><pre id="chopnblok-dm">Hey ChòpnBlọk team. I am building Vouch, a Houston restaurant app around one simple idea: where locals actually eat. ChòpnBlọk is in our opening Houston list, and the suya is a big reason why. The plantain on the Buka is still living in my head.
+
+Would you be open to sending one original high-resolution photo that your team owns or is authorized to share? We would love to use it in the Vouch app and on vouchfood.com, with credit to @chopnblok_.
+
+Also, where does your team eat on a day off? I would take a cook's pick over a review site any day.
+
+Either way, glad to have you on the opening list.</pre></div></div>
+        </details>
+      </div>
+      <details>
+        <summary>Generic restaurant DM</summary>
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="generic-dm">Copy</button><pre id="generic-dm">Hey [RESTAURANT] team. I am building Vouch, a Houston restaurant app around one simple idea: where locals actually eat. [RESTAURANT] is in our opening Houston list, and [DISH] is a big reason why. I just featured it on @vouch.food.
+
+Would you be open to sending one original high-resolution photo that your team owns or is authorized to share? We would love to use it in the Vouch app and on vouchfood.com, with credit to @[HANDLE].
+
+Also, where does your team eat on a day off? I would take a cook's pick over a review site any day.
+
+Either way, glad to have you on the opening list.</pre></div></div>
+      </details>
+      <details>
+        <summary>Permission reply to request when a photo arrives</summary>
+        <div class="detail-body">
+          <p>Reply warmly first. Then ask them to confirm this sentence in the same thread. Change the listed surfaces if you only need app or website use.</p>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="permission-copy">Copy</button><pre id="permission-copy">Thank you. One quick permission line so I keep the record clean. Please reply yes if this is accurate:
+
+"Our team owns this photo or is authorized to share it, and we give Vouch nonexclusive permission to use it in the Vouch app and on vouchfood.com with credit to @[HANDLE]."
+
+You keep ownership. If you ever need it removed, message us or email support@vouchfood.com.</pre></div>
+        </div>
+      </details>
+      <details>
+        <summary>Three honest pinned-post directions</summary>
+        <div class="detail-body">
+          <ol>
+            <li><b>The list is not closed.</b> Nominate a missing restaurant. Review opens the door. Local vouches decide rank.</li>
+            <li><b>Shot it? Share it.</b> Label this coming soon until the upload, permission, review, credit, reporting, and takedown pipeline actually ships.</li>
+            <li><b>Help open your city.</b> Request the next city and nominate its local places, without promising automatic activation.</li>
+          </ol>
+          <div class="note"><strong>Language to keep:</strong> original photo, contributor confirmed, reviewed before publication, photo by, nominated by locals. <strong>Language to avoid:</strong> ownership verified, guaranteed placement, upload to boost, or added to the Top 10.</div>
+        </div>
+      </details>
+    </section>
+
+    <section class="stage" id="release">
+      <div class="stage-head"><span class="stage-number">06</span><h2>App Store release.</h2></div>
+      <p class="stage-intro">Use manual release after approval so the store opening, site button, Instagram story, and restaurant outreach can land together.</p>
+      <div class="task-list">
+        <div class="task"><input id="release-fields" data-check type="checkbox"><label for="release-fields"><strong>Complete App Store fields.</strong><span>Food and Drink primary, Travel secondary, age rating, content rights, subtitle, privacy URL, support URL, and privacy labels.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="release-shots" data-check type="checkbox"><label for="release-shots"><strong>Upload release screenshots.</strong><span>Use the accepted largest iPhone size, real Houston content, no alpha channel, and iPad only if the app still supports iPad.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="release-review" data-check type="checkbox"><label for="release-review"><strong>Attach the exact TestFlight-proven build and first subscriptions.</strong><span>The first auto-renewable subscription group must accompany the first app version submission.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="release-appcheck" data-check type="checkbox"><label for="release-appcheck"><strong>Enforce App Check only after verified device traffic appears.</strong><span>Never apply App Check to the public website waitlist endpoint or RevenueCat webhook.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="release-gate" data-check type="checkbox"><label for="release-gate"><strong>Run the final ten-point gate.</strong><span>Same build, green validation, live support, rights settled, real votes, matching copy, and no unproved feature claims.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="release-submit" data-check type="checkbox"><label for="release-submit"><strong>Submit with manual release selected.</strong><span>After approval, choose the coordinated launch moment instead of releasing accidentally.</span></label><span class="tag you">You</span></div>
+      </div>
+
+      <details open>
+        <summary>App Store values and copy</summary>
+        <div class="detail-body">
+          <table>
+            <tbody>
+              <tr><th>Primary category</th><td>Food &amp; Drink</td></tr>
+              <tr><th>Secondary category</th><td>Travel</td></tr>
+              <tr><th>Subtitle</th><td>Houston restaurants by locals</td></tr>
+              <tr><th>Privacy URL</th><td>https://vouchfood.com/privacy</td></tr>
+              <tr><th>Support URL</th><td>https://vouchfood.com/support</td></tr>
+              <tr><th>Age rating</th><td>Answer user-generated content honestly. Reporting, blocking, and moderation exist, but UGC still exists.</td></tr>
+              <tr><th>Content rights</th><td>Answer from the final photo inventory. User, restaurant, or licensed photographs are third-party content. Confirm you hold the necessary permission rather than selecting No by habit.</td></tr>
+              <tr><th>Release</th><td>Manual release after approval</td></tr>
+            </tbody>
+          </table>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="store-copy">Copy</button><pre id="store-copy">APP NAME
+Vouch
+
+SUBTITLE
+Houston restaurants by locals
+
+PRIMARY CATEGORY
+Food &amp; Drink
+
+SECONDARY CATEGORY
+Travel
+
+PROMOTIONAL TEXT
+Houston first. Vouch for the places you would send a friend, keep your personal list, and see the city's Top 10 move with recent local support. No paid placement.
+
+DESCRIPTION
+Where locals actually eat.
+
+Vouch is Houston's living restaurant shortlist, shaped by the people who keep going back.
+
+SEE THE LIST
+Everyone can see Houston's Top 5. Membership unlocks the full Top 10 and deeper local guidance.
+
+VOUCH FOR A PLACE
+Put your name behind the restaurants you would send a friend to. Your vouches are saved automatically in Your Vouches, a personal list you can return to anytime.
+
+WATCH THE CITY MOVE
+Recent support matters more than old hype. Votes land right away, and the order settles again each morning so the list stays useful without jumping around while you read it.
+
+ADD WHAT WE MISSED
+Nominate a missing restaurant for review. A nomination can make a place eligible to compete. It never guarantees entry or rank.
+
+SHARE WHAT YOU KNOW
+Leave useful comments about what to order, reply to other diners, and report or block content that does not belong.
+
+MEMBERSHIP
+Locals Pass unlocks the complete Top 10 and saved restaurants. City Insider adds what-to-order notes and an Insider badge. Every vouch has equal weight in this release. No restaurant can pay for placement.
+
+Houston is the first live city. More cities will open when they have enough real local participation.
+
+KEYWORDS
+houston,restaurants,food,local,top 10,dining,where to eat,foodie,restaurant guide,eats</pre></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Draft App Privacy inventory to verify in App Store Connect</summary>
+        <div class="detail-body">
+          <div class="note stop"><strong>This is a verification list, not a blind answer key.</strong> App Privacy answers depend on the exact release build and current Firebase and RevenueCat collection behavior. Recheck every item when the build is frozen.</div>
+          <ul>
+            <li><b>Contact info:</b> email address and display name for account and app functionality.</li>
+            <li><b>User content:</b> comments, replies, restaurant suggestions, city requests, and reports.</li>
+            <li><b>Identifiers:</b> Firebase user ID and installation-related identifiers used for authentication, analytics, crash reporting, and subscription association.</li>
+            <li><b>Purchases:</b> subscription status and purchase history handled by Apple and RevenueCat.</li>
+            <li><b>Usage data:</b> product interaction and screen or feature events through Firebase Analytics.</li>
+            <li><b>Diagnostics:</b> crash and performance data through Firebase Crashlytics.</li>
+            <li><b>Photos:</b> do not declare user photo upload until that feature actually ships in the submitted build.</li>
+            <li><b>Location:</b> selecting a city is not the same as collecting device location. Do not declare precise location unless the release build requests or stores it.</li>
+            <li><b>Tracking:</b> no IDFA and no advertising tracking are intended. Confirm the final SDK list before answering No.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Final release gate</summary>
+        <div class="detail-body">
+          <ol>
+            <li>Privacy and Support open publicly and from inside the release build.</li>
+            <li>A test email from another account reaches <code>support@vouchfood.com</code>.</li>
+            <li>The same binary passed the real-phone walk and external TestFlight.</li>
+            <li>All four products display correct localized prices and trial language.</li>
+            <li>Purchase, webhook, Firebase claim, restore, expiration, and reconciliation are proved.</li>
+            <li>The final Houston ten has complete neighborhoods, publishable photos, and insider notes.</li>
+            <li>The V1 contender pool accepts a reviewed restaurant, makes it discoverable, records an equal vouch, and lets ranking rather than nomination determine entry.</li>
+            <li>The site and app make no conflicting rank or feature claim.</li>
+            <li>At least a small real tester group has produced legitimate vouches and comments.</li>
+            <li>App Check verified traffic appears, and enforcement does not touch waitlist or RevenueCat webhook traffic.</li>
+            <li>The screenshots, description, privacy labels, age rating, content rights, subscriptions, and build are all actually saved in the submission.</li>
+          </ol>
+        </div>
+      </details>
+    </section>
+
+    <section class="stage" id="handoffs">
+      <div class="stage-head"><span class="stage-number">07</span><h2>Copy exactly what you need.</h2></div>
+      <p class="stage-intro">These are the short handoffs for continuing the build without making you translate the checklist into developer language.</p>
+      <details open>
+        <summary>Tell Codex to start the release work</summary>
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="start-handoff">Copy</button><pre id="start-handoff">Use docs/VOUCH_LAUNCH_COMMAND_CENTER.html as the current launch map. The RevenueCat signature correction, full local suites, Firebase deploy dry run, and unsigned iOS release build are complete. Keep the production switches off until I finish the exact Product IDs, secrets, sandbox purchase and webhook delivery steps. Never ask me to paste a secret into chat, and maintain the execution, interface, decision, and learning records required by the Vouch framework.
+
+Keep the reviewed open-list contender pool in V1: nomination, duplicate-safe review, approve or decline, visible contenders, equal-weight vouching, and ranking eligibility. A nomination alone must never publish or grant rank. Then ingest the final Houston content, deploy Functions and Firestore rules before the app build, and prepare the exact real-phone walkthrough. Do not ship public photo upload, weekly recap delivery, automatic city activation, or ordering links as if they are already live.</pre></div></div>
+      </details>
+      <details>
+        <summary>Tell Codex the Houston content is ready</summary>
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="content-handoff">Copy</button><pre id="content-handoff">The final Houston ten content pack is ready. Audit every row before writing production. Verify exactly ten unique restaurants, contiguous ranks 1 through 10, one neighborhood, one publishable photo with a rights record, one what-to-order note, and one practical insider tip per restaurant. Show me the dry-run diff before any production write. Preserve the rule that nominations and photo contributions create eligibility and credit, never rank.</pre></div></div>
+      </details>
+      <details>
+        <summary>Tell Codex TestFlight is approved</summary>
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="testflight-handoff">Copy</button><pre id="testflight-handoff">The external TestFlight build is approved. Add the public TestFlight call to action to vouchfood.com while keeping the waitlist available. Keep the Instagram bio pointed at https://vouchfood.com. Verify the site button and analytics path, deploy Hosting only, and give me the short story copy and tester checklist. Do not change the app binary.</pre></div></div>
+      </details>
+      <details>
+        <summary>Tell Codex the app is approved for manual release</summary>
+        <div class="detail-body"><div class="copy"><button class="copy-button" type="button" data-copy-target="release-handoff">Copy</button><pre id="release-handoff">Apple approved Vouch and it is waiting for manual release. Run the final production read-only checks against the exact approved build and current backend. Confirm Privacy, Support, waitlist, subscription webhook, App Check exclusions, Houston data completeness, and the App Store link plan. Do not press release or change production until you show me the launch checklist and I explicitly say go.</pre></div></div>
+      </details>
+    </section>
+
+    <aside class="sources">
+      <h2>Official references used</h2>
+      <ul>
+        <li><a href="https://www.revenuecat.com/docs/integrations/webhooks">RevenueCat webhooks and HMAC signing</a></li>
+        <li><a href="https://www.revenuecat.com/docs/customers/customer-info">RevenueCat customer status through REST API v1</a></li>
+        <li><a href="https://www.revenuecat.com/docs/projects/configuring-products">RevenueCat products, entitlements, and offerings</a></li>
+        <li><a href="https://developer.apple.com/help/app-store-connect/manage-subscriptions/offer-auto-renewable-subscriptions/">Apple auto-renewable subscription setup</a></li>
+        <li><a href="https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers">Apple external TestFlight testers</a></li>
+        <li><a href="https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-in-app-purchase">Apple first subscription submission</a></li>
+        <li><a href="https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/">Apple screenshot specifications</a></li>
+        <li><a href="https://developer.doordash.com/en-US/api/marketplace/">DoorDash Marketplace API and current integration availability</a></li>
+        <li><a href="https://help.doordash.com/en-us/merchants/article/add-online-ordering">DoorDash guidance for verified online-ordering links</a></li>
+      </ul>
+      <p class="mini">This is a private operator guide. It intentionally stores no credentials or secret values and should not be deployed to the public marketing site.</p>
+    </aside>
+  </main>
+
+  <footer><div class="wrap"><p>Vouch. Houston first. One city, ten places, no paid ranking.</p></div></footer>
+
+  <script>
+    (function () {
+      var storageKey = 'vouch-launch-command-center-v1';
+      var checks = Array.prototype.slice.call(document.querySelectorAll('[data-check]'));
+      var notes = Array.prototype.slice.call(document.querySelectorAll('[data-note]'));
+      var progressText = document.getElementById('progressText');
+      var progressBar = document.getElementById('progressBar');
+
+      function readState() {
+        try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); }
+        catch (error) { return {}; }
+      }
+
+      function updateProgress() {
+        var complete = checks.filter(function (box) { return box.checked; }).length;
+        var percent = checks.length ? Math.round(complete / checks.length * 100) : 0;
+        progressText.textContent = complete + ' of ' + checks.length;
+        progressBar.style.width = percent + '%';
+      }
+
+      function saveState() {
+        var state = { checks: {}, notes: {} };
+        checks.forEach(function (box) { state.checks[box.id] = box.checked; });
+        notes.forEach(function (field) { state.notes[field.id] = field.value; });
+        try { localStorage.setItem(storageKey, JSON.stringify(state)); }
+        catch (error) { /* The page remains usable without persistence. */ }
+        updateProgress();
+      }
+
+      var saved = readState();
+      checks.forEach(function (box) {
+        box.checked = Boolean(saved.checks && saved.checks[box.id]);
+        box.addEventListener('change', saveState);
+      });
+      notes.forEach(function (field) {
+        if (saved.notes && typeof saved.notes[field.id] === 'string') field.value = saved.notes[field.id];
+        field.addEventListener('input', saveState);
+      });
+
+      document.getElementById('resetChecks').addEventListener('click', function () {
+        if (!window.confirm('Clear every saved check and note on this page?')) return;
+        checks.forEach(function (box) { box.checked = false; });
+        notes.forEach(function (field) { field.value = ''; });
+        localStorage.removeItem(storageKey);
+        updateProgress();
+      });
+
+      function fallbackCopy(text) {
+        var field = document.createElement('textarea');
+        field.value = text;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        document.execCommand('copy');
+        field.remove();
+      }
+
+      document.querySelectorAll('[data-copy-target]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var target = document.getElementById(button.getAttribute('data-copy-target'));
+          var text = target ? target.textContent : '';
+          var done = function () {
+            button.textContent = 'Copied';
+            window.setTimeout(function () { button.textContent = 'Copy'; }, 1300);
+          };
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text); done(); });
+          } else {
+            fallbackCopy(text);
+            done();
+          }
+        });
+      });
+
+      updateProgress();
+    }());
+  </script>
+</body>
+</html>
