@@ -249,23 +249,23 @@
       <p class="stage-intro">This replaces older handoffs that still call the website unfinished, the RevenueCat verifier incompatible, or the open list automatically deferred. Use this page as the current launch map.</p>
       <div class="status-grid">
         <article class="status-card live"><b>Live now</b><p><b>vouchfood.com</b>, waitlist signup, Privacy, Support, Instagram link, favicon, and Vouch brand assets.</p></article>
-        <article class="status-card you"><b>Andrew owns next</b><p>Instagram bio, final Houston ten, neighborhoods, photographs, insider notes, prices, App Store forms, and device testing.</p></article>
-        <article class="status-card code"><b>Codex owns next</b><p>The reviewed V1 contender pool, resumable account deletion after your approval, Houston content ingestion, safe backend deployment, and release support.</p></article>
+        <article class="status-card you"><b>Andrew owns next</b><p>Instagram bio, photographs, insider notes, prices, App Store forms, and device testing.</p></article>
+        <article class="status-card code"><b>Codex owns next</b><p>The reviewed V1 contender pool, emulator proof and deployment of the locally built account deletion recovery, Houston content ingestion, safe backend deployment, and release support.</p></article>
         <article class="status-card stop"><b>Not live yet</b><p>The iOS release, public TestFlight, reviewed contenders, photo uploads, weekly recap delivery, ordering links, and App Check enforcement.</p></article>
       </div>
       <div class="task-list">
         <div class="task"><input id="now-bio" data-check type="checkbox"><label for="now-bio"><strong>Put vouchfood.com in the Instagram bio.</strong><span>This is useful now and stays correct after TestFlight and App Store launch.</span></label><span class="tag you">You</span></div>
         <div class="task"><input id="now-prices" data-check type="checkbox"><label for="now-prices"><strong>Confirm the two plans, four prices, and seven-day trial decision.</strong><span>Do this before creating or changing Apple subscription products.</span></label><span class="tag you">You</span></div>
-        <div class="task"><input id="now-ten" data-check type="checkbox"><label for="now-ten"><strong>Choose one final Houston removal, then rank 6 through 10.</strong><span>Lotus Seafood and Tacos Los Brothers are out, Better Box stays, and Dona Leti's enters. That creates an eleven-place roster until one more leaves.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="now-ten" data-check type="checkbox"><label for="now-ten"><strong>Final Houston Top 10 recorded.</strong><span>Crave Suya, Lotus Seafood, and Tacos Los Brothers are out. Peri Peri, Lost and Found, Top Sushi, Better Box, and Dona Leti's are ranks 6 through 10.</span></label><span class="tag both">Both</span></div>
         <div class="task"><input id="now-open-list" data-check type="checkbox"><label for="now-open-list"><strong>Keep the reviewed contender pool in V1.</strong><span>Codex builds the bounded intake, review, discovery and equal-vouch path. A nomination alone never publishes or grants rank.</span></label><span class="tag both">Both</span></div>
-        <div class="task"><input id="now-deletion" data-check type="checkbox"><label for="now-deletion"><strong>Approve or change the account-deletion recovery rule.</strong><span>The exact privacy and retention question from the old work is below.</span></label><span class="tag both">Both</span></div>
+        <div class="task"><input id="now-deletion" data-check type="checkbox"><label for="now-deletion"><strong>Verify and deploy the locally built account-deletion recovery.</strong><span>Build and lint pass. Firebase emulator proof, TTL activation, dry run, and deployment remain.</span></label><span class="tag code">Codex</span></div>
       </div>
 
       <details open>
         <summary>What from the old Claude handoff is still relevant?</summary>
         <div class="detail-body">
           <ul>
-            <li><b>Still required:</b> the final Houston roster, ten neighborhood labels, publishable launch photographs, insider notes, final coordinates, account-deletion recovery, exact Apple and RevenueCat configuration, sandbox purchase proof, external TestFlight, App Check traffic verification, photo Storage migration, and the final production content migration.</li>
+            <li><b>Still required:</b> publishable launch photographs, insider notes, final coordinates, emulator proof and deployment of account-deletion recovery, exact Apple and RevenueCat configuration, sandbox purchase proof, external TestFlight, App Check traffic verification, photo Storage migration, and the final production content migration.</li>
             <li><b>Completed or corrected:</b> the RevenueCat signature verifier, membership failure handling, full local validation, unsigned iOS release build, Privacy and Support pages, public website, Add a Place entry point, and Your Vouches list.</li>
             <li><b>Promoted to V1:</b> a reviewed contender pool that turns approved nominations into discoverable, equally voteable restaurants outside the ranked ten.</li>
             <li><b>Still later:</b> public photo uploads, weekly recap delivery, automatic city activation, paid restaurant tools, and ordering or delivery revenue experiments.</li>
@@ -275,20 +275,34 @@
       </details>
 
       <details>
-        <summary>One remaining privacy decision from the Claude work</summary>
+        <summary>Approved account-deletion recovery design</summary>
         <div class="detail-body">
-          <p>Account deletion works on the happy path today, but an interruption can leave a partially completed deletion. The proposed recovery job can resume safely without retaining a permanent plain user ID. The old document says this was approved, but a document is not a substitute for your direct answer.</p>
+          <p>Andrew directly approved the recovery design on August 18, 2026. Codex implemented it locally with one safety correction: the job stays open through a 65-minute post-auth quiet window because an already-issued Firebase ID token may remain usable for an hour. TypeScript build, lint, and focused client tests pass. Firebase emulator proof and deployment remain.</p>
           <div class="copy"><button class="copy-button" type="button" data-copy-target="deletion-decision-answer">Copy</button><pre id="deletion-decision-answer">ACCOUNT DELETION RECOVERY
 
-Approve this design: yes / no
+Status: APPROVED
 
 - Job ID is a one-way hash of the Firebase user ID.
 - Plain user ID exists only while deletion is running.
 - Plain user ID is removed when deletion closes.
 - Completed non-identifying job record is automatically deleted after 30 days.
-- A scheduled function resumes interrupted deletion jobs.
+- A scheduled function resumes interrupted deletion jobs.</pre></div>
+          <h3>Codex pre-deploy gate</h3>
+          <div class="copy"><button class="copy-button" type="button" data-copy-target="deletion-verification">Copy</button><pre id="deletion-verification"># 1. Functions and rules under Firebase emulators
+env PATH=/usr/local/opt/openjdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin firebase emulators:exec --only firestore,auth 'cd functions &amp;&amp; npx jest src/index.test.ts --runInBand --forceExit --detectOpenHandles'
 
-Changes I want:</pre></div>
+env PATH=/usr/local/opt/openjdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin firebase emulators:exec --only firestore 'cd test-rules &amp;&amp; npm test -- --runInBand'
+
+# 2. Whole-source deploy analysis
+firebase deploy --dry-run
+
+# 3. Only after every gate passes: deploy together
+firebase deploy --only functions:requestAccountDeletion,functions:onUserDeleted,functions:resumeAccountDeletions,firestore:rules,firestore:indexes
+
+# 4. One-time TTL policy, then verify ACTIVE
+gcloud firestore fields ttls update expiresAt --collection-group=deletionJobs --enable-ttl --project=majorcitymusteats
+gcloud firestore fields ttls list --project=majorcitymusteats</pre></div>
+          <div class="note"><strong>Do not run the deploy block yet.</strong> The local emulator gate was blocked by Codex's current tool-usage limit before the emulators could start. The code has not failed that gate; it has not completed it.</div>
         </div>
       </details>
 
@@ -312,58 +326,40 @@ Join early ↓</pre></div>
       <div class="stage-head"><span class="stage-number">01</span><h2>Finish what only you can know.</h2></div>
       <p class="stage-intro">The release build should use a complete Houston list, not scaffold text or screenshots whose quality you do not love.</p>
       <div class="task-list">
-        <div class="task"><input id="content-final-five" data-check type="checkbox"><label for="content-final-five"><strong>Choose one more removal and rank the five survivors.</strong><span>Choose one removal from Crave Suya, The Peri Peri Factory, Lost and Found, Top Sushi, The Better Box, and Dona Leti's.</span></label><span class="tag you">You</span></div>
-        <div class="task"><input id="content-neighborhoods" data-check type="checkbox"><label for="content-neighborhoods"><strong>Write one neighborhood for each restaurant.</strong><span>Ten short, human-verified strings. Do not infer them from the mixed address/location field.</span></label><span class="tag you">You</span></div>
+        <div class="task"><input id="content-final-five" data-check type="checkbox"><label for="content-final-five"><strong>Use the final owner-approved Houston order.</strong><span>Ranks 1 through 10 are settled. Codex must rewrite and dry-run the stale launch-order script before any production write.</span></label><span class="tag code">Codex</span></div>
+        <div class="task"><input id="content-neighborhoods" data-check type="checkbox"><label for="content-neighborhoods"><strong>Use the ten settled neighborhood labels.</strong><span>Peri Peri Factory and Top Sushi use Mid-West, Better Box uses Northwest Houston, and Dona Leti's uses Washington Corridor.</span></label><span class="tag both">Both</span></div>
         <div class="task"><input id="content-notes" data-check type="checkbox"><label for="content-notes"><strong>Write two useful insider notes for every restaurant.</strong><span>One exact thing to order and one practical tip. No filler.</span></label><span class="tag you">You</span></div>
         <div class="task"><input id="content-photos" data-check type="checkbox"><label for="content-photos"><strong>Choose one publishable launch photo for every restaurant.</strong><span>Reshoot the top five only if you want stronger launch visuals. It is recommended for quality, not required to prove you took the existing images.</span></label><span class="tag you">You</span></div>
         <div class="task"><input id="content-pack" data-check type="checkbox"><label for="content-pack"><strong>Hand the completed content pack to Codex.</strong><span>Codex can migrate, validate, and seed it only after the facts and rights are settled.</span></label><span class="tag both">Both</span></div>
       </div>
       <details open>
-        <summary>Answer the final Houston roster question</summary>
+        <summary>Final Houston Top 10</summary>
         <div class="detail-body">
-          <p>The opening five remain ChòpnBlọk, Mensho, CorkScrew BBQ, Roostar, and JOEY Uptown. You removed Lotus Seafood and Tacos Los Brothers, kept The Better Box, and added Dona Leti's. That produces eleven restaurants, so one of the six unranked restaurants below must still leave if Vouch remains a Top 10.</p>
+          <p>Andrew directly settled the complete opening order on August 18, 2026. This is now the source of truth for the Houston content pack.</p>
           <div class="copy"><button class="copy-button" type="button" data-copy-target="houston-roster-answer">Copy</button><pre id="houston-roster-answer">FINAL HOUSTON ROSTER
 
-Confirmed ranks 1 through 5:
 1. ChòpnBlọk
 2. Mensho
 3. CorkScrew BBQ
 4. Roostar
 5. JOEY Uptown
+6. The Peri Peri Factory
+7. Lost and Found
+8. Top Sushi
+9. The Better Box
+10. Dona Leti's
 
 Confirmed out:
-- Lotus Seafood
-- Tacos Los Brothers
-
-Confirmed decisions:
-- The Better Box stays
-- Dona Leti's enters
-
-Current total: 11
-
-Remove one more from:
 - Crave Suya
-- The Peri Peri Factory
-- Lost and Found
-- Top Sushi
-- The Better Box
-- Dona Leti's
-
-Final additional removal:
-
-Rank the five survivors:
-6.
-7.
-8.
-9.
-10.</pre></div>
-          <div class="note"><strong>Still unanswered:</strong> the one additional removal, ranks 6 through 10, which Dona Leti's location is the Vouch location, and its neighborhood. Do not remove a sixth-ranked candidate or infer a Dona Leti's branch without Andrew. The current launch-order script still lists Dona Leti's as a removal, so it must not be run until Codex rewrites and dry-runs it against the completed roster.</div>
+- Lotus Seafood
+- Tacos Los Brothers</pre></div>
+          <div class="note"><strong>Engineering guardrail:</strong> the current launch-order script predates this decision and still lists Dona Leti's as a removal. It must not be run until Codex rewrites it for this exact order and shows a dry-run diff.</div>
         </div>
       </details>
       <details open>
-        <summary>Answer the neighborhood question</summary>
+        <summary>Final Houston neighborhood labels</summary>
         <div class="detail-body">
-          <p>This is not asking for exact addresses. It asks for the short area label a Houston person would expect to see on the card. Your screenshots also settle the primary ChòpnBlọk and Roostar locations. Only Roostar's precise display wording, the final five restaurants, and their labels remain.</p>
+          <p>This asks for the short area label a Houston person would expect to see on the card, not another address. Andrew's approval and the supplied location screenshots now settle all ten labels.</p>
           <div class="copy"><button class="copy-button" type="button" data-copy-target="houston-neighborhood-answer">Copy</button><pre id="houston-neighborhood-answer">HOUSTON NEIGHBORHOODS
 
 1. ChòpnBlọk: Montrose
@@ -372,16 +368,21 @@ Rank the five survivors:
 2. Mensho: Chinatown
 3. CorkScrew BBQ: Old Town Spring
    City: Spring
-4. Roostar: East End / Second Ward [choose display wording]
+4. Roostar: Second Ward
    Primary: 2929 Navigation Blvd, Suite 190
 5. JOEY Uptown: Uptown
    Location note: Galleria mall compound
-6. [restaurant]:
-7. [restaurant]:
-8. [restaurant]:
-9. [restaurant]:
-10. [restaurant]:</pre></div>
-          <div class="note"><strong>One wording choice:</strong> 2929 Navigation is within Houston's East End and specifically Second Ward. Choose <b>Second Ward</b> for precision or <b>East End</b> for the broader familiar label.</div>
+6. The Peri Peri Factory: Mid-West
+   Address: 6375 Westheimer Rd
+7. Lost and Found: Midtown
+   Address: 160 W Gray St
+8. Top Sushi: Mid-West
+   Address: 8401 Westheimer Rd
+9. The Better Box: Northwest Houston
+   Address: 8902 Fallbrook Dr
+10. Dona Leti's: Washington Corridor
+    Selected location: 7340 Washington Ave</pre></div>
+          <div class="note"><strong>Labels complete:</strong> these are short card labels, not civic-boundary claims. The screenshots support the selected branches and current addresses; they are evidence, not instructions or authorization for a production write.</div>
         </div>
       </details>
       <details>

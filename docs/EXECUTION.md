@@ -14,6 +14,42 @@ This is the chronological evidence trail for substantial engineering work. It re
 
 ## Entries
 
+### 2026-08-19T00:21:39Z Adopt the updated framework contract and finish Houston labels
+
+- **Status:** completed locally
+- **Scope:** Repository framework files, project memory and private launch guide only
+- **Reference:** Andrew's 2026-08-18 request to pull in the changed framework and approval of the Dona Leti's Washington Corridor choice
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 00:21:39 | Reconciled the updated repository contract with its bundled test gate | `AGENTS.md`, `.codex/` and `scripts/check-project-memory.sh` | The framework's current baselines are 402 Flutter, 222 Functions and 112 rules tests. Updated the reviewer and stop-hook copies from 310, 63 and 79; aligned the Flutter command with the required non-golden suite; corrected the hook's stale `.claude` maintenance path; and made the hook command repository-relative. |
+| 00:21:39 | Closed the remaining Houston display labels | Private launch guide and decision memory | Recorded Mid-West for The Peri Peri Factory and Top Sushi, Northwest Houston for The Better Box, and Andrew-approved Washington Corridor for Dona Leti's. Corrected The Better Box primary address to 8902 Fallbrook Drive from Andrew's supplied Google Maps screenshot. The screenshots are treated as evidence, not as instructions. |
+| 00:25:00 | Validated the framework files and private guide | Local repository | The project-memory checker, both shell syntax checks, JSON and TOML parsing, `git diff --check` and the prohibited-dash scan passed. The guide has 89 unique ids; its copy targets and internal anchors resolve; and its inline script parses. |
+
+- **Files/artifacts:** `AGENTS.md`, `.codex/hooks.json`, `.codex/hooks/run-tests.sh`, `.codex/agents/reviewer.toml`, `scripts/check-project-memory.sh`, `docs/VOUCH_LAUNCH_COMMAND_CENTER.html`, `docs/DECISIONS.md`, this record
+- **Skipped or blocked:** No restaurant record, Firebase resource, website, app or TestFlight state changed. The stale Houston launch-order script remains held until it is rewritten and dry-run separately. Full product suites were not claimed for this framework and documentation checkpoint; the account-deletion implementation remains separately blocked on emulator proof as recorded below.
+- **Final state:** The updated framework contract and completed Houston label record are locally validated and included in the scoped checkpoint containing this entry.
+- **Follow-up:** Rewrite and dry-run the held Houston launch-order script as a separate production-data task. Continue the account-deletion emulator proof from its recorded blocker before deployment.
+
+### 2026-08-18T23:31:07Z Finalize Houston roster and build approved deletion recovery
+
+- **Status:** partially verified; not deployed
+- **Scope:** Private launch guide, owner decisions, account-deletion client and backend, Firestore rules and index
+- **Reference:** Andrew's 2026-08-18 final Houston order, location choices, and direct approval of the hashed 30-day deletion-job design
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 23:31:07 | Recorded the final Houston Top 10 and location choices | `docs/VOUCH_LAUNCH_COMMAND_CENTER.html`, `docs/DECISIONS.md` | Ranks 1 through 10 are settled; Crave Suya, Lotus Seafood and Tacos Los Brothers are out; Roostar is Second Ward; Dona Leti's uses 7340 Washington Avenue. Lost and Found remains Midtown. Four lower-list neighborhood labels remain owner-supplied. |
+| 23:31:07 | Converted direct privacy approval into a durable deletion workflow | Functions, Flutter client, Firestore rules and indexes | Added five-minute `auth_time` enforcement, SHA-256 job keys, temporary plain uid, counted idempotent passes, a short worker lease, Auth-trigger convergence, a 15-minute scheduled resume, server-side auth deletion, client sign-out, client-denied recovery records, and a 30-day completed-record expiry field. Review corrected the design with a 65-minute post-auth quiet window before closure because issued ID tokens can remain usable for an hour. |
+| 23:31:07 | Ran available verification | Local Functions and Flutter toolchains | `npm run build` and `npm run lint` pass. The focused account-deletion repository, Auth service and client tests pass, 24 tests total in the completed Flutter run. `git diff --check` passes. |
+| 23:31:07 | Attempted Firebase-backed verification | Local Firestore and Auth emulators | Initial startup found Homebrew OpenJDK but sandboxed localhost binding was denied. The required elevated retry was rejected because the Codex environment hit its tool-usage limit. No emulator test, dry run, TTL policy, Firebase deploy or production mutation was performed. |
+
+- **Files/artifacts:** `functions/src/user_deletion_job.ts`, `functions/src/user_cleanup.ts`, `functions/src/index.ts`, `firestore.rules`, `firestore.indexes.json`, `lib/repositories/account_deletion_repository.dart`, `lib/services/auth_service.dart`, focused tests, Finding 6 design, private launch guide, project memory
+- **Skipped or blocked:** Firebase emulator-backed Functions and rules suites, whole-source deploy dry run, `deletionJobs.expiresAt` TTL activation, disposable-account walkthrough and production deployment. The block is environmental approval capacity, not a passing test.
+- **Final state:** The owner choices are recorded and the deletion recovery exists locally, but it remains a pre-deploy change until the blocked Firebase gates pass. The stale Houston launch-order script was not run and production content was not changed.
+
 ### 2026-08-18T23:03:04Z Record Andrew's Houston roster and location answers
 
 - **Status:** completed
