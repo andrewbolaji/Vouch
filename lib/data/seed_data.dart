@@ -90,13 +90,28 @@ class SeedData {
   static const List<Restaurant> restaurants = [
     // Houston
     Restaurant(
+      id: 'hou-18',
+      cityId: 'houston',
+      name: 'ChòpnBlọk',
+      cuisine: 'West African',
+      imageUrl: 'placeholder://restaurant',
+      description: 'West African. Montrose.',
+      rank: 1,
+      locations: [
+        RestaurantLocation(
+          name: 'Montrose',
+          address: '507 Westheimer Rd, Houston, TX 77006',
+        ),
+      ],
+    ),
+    Restaurant(
       id: 'hou-1',
       cityId: 'houston',
       name: 'Mensho',
       cuisine: 'Ramen',
       imageUrl: 'placeholder://restaurant',
       description: 'Ramen. Chinatown.',
-      rank: 1,
+      rank: 2,
       locations: [
         RestaurantLocation(
           name: 'Chinatown',
@@ -106,73 +121,135 @@ class SeedData {
       ],
     ),
     Restaurant(
-      id: 'hou-11',
+      id: 'hou-9',
       cityId: 'houston',
-      name: 'Tacos Los Brothers',
-      cuisine: 'Mexican (Tacos)',
+      name: 'CorkScrew BBQ',
+      cuisine: 'Barbecue',
       imageUrl: 'placeholder://restaurant',
-      description: 'Tacos. Food truck in South Main.',
-      rank: 2,
-      priceLevel: 1,
+      description: 'Barbecue. Old Town Spring.',
+      rank: 3,
       locations: [
         RestaurantLocation(
-          name: 'South Main',
-          address: '9365 S Main St, Houston, TX 77025',
+          name: 'Old Town Spring',
+          address: '26608 Keith St, Spring, TX 77373',
         ),
       ],
-      isMobileVenue: true,
     ),
     Restaurant(
-      id: 'hou-12',
+      id: 'hou-19',
       cityId: 'houston',
-      name: 'Crave Suya',
-      cuisine: 'West African',
+      name: 'Roostar',
+      cuisine: 'Vietnamese',
       imageUrl: 'placeholder://restaurant',
-      description: 'West African. Food truck on Richmond Ave.',
-      rank: 3,
-      priceLevel: 1,
+      description: 'Vietnamese. Second Ward.',
+      rank: 4,
       locations: [
         RestaurantLocation(
-          name: 'Richmond Ave',
+          name: 'Second Ward',
           address:
-              '8633 Richmond Ave, Houston, TX 77063',
+              '2929 Navigation Blvd, Ste 190, Houston, TX 77003',
         ),
       ],
-      isMobileVenue: true,
+    ),
+    Restaurant(
+      id: 'hou-16',
+      cityId: 'houston',
+      name: 'JOEY Uptown',
+      cuisine: 'New American',
+      imageUrl: 'placeholder://restaurant',
+      description: 'New American. Uptown.',
+      rank: 5,
+      priceLevel: 3,
+      locations: [
+        RestaurantLocation(
+          name: 'Uptown',
+          address:
+              '5045 Westheimer Rd, Ste X01, Houston, TX 77056',
+        ),
+      ],
     ),
     Restaurant(
       id: 'hou-13',
       cityId: 'houston',
       name: 'The Peri Peri Factory',
-      cuisine: 'Portuguese-African (Peri Peri Chicken)',
+      cuisine: 'Peri Peri Chicken',
       imageUrl: 'placeholder://restaurant',
-      description: 'Peri peri chicken. Westheimer.',
-      rank: 4,
+      description: 'Peri peri chicken. Mid-West.',
+      rank: 6,
       locations: [
         RestaurantLocation(
-          name: 'Westheimer',
-          address:
-              '6375 Westheimer Rd, Houston, TX 77057',
+          name: 'Mid-West',
+          address: '6375 Westheimer Rd, Houston, TX 77057',
         ),
       ],
     ),
     Restaurant(
-      id: 'hou-9',
+      id: 'hou-4',
       cityId: 'houston',
-      name: 'Corkscrew BBQ',
-      cuisine: 'BBQ',
+      name: 'Lost & Found',
+      cuisine: 'American',
       imageUrl: 'placeholder://restaurant',
-      description:
-          'Barbecue in Spring. Awarded a MICHELIN star'
-          ' in the inaugural MICHELIN Guide Texas,'
-          ' November 2024.',
-      rank: 5,
+      description: 'Cocktails and American food. Midtown.',
+      rank: 7,
+      priceLevel: 3,
       locations: [
         RestaurantLocation(
-          name: 'Spring',
-          address: '26608 Keith St, Spring, TX 77373',
+          name: 'Midtown',
+          address: '160 W Gray St, Houston, TX 77019',
         ),
       ],
+    ),
+    Restaurant(
+      id: 'hou-14',
+      cityId: 'houston',
+      name: 'Top Sushi',
+      cuisine: 'Sushi',
+      imageUrl: 'placeholder://restaurant',
+      description: 'Japanese sushi. Mid-West.',
+      rank: 8,
+      locations: [
+        RestaurantLocation(
+          name: 'Mid-West',
+          address:
+              '8401 Westheimer Rd, Ste 160, Houston, TX 77063',
+        ),
+      ],
+    ),
+    Restaurant(
+      id: 'hou-15',
+      cityId: 'houston',
+      name: 'The Better Box',
+      cuisine: 'Comfort Food',
+      imageUrl: 'placeholder://restaurant',
+      description: 'Comfort food. Northwest Houston.',
+      rank: 9,
+      priceLevel: 1,
+      locations: [
+        RestaurantLocation(
+          name: 'Northwest Houston',
+          address: '8902 Fallbrook Dr, Houston, TX 77064',
+        ),
+      ],
+    ),
+    Restaurant(
+      id: 'hou-20',
+      cityId: 'houston',
+      name: 'Caribbean Jerk Palace',
+      cuisine: 'Caribbean',
+      imageUrl: 'placeholder://restaurant',
+      description:
+          'Big portions and deeply seasoned food. Pricier, with slower service.',
+      rank: 10,
+      priceLevel: 3,
+      locations: [
+        RestaurantLocation(
+          name: 'Third Ward',
+          address: '3801 Emancipation Ave, Houston, TX 77004',
+        ),
+      ],
+      whatToOrder: 'Oxtails with mac and cheese',
+      insiderTip:
+          'Smothered turkey necks with distinctive gravy and real tenderism.',
     ),
 
     // Atlanta

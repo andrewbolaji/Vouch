@@ -788,10 +788,10 @@ void main() {
       expect(nyc1, isNotNull);
       expect(nyc1!.commentCount, 1);
 
-      // hou-11 (Tacos Los Brothers) has 0 seed comments
-      final hou11 = state.restaurantById('hou-11');
-      expect(hou11, isNotNull);
-      expect(hou11!.commentCount, 0);
+      // hou-20 (Caribbean Jerk Palace) has 0 seed comments
+      final hou20 = state.restaurantById('hou-20');
+      expect(hou20, isNotNull);
+      expect(hou20!.commentCount, 0);
     });
 
     test('refresh reloads data', () async {

@@ -308,6 +308,26 @@ This is the chronological evidence trail for substantial engineering work. It re
 - **Final state:** Project-memory adoption is implemented and verified locally. It is not committed or pushed.
 - **Follow-up:** Fix and test the RevenueCat signature contract before Andrew creates or enables the signing secret. Andrew and Codex will choose the Your Vouches product contract before implementation. Commit the memory files without sweeping in unrelated site work when Andrew wants this transition checkpoint pushed.
 
+### 2026-08-21T12:35:48Z Replace Houston rank 10 with Caribbean Jerk Palace
+
+- **Status:** completed
+- **Scope:** Local Houston app catalog, website copy, launch-order tooling and decision record
+- **Reference:** Andrew's 2026-08-21 Top 10 decision
+- **Operator:** Codex
+
+| UTC time | Action | Target/environment | Result and evidence |
+|---|---|---|---|
+| 12:35:48 | Reconciled the settled Houston order with local app and site sources | Local source | Replaced the stale Houston demo catalog with the owner-approved ten-place order. Caribbean Jerk Palace is rank 10 at 3801 Emancipation Avenue in Third Ward, with oxtails and mac and cheese as the main order and smothered turkey necks as the insider pick. |
+| 12:35:48 | Updated the launch-order script and public website boundary copy | Local source | The script now uses the settled order and removes Dona Leti's plus the previously rejected restaurants. The website still exposes only ranks 1 through 5, but its gated-ranks copy now identifies Caribbean Jerk Palace as the Third Ward restaurant ending the Top 10. |
+| 12:38:00 | Ran focused catalog and restaurant-detail regression tests | Local Flutter test environment | `flutter test test/screens/restaurant_detail_screen_test.dart test/providers/app_state_test.dart` passed all 51 tests after replacing the retired Tacos Los Brothers zero-comment fixture with Caribbean Jerk Palace. Node syntax, project-memory and scoped diff checks passed. |
+| 12:55:00 | Added Andrew's original Caribbean Jerk Palace photo and verified its app mapping | Local app assets and Flutter tests | Copied `IMG_2629.jpeg` into the bundled demo assets, mapped the exact restaurant name to it, and added a regression assertion for the asset path. The combined image, restaurant-detail and app-state run passed all 63 tests. |
+| 12:57:00 | Deployed and verified the updated website | Firebase Hosting and `https://vouchfood.com/` | Hosting release completed for `majorcitymusteats`. A fresh production render showed the correct public top five and the Caribbean Jerk Palace in Third Ward boundary copy, with no horizontal overflow or browser warnings or errors. |
+
+- **Files/artifacts:** `assets/demo/Caribbean Jerk Palace.jpeg`, `lib/config/demo_image_overrides.dart`, `lib/data/seed_data.dart`, `scripts/set_houston_launch_order.js`, `site/index.html`, `docs/DECISIONS.md`, `docs/EXECUTION.md`, focused widget and provider tests
+- **Skipped or blocked:** No production Firestore write was performed. The launch-order script still requires a deliberate dry run against the intended Firebase project before any confirmed data mutation.
+- **Final state:** The app catalog and live website reflect the updated Houston Top 10. Caribbean Jerk Palace has Andrew's supplied app photo, and the website preserves its ranks 6 through 10 access boundary.
+- **Follow-up:** Dry-run the production order script before any confirmed Firestore update.
+
 ## Entry template
 
 ### [YYYY-MM-DDTHH:MM:SSZ] [TASK OR CHANGE]

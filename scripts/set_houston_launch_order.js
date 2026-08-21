@@ -30,16 +30,16 @@ const db = admin.firestore();
 
 // Curated launch order: [rank, name]
 const LAUNCH_ORDER = [
-  [1, "Mensho"],
-  [2, "Tacos Los Brothers"],
-  [3, "Crave Suya"],
-  [4, "The Peri Peri Factory"],
-  [5, "Corkscrew BBQ"],
-  [6, "Lost and Found"],
-  [7, "Top Sushi"],
-  [8, "The Better Box"],
-  [9, "Joey Uptown"],
-  [10, "Lotus Seafood"],
+  [1, "ChòpnBlọk"],
+  [2, "Mensho"],
+  [3, "CorkScrew BBQ"],
+  [4, "Roostar"],
+  [5, "JOEY Uptown"],
+  [6, "The Peri Peri Factory"],
+  [7, "Lost & Found"],
+  [8, "Top Sushi"],
+  [9, "The Better Box"],
+  [10, "Caribbean Jerk Palace"],
 ];
 
 // Restaurants to remove from Houston (not on the new list).
@@ -47,6 +47,9 @@ const REMOVALS = [
   "The Puddery",
   "Le Jardinier",
   "Dona Leti's",
+  "Tacos Los Brothers",
+  "Crave Suya",
+  "Lotus Seafood",
   "Hidden Omakase",
   "Tatemo",
   "Taste Bar + Kitchen",

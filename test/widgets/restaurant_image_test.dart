@@ -79,6 +79,26 @@ void main() {
       expect(sources[0].isAsset, isTrue);
     });
 
+    test('resolves Caribbean Jerk Palace to Andrew\'s supplied photo', () {
+      const restaurant = Restaurant(
+        id: 'hou-20',
+        cityId: 'houston',
+        name: 'Caribbean Jerk Palace',
+        cuisine: 'Caribbean',
+        imageUrl: 'placeholder://restaurant',
+        description: '',
+        rank: 10,
+      );
+
+      final sources = RestaurantImage.resolveImageSources(restaurant);
+      expect(sources, hasLength(1));
+      expect(sources.single.isAsset, isTrue);
+      expect(
+        sources.single.assetPath,
+        'assets/demo/Caribbean Jerk Palace.jpeg',
+      );
+    });
+
     test('falls through to network URL when name not in map', () {
       const restaurant = Restaurant(
         id: 'test',

@@ -63,6 +63,10 @@ const Map<String, DemoImagePaths> kDemoImageOverrides = {
     'assets/demo/Lost and Found.png',
     'assets/demo/Lost and Found 2.png',
   ),
+  'lost & found': DemoImagePaths(
+    'assets/demo/Lost and Found.png',
+    'assets/demo/Lost and Found 2.png',
+  ),
   'mensho': DemoImagePaths(
     'assets/demo/Mensho.png',
     'assets/demo/Mensho 2.png',
@@ -117,7 +121,11 @@ const Map<String, DemoImagePaths> kDemoImageOverrides = {
   ),
   // Singles (primary only)
   'butter funk kitchen': DemoImagePaths('assets/demo/Butter Funk Kitchen.png'),
+  'caribbean jerk palace': DemoImagePaths(
+    'assets/demo/Caribbean Jerk Palace.jpeg',
+  ),
   'chopnblok': DemoImagePaths('assets/demo/ChopnBlok.png'),
+  'chòpnblọk': DemoImagePaths('assets/demo/ChopnBlok.png'),
   'crave suya': DemoImagePaths('assets/demo/Crave Suya.png'),
   'handies douzo': DemoImagePaths('assets/demo/Handies Douzo.png'),
   'jamaica pon di road': DemoImagePaths(
